@@ -1,0 +1,92 @@
+/**
+ * Kjellerbruksendring — bruk-typer og rom-data
+ * Ported from prototype/index.html (KJELLER_BRUK + KJELLER_ROOMS).
+ */
+
+export type KjellerBrukId = "soverom" | "hybel" | "stue" | "kontor" | "bad";
+
+export interface KjellerBruk {
+  label: string;
+  desc: string;
+  takhoyde_min: number;
+  takhoyde_lempet: number;
+  krav_romning: boolean;
+  krav_dagslys: number;   // 0..1 (0.10 = 10%)
+  krav_radon: boolean;
+  ansvarsrett: boolean;
+  soknad: string;
+}
+
+export const KJELLER_BRUK: Record<KjellerBrukId, KjellerBruk> = {
+  soverom: {
+    label: "Soverom",
+    desc: "Eget soverom for familiemedlem",
+    takhoyde_min: 2400, takhoyde_lempet: 2200,
+    krav_romning: true, krav_dagslys: 0.10, krav_radon: true,
+    ansvarsrett: false,
+    soknad: "PBL § 20-1 d (bruksendring)",
+  },
+  hybel: {
+    label: "Hybel / utleie",
+    desc: "Utleieleilighet med eget kjøkken og bad",
+    takhoyde_min: 2400, takhoyde_lempet: 2400,
+    krav_romning: true, krav_dagslys: 0.10, krav_radon: true,
+    ansvarsrett: true,
+    soknad: "PBL § 20-3 (med ansvarsrett)",
+  },
+  stue: {
+    label: "Stue / TV-rom",
+    desc: "Familierom som del av samme bolig",
+    takhoyde_min: 2400, takhoyde_lempet: 2200,
+    krav_romning: false, krav_dagslys: 0.10, krav_radon: true,
+    ansvarsrett: false,
+    soknad: "PBL § 20-4 c (uten ansvarsrett)",
+  },
+  kontor: {
+    label: "Hjemmekontor",
+    desc: "Arbeidsrom innen samme bolig",
+    takhoyde_min: 2400, takhoyde_lempet: 2200,
+    krav_romning: false, krav_dagslys: 0.10, krav_radon: true,
+    ansvarsrett: false,
+    soknad: "PBL § 20-4 c (uten ansvarsrett)",
+  },
+  bad: {
+    label: "Bad / WC",
+    desc: "Ekstra bad i kjeller",
+    takhoyde_min: 2200, takhoyde_lempet: 2200,
+    krav_romning: false, krav_dagslys: 0, krav_radon: false,
+    ansvarsrett: false,
+    soknad: "PBL § 20-4 c (uten ansvarsrett)",
+  },
+};
+
+export interface KjellerRoom {
+  id: string;
+  name: string;
+  area: number;     // m²
+  height: number;   // mm
+  vinduer: string;
+}
+
+const ROOMS_BY_PROP_ID: Record<string, KjellerRoom[]> = {
+  "1":  [{ id: "fellesrom", name: "Fellesrom", area: 24, height: 2280, vinduer: "Lite vindu (0,8×0,6 m)" },
+         { id: "bod",       name: "Bod",       area: 18, height: 2280, vinduer: "Ingen" },
+         { id: "vaskerom",  name: "Vaskerom",  area: 12, height: 2280, vinduer: "Lite vindu (0,6×0,4 m)" }],
+  "2":  [{ id: "fellesrom", name: "Fellesrom", area: 28, height: 2280, vinduer: "Lite vindu (0,8×0,6 m)" },
+         { id: "teknisk",   name: "Teknisk",   area: 9,  height: 2280, vinduer: "Ingen" },
+         { id: "bod",       name: "Bod",       area: 14, height: 2280, vinduer: "Ingen" }],
+  "4":  [{ id: "stue",      name: "Stue (delvis innredet)", area: 22, height: 2150, vinduer: "Lite vindu (0,6×0,5 m)" },
+         { id: "bod",       name: "Bod",       area: 16, height: 2150, vinduer: "Ingen" }],
+  "5":  [{ id: "fellesrom", name: "Fellesrom", area: 32, height: 2310, vinduer: "Lite vindu (0,9×0,6 m)" },
+         { id: "vaskerom",  name: "Vaskerom",  area: 11, height: 2310, vinduer: "Ingen" },
+         { id: "bod",       name: "Bod",       area: 19, height: 2310, vinduer: "Ingen" }],
+};
+
+const DEFAULT_ROOMS: KjellerRoom[] = [
+  { id: "fellesrom", name: "Fellesrom", area: 26, height: 2280, vinduer: "Lite vindu (0,8×0,6 m)" },
+  { id: "bod",       name: "Bod",       area: 16, height: 2280, vinduer: "Ingen" },
+];
+
+export function getKjellerRooms(propId: string): KjellerRoom[] {
+  return ROOMS_BY_PROP_ID[propId] || DEFAULT_ROOMS;
+}
