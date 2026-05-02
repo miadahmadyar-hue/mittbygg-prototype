@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   MittBygg design tokens — ported from prototype/index.html
+   =========================================================================== */
+@theme {
+  /* Brand */
+  --color-green-50:  #f1f7f4;
+  --color-green-100: #d8ebe1;
+  --color-green-300: #6da690;
+  --color-green-500: #0a4f3c;
+  --color-green-600: #084134;
+  --color-green-700: #052f24;
+  --color-orange-500: #e9763a;
+  --color-orange-600: #d2632a;
+
+  /* Status */
+  --color-red-500:   #c53030;
+  --color-red-50:    #fff4f4;
+  --color-amber-500: #d97706;
+  --color-amber-50:  #fff8eb;
+
+  /* Neutrals */
+  --color-gray-50:  #f7f7f6;
+  --color-gray-100: #ededeb;
+  --color-gray-200: #dedcd9;
+  --color-gray-300: #c9c6c2;
+  --color-gray-400: #94918c;
+  --color-gray-500: #6b6863;
+  --color-gray-700: #3a3835;
+  --color-gray-900: #1a1917;
+
+  --color-background: #f7f7f6;
+  --color-foreground: #1a1917;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+               "Segoe UI", "Inter", Roboto, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+
+  /* Radii */
+  --radius-sm:  8px;
+  --radius:     12px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(10, 30, 25, 0.04),
+               0 1px 3px rgba(10, 30, 25, 0.06);
+  --shadow-md: 0 4px 12px rgba(10, 30, 25, 0.08);
+  --shadow-lg: 0 16px 40px rgba(10, 30, 25, 0.12);
+}
+
+html, body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media (min-width: 900px) {
+  body {
+    background: linear-gradient(160deg,
+                #eaf3ee 0%, #f7f7f6 50%, #fef4ec 100%);
+  }
+}
+
+/* Mobile-shell wrapper used by every route */
+.shell {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: white;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 900px) {
+  .shell {
+    margin: 24px auto;
+    min-height: calc(100vh - 48px);
+    border-radius: var(--radius-xl);
+  }
+}
+
+/* View transition */
+.view {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: viewIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Spinner used during BankID + loading screens */
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--color-gray-200);
+  border-top-color: var(--color-green-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.spinner-lg {
+  width: 56px; height: 56px;
+  border-width: 4px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
