@@ -1,0 +1,2931 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<title>MittBygg — Fra idé til ferdigattest</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a4f3c">
+<style>
+/* ===========================================================================
+   DESIGN TOKENS
+   =========================================================================== */
+:root {
+  --green-50:  #f1f7f4;
+  --green-100: #d8ebe1;
+  --green-300: #6da690;
+  --green-500: #0a4f3c;
+  --green-600: #084134;
+  --green-700: #052f24;
+  --orange-500: #e9763a;
+  --orange-600: #d2632a;
+  --red-500: #c53030;
+  --red-50: #fff4f4;
+  --amber-500: #d97706;
+  --amber-50: #fff8eb;
+  --gray-50: #f7f7f6;
+  --gray-100: #ededeb;
+  --gray-200: #dedcd9;
+  --gray-300: #c9c6c2;
+  --gray-400: #94918c;
+  --gray-500: #6b6863;
+  --gray-700: #3a3835;
+  --gray-900: #1a1917;
+  --shadow-sm: 0 1px 2px rgba(10, 30, 25, 0.04), 0 1px 3px rgba(10, 30, 25, 0.06);
+  --shadow-md: 0 4px 12px rgba(10, 30, 25, 0.08);
+  --shadow-lg: 0 16px 40px rgba(10, 30, 25, 0.12);
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+          "Inter", Roboto, sans-serif;
+  --mono: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+*::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv11";
+}
+body { min-height: 100vh; min-height: 100dvh; }
+
+button { font-family: inherit; font-size: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; font-size: inherit; }
+a { color: inherit; text-decoration: none; }
+
+/* ===========================================================================
+   APP SHELL
+   =========================================================================== */
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex; flex-direction: column;
+}
+
+.shell {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: white;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+@media (min-width: 900px) {
+  body { background: linear-gradient(160deg, #eaf3ee 0%, #f7f7f6 50%, #fef4ec 100%); }
+  .shell {
+    margin: 24px auto;
+    min-height: calc(100vh - 48px);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+}
+
+/* TOP BAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  background: white;
+  border-bottom: 1px solid var(--gray-100);
+  position: sticky; top: 0; z-index: 5;
+  height: 56px;
+  flex-shrink: 0;
+}
+.topbar .back {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-100);
+  display: grid; place-items: center;
+  transition: background 0.15s;
+}
+.topbar .back:hover { background: var(--gray-200); }
+.topbar .title { font-weight: 600; font-size: 17px; }
+.topbar .right { display: flex; gap: var(--space-2); align-items: center; }
+
+.brandmark {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-weight: 700; letter-spacing: -0.02em;
+}
+.brandmark .dot {
+  width: 24px; height: 24px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--green-500), var(--green-700));
+  display: grid; place-items: center;
+}
+.brandmark .dot::before {
+  content: "";
+  width: 10px; height: 10px;
+  background: white;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+/* MAIN CONTENT */
+.view {
+  flex: 1;
+  padding: var(--space-5);
+  display: flex; flex-direction: column;
+  gap: var(--space-4);
+  animation: viewIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.view.tight { padding: var(--space-4); gap: var(--space-3); }
+
+/* TYPOGRAPHY */
+h1, h2, h3, h4, p { margin: 0; }
+h1 { font-size: 32px; line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; }
+h2 { font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; font-weight: 700; }
+h3 { font-size: 17px; line-height: 1.3; font-weight: 600; }
+h4 { font-size: 14px; line-height: 1.3; font-weight: 600; color: var(--gray-500);
+     text-transform: uppercase; letter-spacing: 0.04em; }
+p  { font-size: 15px; line-height: 1.5; color: var(--gray-700); }
+.lead { font-size: 17px; line-height: 1.45; color: var(--gray-700); }
+.muted { color: var(--gray-500); }
+.tiny  { font-size: 12px; }
+.small { font-size: 13px; }
+.mono  { font-family: var(--mono); }
+
+/* CARDS */
+.card {
+  background: white;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+.card.pad-sm { padding: var(--space-4); }
+.card.flat { box-shadow: none; border: 1px solid var(--gray-100); }
+.card.lifted { box-shadow: var(--shadow-sm); border-color: transparent; }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  transition: transform 0.05s, background 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.98); }
+.btn.primary {
+  background: var(--green-500);
+  color: white;
+  box-shadow: 0 1px 0 var(--green-700) inset, 0 4px 14px rgba(10, 79, 60, 0.25);
+}
+.btn.primary:hover { background: var(--green-600); }
+.btn.secondary {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+.btn.secondary:hover { background: var(--gray-200); }
+.btn.ghost {
+  background: transparent;
+  color: var(--green-500);
+}
+.btn.ghost:hover { background: var(--green-50); }
+.btn.danger {
+  background: var(--red-500);
+  color: white;
+}
+.btn.full { width: 100%; }
+.btn.lg { padding: 18px 24px; font-size: 17px; border-radius: 14px; }
+.btn.sm { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
+.btn.block { display: flex; width: 100%; }
+
+/* CTA STACK at bottom of view */
+.cta-stack {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+.cta-stack.row { flex-direction: row; }
+.cta-stack.row .btn { flex: 1; }
+
+/* INPUTS */
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  gap: var(--space-3);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input-wrap:focus-within {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 4px var(--green-50);
+}
+.input-wrap input,
+.input-wrap select {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--gray-900);
+  width: 100%;
+  min-width: 0;
+}
+.input-wrap .icon { color: var(--gray-400); flex-shrink: 0; }
+
+.label { display: block; font-size: 13px; font-weight: 600;
+         color: var(--gray-700); margin-bottom: var(--space-2); }
+.field { display: flex; flex-direction: column; gap: 0; }
+.field + .field { margin-top: var(--space-3); }
+
+/* RADIO CARDS */
+.radio-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  background: white;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.radio-card + .radio-card { margin-top: var(--space-2); }
+.radio-card:hover { border-color: var(--gray-300); background: var(--gray-50); }
+.radio-card.selected {
+  border-color: var(--green-500);
+  background: var(--green-50);
+  box-shadow: 0 0 0 1px var(--green-500) inset;
+}
+.radio-card .check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--gray-300);
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  transition: all 0.15s;
+}
+.radio-card.selected .check {
+  border-color: var(--green-500);
+  background: var(--green-500);
+}
+.radio-card.selected .check::after {
+  content: "";
+  width: 8px; height: 8px;
+  background: white;
+  border-radius: 50%;
+}
+.radio-card .body { flex: 1; }
+.radio-card .body .t { font-weight: 600; font-size: 15px; }
+.radio-card .body .d { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+.radio-card .lead-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--gray-100);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+
+/* TOGGLE */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-4); background: white;
+  border: 1px solid var(--gray-100); border-radius: var(--radius);
+}
+.toggle-row + .toggle-row { margin-top: var(--space-2); }
+.toggle-row .body .t { font-weight: 600; font-size: 15px; }
+.toggle-row .body .d { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+.toggle {
+  width: 48px; height: 28px;
+  background: var(--gray-200);
+  border-radius: 999px;
+  border: none;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  width: 22px; height: 22px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+.toggle.on { background: var(--green-500); }
+.toggle.on::after { transform: translateX(20px); }
+
+/* PILLS / TAGS */
+.pill {
+  display: inline-flex; align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+.pill.green   { background: #dcebe2; color: var(--green-700); }
+.pill.amber   { background: var(--amber-50); color: var(--amber-500); }
+.pill.red     { background: var(--red-50); color: var(--red-500); }
+.pill.blue    { background: #e3edf7; color: #2156a8; }
+
+/* BADGE */
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 6px;
+         background: var(--green-50); color: var(--green-600);
+         font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+
+/* PROGRESS */
+.progress {
+  display: flex; gap: 4px;
+  margin: 0 var(--space-1);
+}
+.progress .seg {
+  flex: 1; height: 4px;
+  background: var(--gray-200);
+  border-radius: 999px;
+  transition: background 0.3s;
+}
+.progress .seg.done { background: var(--green-500); }
+
+/* HERO */
+.hero {
+  flex: 1;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: var(--space-10) var(--space-5);
+  text-align: center;
+  background: linear-gradient(180deg, #fafaf8 0%, #ecf3ef 100%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(233, 118, 58, 0.18), transparent);
+  top: -60px; right: -100px;
+  pointer-events: none;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(10, 79, 60, 0.10), transparent);
+  bottom: -80px; left: -80px;
+  pointer-events: none;
+}
+.hero h1 { font-size: 38px; line-height: 1.05; }
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(120deg, var(--green-500), var(--orange-500));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero p { font-size: 17px; margin: var(--space-4) auto 0; max-width: 320px; }
+
+/* AVATAR / ORB */
+.orb {
+  width: 88px; height: 88px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--green-500), var(--green-700) 70%, #2a7a5e);
+  display: grid; place-items: center;
+  margin: 0 auto var(--space-6);
+  box-shadow: 0 12px 28px rgba(10, 79, 60, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.orb svg { color: white; }
+
+/* PROPERTY HEADER */
+.property-hero {
+  background: linear-gradient(135deg, var(--green-500), var(--green-700));
+  color: white;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+.property-hero::after {
+  content: "";
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  top: -50px; right: -50px;
+}
+.property-hero h2 { color: white; }
+.property-hero p { color: rgba(255, 255, 255, 0.78); }
+.property-hero .stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  position: relative; z-index: 1;
+}
+.property-hero .stat .num {
+  font-size: 24px; font-weight: 700; letter-spacing: -0.02em;
+}
+.property-hero .stat .lbl {
+  font-size: 12px; opacity: 0.7; margin-top: 2px;
+}
+
+/* TILTAK GRID */
+.tiltak-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.tiltak-card {
+  background: white;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-2);
+  transition: all 0.15s;
+  cursor: pointer;
+  text-align: left;
+  align-items: stretch;
+  min-height: 140px;
+}
+.tiltak-card:hover {
+  border-color: var(--green-300);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.tiltak-card .icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--green-50);
+  color: var(--green-500);
+  display: grid; place-items: center;
+  margin-bottom: var(--space-1);
+}
+.tiltak-card .icon.warm { background: #fef0e6; color: var(--orange-500); }
+.tiltak-card .icon.blue { background: #e3edf7; color: #2156a8; }
+.tiltak-card .name {
+  font-size: 14px; font-weight: 700; line-height: 1.2;
+}
+.tiltak-card .desc {
+  font-size: 12px; color: var(--gray-500); line-height: 1.35;
+}
+.tiltak-card .meta {
+  margin-top: auto;
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+
+/* SEARCH RESULTS */
+.suggestions {
+  background: white;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.suggestions .row {
+  padding: var(--space-3) var(--space-4);
+  display: flex; align-items: center; gap: var(--space-3);
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--gray-100);
+}
+.suggestions .row:last-child { border-bottom: none; }
+.suggestions .row:hover { background: var(--gray-50); }
+.suggestions .row .pin {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--green-50);
+  color: var(--green-500);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.suggestions .row .body { flex: 1; min-width: 0; }
+.suggestions .row .body .a {
+  font-weight: 600; font-size: 15px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.suggestions .row .body .b {
+  font-size: 13px; color: var(--gray-500);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* LIST */
+.kv-list { display: flex; flex-direction: column; }
+.kv-list .row {
+  display: flex; justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 14px;
+  gap: var(--space-3);
+}
+.kv-list .row:last-child { border-bottom: none; }
+.kv-list .row .k { color: var(--gray-500); flex-shrink: 0; }
+.kv-list .row .v { font-weight: 600; text-align: right; }
+
+/* TIMELINE */
+.timeline { display: flex; flex-direction: column; padding: 0; }
+.timeline .step {
+  display: flex; gap: var(--space-3);
+  padding: 0;
+  align-items: flex-start;
+  position: relative;
+}
+.timeline .step + .step { margin-top: var(--space-3); }
+.timeline .step .dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--green-50);
+  color: var(--green-500);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 1;
+}
+.timeline .step.done .dot { background: var(--green-500); color: white; }
+.timeline .step.current .dot {
+  background: var(--orange-500); color: white;
+  box-shadow: 0 0 0 4px rgba(233, 118, 58, 0.25);
+}
+.timeline .step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 13px; top: 28px;
+  width: 2px;
+  height: calc(100% + var(--space-3) - 28px);
+  background: var(--gray-200);
+}
+.timeline .step.done:not(:last-child)::before { background: var(--green-300); }
+.timeline .step .body { flex: 1; padding-bottom: var(--space-2); }
+.timeline .step .body .t { font-weight: 600; font-size: 14px; }
+.timeline .step .body .d { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+
+/* RESULT BADGES */
+.result-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+}
+.result-badge.green {
+  background: linear-gradient(135deg, #d8ebe1, #ebf6ef);
+  border: 1px solid #c9e1d3;
+}
+.result-badge.amber {
+  background: linear-gradient(135deg, #fdf2d9, #fef8e8);
+  border: 1px solid #f3e0a8;
+}
+.result-badge.red {
+  background: linear-gradient(135deg, #fde0e0, #fef0f0);
+  border: 1px solid #f5b7b7;
+}
+.result-badge .ic {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: white;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.result-badge.green .ic { color: var(--green-500); }
+.result-badge.amber .ic { color: var(--amber-500); }
+.result-badge.red   .ic { color: var(--red-500); }
+.result-badge .text .t { font-size: 18px; font-weight: 700; }
+.result-badge .text .d { font-size: 13px; color: var(--gray-700); margin-top: 2px; }
+
+/* ALERT */
+.alert {
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  display: flex; gap: var(--space-3);
+  align-items: flex-start;
+  font-size: 14px;
+}
+.alert .ic { flex-shrink: 0; margin-top: 2px; }
+.alert.info  { background: #eaf2fb; color: #1d4f8c; }
+.alert.amber { background: var(--amber-50); color: var(--amber-500); }
+.alert.red   { background: var(--red-50); color: var(--red-500); }
+.alert.green { background: var(--green-50); color: var(--green-700); }
+
+/* CHECK LIST */
+.checklist { display: flex; flex-direction: column; gap: var(--space-2); }
+.checklist li {
+  list-style: none;
+  display: flex; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: white;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  align-items: flex-start;
+}
+.checklist li .ic {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.checklist li .ic.ok    { background: var(--green-50); color: var(--green-500); }
+.checklist li .ic.todo  { background: var(--gray-100); color: var(--gray-500); }
+.checklist li .ic.warn  { background: var(--amber-50); color: var(--amber-500); }
+.checklist li .ic.fail  { background: var(--red-50); color: var(--red-500); }
+.checklist li .body { flex: 1; }
+.checklist li .body .t { font-weight: 600; font-size: 14px; }
+.checklist li .body .d { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+.checklist li .body .ref { font-size: 11px; color: var(--gray-400);
+                            margin-top: 4px; font-family: var(--mono); }
+ul.checklist { padding: 0; margin: 0; }
+
+/* THUMBNAIL GRID for tegninger */
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+.thumb {
+  aspect-ratio: 4/3;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: white;
+  display: flex; flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.thumb svg { width: 100%; height: 100%; }
+.thumb .lbl {
+  position: absolute;
+  bottom: 6px; left: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 10px; font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* COST BAR */
+.cost-card {
+  background: linear-gradient(135deg, #fef4ec, #fff8f2);
+  border: 1px solid #f8d4b3;
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  display: flex; flex-direction: column;
+  gap: var(--space-3);
+}
+.cost-card .total {
+  font-size: 28px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--orange-600);
+}
+.cost-card .row {
+  display: flex; justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+  border-top: 1px dashed rgba(210, 99, 42, 0.3);
+}
+.cost-card .row .k { color: var(--gray-700); }
+.cost-card .row .v { font-weight: 600; }
+
+/* SHEET / OVERLAY */
+.scrim {
+  position: fixed; inset: 0;
+  background: rgba(10, 30, 25, 0.55);
+  display: grid; place-items: end center;
+  z-index: 100;
+  animation: fadeIn 0.2s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.sheet {
+  background: white;
+  width: 100%;
+  max-width: 480px;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-6);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (min-width: 900px) {
+  .scrim { place-items: center; }
+  .sheet { border-radius: var(--radius-xl); margin-bottom: 24px; }
+}
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.sheet .grab {
+  width: 36px; height: 4px;
+  background: var(--gray-200);
+  border-radius: 2px;
+  margin: -8px auto var(--space-4);
+}
+
+/* SPINNER */
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--green-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* LOADING SCREEN */
+.loading-view {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: var(--space-4);
+  text-align: center;
+  padding: var(--space-10);
+}
+.loading-view .big-spinner {
+  width: 56px; height: 56px;
+  border: 4px solid var(--gray-200);
+  border-top-color: var(--green-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* DASHBOARD CARDS */
+.row-cards { display: flex; flex-direction: column; gap: var(--space-3); }
+
+/* SCROLL POLISH */
+.shell::-webkit-scrollbar { width: 6px; }
+.shell::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 6px; }
+
+/* UTILITY */
+.flex { display: flex; }
+.flex-1 { flex: 1; }
+.center { display: grid; place-items: center; }
+.between { justify-content: space-between; }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.col { flex-direction: column; }
+.text-center { text-align: center; }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-6 { margin-top: var(--space-6); }
+.mt-8 { margin-top: var(--space-8); }
+
+/* SECTION HEADER */
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+.section-head .lnk { font-size: 13px; color: var(--green-500); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+
+// ==========================================================================
+// MOCKED DATA
+// ==========================================================================
+
+const ADDRESSES = [
+  { id: "1", street: "Solbakken 12", postal: "0123", city: "Oslo",
+    coords: [59.9226, 10.7567],
+    matrikkel: { gnr: "35", bnr: "127", kommune: "Oslo" },
+    bygg: { byggeAar: 1985, BRA: 178, etasjer: 2, kjeller: true, garasje: false,
+            tomt: 612, regplan: "Reguleringsplan S-3022 (1976)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 2018, type: "Tilbygg veranda", status: "Ferdigattest" },
+              { aar: 2002, type: "Garasje (frittliggende)", status: "Ferdigattest" }
+            ],
+            tegninger: [
+              { saksnr: "198501247", title: "Plantegning 1. etg",       type: "PDF", year: 1985, kilde: "Oslo PBE" },
+              { saksnr: "198501247", title: "Plantegning kjeller",       type: "PDF", year: 1985, kilde: "Oslo PBE" },
+              { saksnr: "198501247", title: "Snitt A-A",                 type: "PDF", year: 1985, kilde: "Oslo PBE" },
+              { saksnr: "198501247", title: "Fasade nord/sør",           type: "PDF", year: 1985, kilde: "Oslo PBE" },
+              { saksnr: "198501247", title: "Fasade øst/vest",           type: "PDF", year: 1985, kilde: "Oslo PBE" },
+              { saksnr: "198501247", title: "Situasjonsplan",            type: "PDF", year: 1985, kilde: "Oslo PBE" },
+              { saksnr: "200218903", title: "Garasje — plan + fasader",  type: "PDF", year: 2002, kilde: "Oslo PBE" },
+              { saksnr: "201804521", title: "Tilbygg veranda — tegninger", type: "PDF", year: 2018, kilde: "Oslo PBE" },
+              { saksnr: "201804521", title: "Ferdigattest",              type: "PDF", year: 2019, kilde: "Oslo PBE" }
+            ]
+          }
+  },
+  { id: "2", street: "Solhellinga 24", postal: "0378", city: "Oslo",
+    coords: [59.9389, 10.7008],
+    matrikkel: { gnr: "42", bnr: "87", kommune: "Oslo" },
+    bygg: { byggeAar: 1972, BRA: 142, etasjer: 1, kjeller: true, garasje: true,
+            tomt: 580, regplan: "Småhusplan Oslo (vedtatt 2013)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 1995, type: "Innvendig endring", status: "Ferdigattest" }
+            ],
+            tegninger: [
+              { saksnr: "197200834", title: "Plantegning 1. etg",       type: "PDF", year: 1972, kilde: "Oslo PBE" },
+              { saksnr: "197200834", title: "Plantegning kjeller",       type: "PDF", year: 1972, kilde: "Oslo PBE" },
+              { saksnr: "197200834", title: "Snitt + fasader",           type: "PDF", year: 1972, kilde: "Oslo PBE" },
+              { saksnr: "197200834", title: "Situasjonsplan",            type: "PDF", year: 1972, kilde: "Oslo PBE" },
+              { saksnr: "199512456", title: "Innvendig endring — plan",  type: "PDF", year: 1995, kilde: "Oslo PBE" }
+            ]
+          }
+  },
+  { id: "3", street: "Bjørkehaugen 7B", postal: "0357", city: "Oslo",
+    coords: [59.9420, 10.7110],
+    matrikkel: { gnr: "44", bnr: "201", kommune: "Oslo" },
+    bygg: { byggeAar: 2015, BRA: 215, etasjer: 2, kjeller: false, garasje: true,
+            tomt: 740, regplan: "Detaljreguleringsplan Bjørkehaugen (2012)",
+            byggegrenser: { nord: 6, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: []
+          }
+  },
+  { id: "4", street: "Kirkeveien 99", postal: "0364", city: "Oslo",
+    coords: [59.9343, 10.7128],
+    matrikkel: { gnr: "47", bnr: "12", kommune: "Oslo" },
+    bygg: { byggeAar: 1932, BRA: 96, etasjer: 2, kjeller: true, garasje: false,
+            tomt: 320, regplan: "Småhusplan Oslo (vedtatt 2013)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 2009, type: "Bruksendring loft", status: "Ferdigattest" }
+            ]
+          }
+  },
+  { id: "5", street: "Fjordveien 18", postal: "5063", city: "Bergen",
+    coords: [60.3697, 5.3489],
+    matrikkel: { gnr: "165", bnr: "4", kommune: "Bergen" },
+    bygg: { byggeAar: 1968, BRA: 156, etasjer: 2, kjeller: true, garasje: true,
+            tomt: 660, regplan: "Kommuneplan Bergen 2018-2030",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: []
+          }
+  },
+  { id: "6", street: "Storgata 4", postal: "7011", city: "Trondheim",
+    coords: [63.4305, 10.3951],
+    matrikkel: { gnr: "404", bnr: "11", kommune: "Trondheim" },
+    bygg: { byggeAar: 1898, BRA: 128, etasjer: 2, kjeller: true, garasje: false,
+            tomt: 215, regplan: "Antikvarisk verneplan Midtbyen",
+            byggegrenser: { nord: 0, sor: 0, ost: 0, vest: 0 },
+            tidligereSaker: [
+              { aar: 2020, type: "Fasadeendring vindu", status: "Avslag" },
+              { aar: 2021, type: "Fasadeendring vindu (revidert)", status: "Ferdigattest" }
+            ]
+          }
+  },
+  { id: "7", street: "Lavollveien 31", postal: "9024", city: "Tromsø",
+    coords: [69.6492, 18.9553],
+    matrikkel: { gnr: "117", bnr: "302", kommune: "Tromsø" },
+    bygg: { byggeAar: 1981, BRA: 134, etasjer: 1, kjeller: true, garasje: true,
+            tomt: 720, regplan: "Reguleringsplan Tromsdalen Vest",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: []
+          }
+  },
+  { id: "8", street: "Marvik 27", postal: "4030", city: "Stavanger",
+    coords: [58.9700, 5.7331],
+    matrikkel: { gnr: "29", bnr: "612", kommune: "Stavanger" },
+    bygg: { byggeAar: 1995, BRA: 198, etasjer: 2, kjeller: true, garasje: true,
+            tomt: 510, regplan: "Detaljregulering Marvik (1992)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: []
+          }
+  },
+  { id: "9", street: "Nordvegen 88", postal: "1397", city: "Nesodden",
+    coords: [59.8603, 10.6553],
+    matrikkel: { gnr: "12", bnr: "405", kommune: "Nesodden" },
+    bygg: { byggeAar: 1965, BRA: 110, etasjer: 1, kjeller: true, garasje: false,
+            tomt: 980, regplan: "LNF / spredt boligbebyggelse",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: []
+          }
+  },
+  { id: "10", street: "Erlend Skjalgssons gate 2", postal: "0267", city: "Oslo",
+    coords: [59.9181, 10.7028],
+    matrikkel: { gnr: "37", bnr: "55", kommune: "Oslo" },
+    bygg: { byggeAar: 1928, BRA: 88, etasjer: 1, kjeller: true, garasje: false,
+            tomt: 245, regplan: "Småhusplan Oslo (vedtatt 2013)",
+            byggegrenser: { nord: 3, sor: 3, ost: 3, vest: 3 },
+            tidligereSaker: [
+              { aar: 1998, type: "Bruksendring loft", status: "Ferdigattest" }
+            ],
+            tegninger: [
+              { saksnr: "192800217", title: "Originaltegninger 1928 (skannet)", type: "PDF", year: 1928, kilde: "Oslo PBE — historisk arkiv" },
+              { saksnr: "192800217", title: "Plantegning + fasader (kalkér)", type: "PDF", year: 1928, kilde: "Oslo PBE — historisk arkiv" },
+              { saksnr: "199807112", title: "Loftutbygging — tegninger", type: "PDF", year: 1998, kilde: "Oslo PBE" },
+              { saksnr: "199807112", title: "Brannkonsept (loft)", type: "DOCX", year: 1998, kilde: "Oslo PBE" }
+            ]
+          }
+  },
+
+  // ==================  LILLESTRØM KOMMUNE  ==================
+  { id: "11", street: "Storgata 14", postal: "2000", city: "Lillestrøm",
+    coords: [59.9558, 11.0497],
+    matrikkel: { gnr: "78", bnr: "421", kommune: "Lillestrøm" },
+    bygg: { byggeAar: 1958, BRA: 124, etasjer: 2, kjeller: true, garasje: false,
+            tomt: 432, regplan: "Kommuneplan Lillestrøm 2023–2034",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 2014, type: "Skifte tak (tekkemateriale)", status: "Ferdigattest" }
+            ],
+            tegninger: [
+              { saksnr: "S-1958-0233", title: "Plantegninger 1. + 2. etg", type: "PDF", year: 1958, kilde: "Lillestrøm kommune (tidl. Skedsmo)" },
+              { saksnr: "S-1958-0233", title: "Snitt + fasader", type: "PDF", year: 1958, kilde: "Lillestrøm kommune (tidl. Skedsmo)" },
+              { saksnr: "201400982", title: "Tak — produktdatablad + kart", type: "PDF", year: 2014, kilde: "Lillestrøm kommune" }
+            ]
+          }
+  },
+  { id: "12", street: "Sørumsgata 7", postal: "2003", city: "Lillestrøm",
+    coords: [59.9522, 11.0469],
+    matrikkel: { gnr: "81", bnr: "112", kommune: "Lillestrøm" },
+    bygg: { byggeAar: 1991, BRA: 168, etasjer: 2, kjeller: true, garasje: true,
+            tomt: 540, regplan: "Detaljreguleringsplan Sørum øst (1989)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [],
+            tegninger: [
+              { saksnr: "S-1991-0789", title: "Komplett tegningssett — bygging", type: "PDF", year: 1991, kilde: "Lillestrøm kommune (tidl. Skedsmo)" },
+              { saksnr: "S-1991-0789", title: "Energiberegning", type: "PDF", year: 1991, kilde: "Lillestrøm kommune (tidl. Skedsmo)" }
+            ]
+          }
+  },
+  { id: "13", street: "Volla terrasse 18", postal: "2004", city: "Lillestrøm",
+    coords: [59.9603, 11.0561],
+    matrikkel: { gnr: "82", bnr: "303", kommune: "Lillestrøm" },
+    bygg: { byggeAar: 2008, BRA: 198, etasjer: 2, kjeller: false, garasje: true,
+            tomt: 620, regplan: "Detaljreguleringsplan Volla (2005)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [],
+            tegninger: [
+              { saksnr: "200804512", title: "Komplett tegningssett (digital)", type: "PDF", year: 2008, kilde: "Lillestrøm kommune" },
+              { saksnr: "200804512", title: "Energiattest (TEK10)", type: "PDF", year: 2008, kilde: "Lillestrøm kommune" }
+            ]
+          }
+  },
+
+  // ==================  DRAMMEN KOMMUNE  ==================
+  { id: "14", street: "Bragernes torg 5", postal: "3017", city: "Drammen",
+    coords: [59.7440, 10.2045],
+    matrikkel: { gnr: "110", bnr: "44", kommune: "Drammen" },
+    bygg: { byggeAar: 1905, BRA: 152, etasjer: 3, kjeller: true, garasje: false,
+            tomt: 198, regplan: "Antikvarisk verneplan Bragernes",
+            byggegrenser: { nord: 0, sor: 0, ost: 0, vest: 0 },
+            tidligereSaker: [
+              { aar: 2017, type: "Fasadeendring (vinduer)", status: "Ferdigattest" },
+              { aar: 1976, type: "Innvendig ombygging", status: "Ferdigattest" }
+            ],
+            tegninger: [
+              { saksnr: "D-1905-0044", title: "Originaltegninger (skannet)", type: "PDF", year: 1905, kilde: "Drammen kommune — byantikvar" },
+              { saksnr: "D-1905-0044", title: "Fasadetegninger (kalkér)", type: "PDF", year: 1905, kilde: "Drammen kommune — byantikvar" },
+              { saksnr: "197600312", title: "Innvendig ombygging — plan", type: "PDF", year: 1976, kilde: "Drammen kommune" },
+              { saksnr: "201702289", title: "Vindu-utskifting — fasader", type: "PDF", year: 2017, kilde: "Drammen kommune" },
+              { saksnr: "201702289", title: "Antikvarisk uttalelse", type: "PDF", year: 2017, kilde: "Drammen kommune" }
+            ]
+          }
+  },
+  { id: "15", street: "Strømsø allé 31", postal: "3045", city: "Drammen",
+    coords: [59.7368, 10.2032],
+    matrikkel: { gnr: "115", bnr: "208", kommune: "Drammen" },
+    bygg: { byggeAar: 1979, BRA: 138, etasjer: 1, kjeller: true, garasje: true,
+            tomt: 510, regplan: "Reguleringsplan Strømsø (1972)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [],
+            tegninger: [
+              { saksnr: "D-1979-1124", title: "Plantegning 1. etg + kjeller", type: "PDF", year: 1979, kilde: "Drammen kommune" },
+              { saksnr: "D-1979-1124", title: "Snitt + fasader", type: "PDF", year: 1979, kilde: "Drammen kommune" },
+              { saksnr: "D-1979-1124", title: "Situasjonsplan", type: "PDF", year: 1979, kilde: "Drammen kommune" }
+            ]
+          }
+  },
+  { id: "16", street: "Konnerudgata 92", postal: "3032", city: "Drammen",
+    coords: [59.7218, 10.1731],
+    matrikkel: { gnr: "118", bnr: "67", kommune: "Drammen" },
+    bygg: { byggeAar: 2002, BRA: 187, etasjer: 2, kjeller: true, garasje: true,
+            tomt: 690, regplan: "Detaljreguleringsplan Konnerud (1998)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [],
+            tegninger: [
+              { saksnr: "200203345", title: "Komplett tegningssett", type: "PDF", year: 2002, kilde: "Drammen kommune" },
+              { saksnr: "200203345", title: "Energiberegning (TEK97)", type: "PDF", year: 2002, kilde: "Drammen kommune" }
+            ]
+          }
+  },
+
+  // ==================  ASKER KOMMUNE  ==================
+  { id: "17", street: "Askerveien 110", postal: "1384", city: "Asker",
+    coords: [59.8331, 10.4395],
+    matrikkel: { gnr: "63", bnr: "229", kommune: "Asker" },
+    bygg: { byggeAar: 1962, BRA: 132, etasjer: 1, kjeller: true, garasje: true,
+            tomt: 720, regplan: "Reguleringsplan Asker sentrum (1968)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 1988, type: "Tilbygg sør", status: "Ferdigattest" }
+            ],
+            tegninger: [
+              { saksnr: "A-1962-0418", title: "Originaltegninger (skannet)", type: "PDF", year: 1962, kilde: "Asker kommune" },
+              { saksnr: "A-1962-0418", title: "Plantegning + fasader", type: "PDF", year: 1962, kilde: "Asker kommune" },
+              { saksnr: "198811234", title: "Tilbygg — plan + snitt", type: "PDF", year: 1988, kilde: "Asker kommune" }
+            ]
+          }
+  },
+  { id: "18", street: "Bondiveien 41", postal: "1387", city: "Asker",
+    coords: [59.8521, 10.4280],
+    matrikkel: { gnr: "65", bnr: "514", kommune: "Asker" },
+    bygg: { byggeAar: 1995, BRA: 174, etasjer: 2, kjeller: true, garasje: true,
+            tomt: 580, regplan: "Detaljreguleringsplan Bondi (1992)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [],
+            tegninger: [
+              { saksnr: "199506789", title: "Komplett tegningssett", type: "PDF", year: 1995, kilde: "Asker kommune" }
+            ]
+          }
+  },
+  { id: "19", street: "Vollenveien 56", postal: "1390", city: "Vollen",
+    coords: [59.8056, 10.4842],
+    matrikkel: { gnr: "70", bnr: "812", kommune: "Asker" },
+    bygg: { byggeAar: 1948, BRA: 96, etasjer: 1, kjeller: true, garasje: false,
+            tomt: 1100, regplan: "LNF / spredt boligbebyggelse (Vollen)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 2009, type: "Bruksendring kjeller (avslag)", status: "Avslag" }
+            ],
+            tegninger: [
+              { saksnr: "A-1948-0089", title: "Originaltegninger (skannet)", type: "PDF", year: 1948, kilde: "Asker kommune (tidl. Røyken)" },
+              { saksnr: "200912001", title: "Bruksendring — søknad (avslag)", type: "PDF", year: 2009, kilde: "Asker kommune" },
+              { saksnr: "200912001", title: "Avslagsvedtak m/begrunnelse", type: "PDF", year: 2009, kilde: "Asker kommune" }
+            ]
+          }
+  },
+
+  // ==================  BÆRUM KOMMUNE (Sandvika)  ==================
+  { id: "20", street: "Rådmann Halmrasts vei 2", postal: "1337", city: "Sandvika",
+    coords: [59.8917, 10.5267],
+    matrikkel: { gnr: "53", bnr: "311", kommune: "Bærum" },
+    bygg: { byggeAar: 1968, BRA: 156, etasjer: 2, kjeller: true, garasje: true,
+            tomt: 640, regplan: "Småhusplan Bærum (vedtatt 2007)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 2003, type: "Garasje + carport", status: "Ferdigattest" }
+            ],
+            tegninger: [
+              { saksnr: "B-1968-0567", title: "Originaltegninger (skannet)", type: "PDF", year: 1968, kilde: "Bærum kommune" },
+              { saksnr: "B-1968-0567", title: "Plantegning + snitt + fasader", type: "PDF", year: 1968, kilde: "Bærum kommune" },
+              { saksnr: "200315678", title: "Garasje — plan + situasjonsplan", type: "PDF", year: 2003, kilde: "Bærum kommune" }
+            ]
+          }
+  },
+  { id: "21", street: "Brambanigata 9", postal: "1338", city: "Sandvika",
+    coords: [59.8932, 10.5288],
+    matrikkel: { gnr: "53", bnr: "452", kommune: "Bærum" },
+    bygg: { byggeAar: 1925, BRA: 118, etasjer: 2, kjeller: true, garasje: false,
+            tomt: 380, regplan: "Småhusplan Bærum (vedtatt 2007) + bevaringsverdig",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [
+              { aar: 1996, type: "Bruksendring loft", status: "Ferdigattest" },
+              { aar: 2019, type: "Solcelleanlegg", status: "Tillatelse" }
+            ],
+            tegninger: [
+              { saksnr: "B-1925-0078", title: "Originaltegninger 1925 (kalkér)", type: "PDF", year: 1925, kilde: "Bærum kommune — historisk arkiv" },
+              { saksnr: "199608334", title: "Loftutbygging — tegninger", type: "PDF", year: 1996, kilde: "Bærum kommune" },
+              { saksnr: "201907221", title: "Solcelleanlegg — tak-tegning", type: "PDF", year: 2019, kilde: "Bærum kommune" },
+              { saksnr: "201907221", title: "Antikvarisk uttalelse", type: "PDF", year: 2019, kilde: "Bærum kommune" }
+            ]
+          }
+  },
+  { id: "22", street: "Engervannsveien 12", postal: "1341", city: "Slependen",
+    coords: [59.8843, 10.5602],
+    matrikkel: { gnr: "57", bnr: "199", kommune: "Bærum" },
+    bygg: { byggeAar: 2014, BRA: 224, etasjer: 2, kjeller: false, garasje: true,
+            tomt: 780, regplan: "Detaljreguleringsplan Slependen (2010)",
+            byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+            tidligereSaker: [],
+            tegninger: [
+              { saksnr: "201408903", title: "Komplett tegningssett (BIM-eksport)", type: "PDF", year: 2014, kilde: "Bærum kommune" },
+              { saksnr: "201408903", title: "Energiattest (TEK10)", type: "PDF", year: 2014, kilde: "Bærum kommune" },
+              { saksnr: "201408903", title: "IFC-modell", type: "IFC", year: 2014, kilde: "Bærum kommune" }
+            ]
+          }
+  },
+];
+
+// ==========================================================================
+// TILTAK CATALOG
+// ==========================================================================
+
+const TILTAK = [
+  { id: "kjeller-bruksendring",
+    name: "Bruksendring kjeller",
+    desc: "Kjeller til soverom, hybel, kontor eller stue",
+    icon: "kjeller",
+    iconClass: "",
+    tags: [{ t: "Søknadspliktig", c: "amber" }, { t: "Vanlig", c: "" }],
+    wizard: "kjeller",
+    available: true,
+  },
+  { id: "fjern-vegg",
+    name: "Fjern bærevegg",
+    desc: "Åpen planløsning – med bjelke og dimensjonering",
+    icon: "wall",
+    iconClass: "warm",
+    tags: [{ t: "Krever ANS-rett", c: "red" }],
+    wizard: "vegg",
+    available: true,
+  },
+  { id: "garasje",
+    name: "Bygge garasje",
+    desc: "Frittliggende garasje, carport eller bod",
+    icon: "garasje",
+    iconClass: "blue",
+    tags: [{ t: "Ofte unntatt", c: "green" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "tilbygg",
+    name: "Tilbygg",
+    desc: "Utvide huset med ekstra rom eller etasje",
+    icon: "tilbygg",
+    iconClass: "warm",
+    tags: [{ t: "Søknadspliktig", c: "amber" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "fasade",
+    name: "Fasadeendring",
+    desc: "Nye vinduer, kledning eller terrasse",
+    icon: "fasade",
+    iconClass: "",
+    tags: [{ t: "Avhenger", c: "" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "tak",
+    name: "Skifte tak",
+    desc: "Nytt tekkemateriale eller takform",
+    icon: "tak",
+    iconClass: "blue",
+    tags: [{ t: "Ofte unntatt", c: "green" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "solceller",
+    name: "Solceller",
+    desc: "Solcelleanlegg på tak eller vegg",
+    icon: "sol",
+    iconClass: "warm",
+    tags: [{ t: "Ofte unntatt", c: "green" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "anneks",
+    name: "Anneks / uthus",
+    desc: "Frittliggende anneks ≤ 50 m²",
+    icon: "anneks",
+    iconClass: "",
+    tags: [{ t: "Ofte unntatt", c: "green" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "levegg",
+    name: "Levegg",
+    desc: "Skjerm mot innsyn eller vind",
+    icon: "levegg",
+    iconClass: "blue",
+    tags: [{ t: "Ofte unntatt", c: "green" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "vindu",
+    name: "Innsette nytt vindu",
+    desc: "Nytt vindu på fasade",
+    icon: "vindu",
+    iconClass: "",
+    tags: [{ t: "Avhenger", c: "" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "brygge",
+    name: "Brygge / stupebrett",
+    desc: "Privat brygge på sjøtomt",
+    icon: "brygge",
+    iconClass: "blue",
+    tags: [{ t: "Søknadspliktig", c: "amber" }],
+    wizard: "stub",
+    available: false,
+  },
+  { id: "andre",
+    name: "Noe annet",
+    desc: "Beskriv tiltaket – AI hjelper deg videre",
+    icon: "ai",
+    iconClass: "warm",
+    tags: [{ t: "AI-assistent", c: "" }],
+    wizard: "stub",
+    available: false,
+  },
+];
+
+// ==========================================================================
+// KJELLERBRUKSENDRING — REGEL-MOTOR (port av kjeller_wizard.py)
+// ==========================================================================
+
+const KJELLER_BRUK = {
+  soverom: { label: "Soverom",
+             desc: "Eget soverom for familiemedlem",
+             takhoyde_min: 2400, takhoyde_lempet: 2200,
+             krav_romning: true, krav_dagslys: 0.10, krav_radon: true,
+             ansvarsrett: false, soknad: "PBL § 20-1 d (bruksendring)" },
+  hybel:   { label: "Hybel / utleie",
+             desc: "Utleieleilighet med eget kjøkken og bad",
+             takhoyde_min: 2400, takhoyde_lempet: 2400,
+             krav_romning: true, krav_dagslys: 0.10, krav_radon: true,
+             ansvarsrett: true, soknad: "PBL § 20-3 (med ansvarsrett)" },
+  stue:    { label: "Stue / TV-rom",
+             desc: "Familierom som del av samme bolig",
+             takhoyde_min: 2400, takhoyde_lempet: 2200,
+             krav_romning: false, krav_dagslys: 0.10, krav_radon: true,
+             ansvarsrett: false, soknad: "PBL § 20-4 c (uten ansvarsrett)" },
+  kontor:  { label: "Hjemmekontor",
+             desc: "Arbeidsrom innen samme bolig",
+             takhoyde_min: 2400, takhoyde_lempet: 2200,
+             krav_romning: false, krav_dagslys: 0.10, krav_radon: true,
+             ansvarsrett: false, soknad: "PBL § 20-4 c (uten ansvarsrett)" },
+  bad:     { label: "Bad / WC",
+             desc: "Ekstra bad i kjeller",
+             takhoyde_min: 2200, takhoyde_lempet: 2200,
+             krav_romning: false, krav_dagslys: 0, krav_radon: false,
+             ansvarsrett: false, soknad: "PBL § 20-4 c (uten ansvarsrett)" },
+};
+
+const KJELLER_ROOMS = {
+  "1":  [{ id: "fellesrom", name: "Fellesrom", area: 24, height: 2280, vinduer: "Lite vindu (0,8×0,6 m)" },
+         { id: "bod",       name: "Bod",       area: 18, height: 2280, vinduer: "Ingen" },
+         { id: "vaskerom",  name: "Vaskerom",  area: 12, height: 2280, vinduer: "Lite vindu (0,6×0,4 m)" }],
+  "2":  [{ id: "fellesrom", name: "Fellesrom", area: 28, height: 2280, vinduer: "Lite vindu (0,8×0,6 m)" },
+         { id: "teknisk",   name: "Teknisk",   area: 9,  height: 2280, vinduer: "Ingen" },
+         { id: "bod",       name: "Bod",       area: 14, height: 2280, vinduer: "Ingen" }],
+  "4":  [{ id: "stue",      name: "Stue (delvis innredet)", area: 22, height: 2150, vinduer: "Lite vindu (0,6×0,5 m)" },
+         { id: "bod",       name: "Bod",       area: 16, height: 2150, vinduer: "Ingen" }],
+  "5":  [{ id: "fellesrom", name: "Fellesrom", area: 32, height: 2310, vinduer: "Lite vindu (0,9×0,6 m)" },
+         { id: "vaskerom",  name: "Vaskerom",  area: 11, height: 2310, vinduer: "Ingen" },
+         { id: "bod",       name: "Bod",       area: 19, height: 2310, vinduer: "Ingen" }],
+  "default": [{ id: "fellesrom", name: "Fellesrom", area: 26, height: 2280,
+                vinduer: "Lite vindu (0,8×0,6 m)" },
+              { id: "bod",       name: "Bod",       area: 16, height: 2280,
+                vinduer: "Ingen" }]
+};
+function getKjellerRooms(propId) {
+  return KJELLER_ROOMS[propId] || KJELLER_ROOMS["default"];
+}
+
+function evaluateKjeller(input) {
+  // input: { propId, byggeAar, room, ny_bruk, radon, drenering, balansert_vent }
+  const krav = KJELLER_BRUK[input.ny_bruk];
+  const rooms = getKjellerRooms(input.propId);
+  const room = rooms.find(r => r.id === input.room) || rooms[0];
+  const eldre = input.byggeAar < 2010;
+
+  const findings = [];   // { type: ok|warn|fail, t, d, ref }
+  const tiltak = [];     // { name, desc, kostnad }
+  const lempninger = [];
+
+  // 1. TAKHØYDE
+  const min_h = eldre ? krav.takhoyde_lempet : krav.takhoyde_min;
+  if (room.height < min_h) {
+    findings.push({
+      type: "fail",
+      t: "Takhøyde for lav",
+      d: `${room.height} mm — krav ${min_h} mm. Gulvet må graves ut, eller velg annen bruk.`,
+      ref: "TEK17 § 12-7"
+    });
+    tiltak.push({ name: "Senke gulv (utgraving)",
+                  desc: "Krever RIB-vurdering av fundament og dreneringsomlegging.",
+                  kostnad: 150000 });
+  } else {
+    findings.push({
+      type: "ok",
+      t: "Takhøyde OK",
+      d: `${room.height} mm tilfredsstiller ${eldre ? "lempet" : "vanlig"} krav (${min_h} mm).`,
+      ref: "TEK17 § 12-7"
+    });
+    if (eldre && room.height < krav.takhoyde_min) {
+      lempninger.push({
+        regel: "Takhøyde",
+        tekst: `${room.height} mm aksepteres iht. PBL § 31-2 og DiBK HO-3/2016 (lempet krav 2200 mm for bygg fra ${input.byggeAar}).`
+      });
+    }
+  }
+
+  // 2. ROMNINGSVINDU
+  if (krav.krav_romning) {
+    if (room.vinduer.includes("Lite")) {
+      findings.push({
+        type: "fail",
+        t: "Mangler godkjent rømningsvindu",
+        d: "Eksisterende vindu er for lite. Krav: bredde ≥ 0,5 m, høyde ≥ 0,6 m, sum ≥ 1,5 m, sill ≤ 1,2 m fra gulv.",
+        ref: "TEK17 § 11-13 (alltid gjeldende)"
+      });
+      tiltak.push({ name: "Bygge vindusbrønn + større vindu",
+                    desc: "Prefabrikkert betongbrønn (ACO Self el. tilsv.) med stige og avløp i bunn. Nytt vindu 1,0 × 1,0 m.",
+                    kostnad: 35000 });
+    } else if (room.vinduer === "Ingen") {
+      findings.push({
+        type: "fail",
+        t: "Ingen vinduer i rommet",
+        d: "Soverom uten vindu er ikke godkjent. Må etablere rømningsvindu.",
+        ref: "TEK17 § 11-13"
+      });
+      tiltak.push({ name: "Etablere vindusbrønn med rømningsvindu",
+                    desc: "Krever utgraving og hulltaking i kjellervegg.",
+                    kostnad: 65000 });
+    } else {
+      findings.push({
+        type: "ok", t: "Rømningsvindu OK",
+        d: "Eksisterende vindu tilfredsstiller TEK17 § 11-13.",
+        ref: "TEK17 § 11-13"
+      });
+    }
+  }
+
+  // 3. DAGSLYS
+  if (krav.krav_dagslys > 0) {
+    // approximation: small window in 26 m² gives ~1.8% — needs improvement
+    const glass = room.vinduer.includes("Lite") ? 0.005 * room.area * 100 : 1.0;
+    const pct = (glass / room.area) * 100;
+    const target_pct = krav.krav_dagslys * 100;
+    const lempet_pct = 7;
+    if (pct < lempet_pct) {
+      findings.push({
+        type: "warn",
+        t: "Lite dagslys",
+        d: `Kun ~${pct.toFixed(1)}% glassflate. Mål: ${target_pct}% (kan lempes til ${lempet_pct}% for eldre bolig).`,
+        ref: "TEK17 § 13-7"
+      });
+    } else if (eldre && pct < target_pct) {
+      lempninger.push({
+        regel: "Dagslys",
+        tekst: `${pct.toFixed(1)}% godtas iht. PBL § 31-2 (lempet ned mot 7% for bestående bygg når funksjonelt dagslys er prosjektert iht. NS-EN 17037).`
+      });
+      findings.push({
+        type: "ok", t: "Dagslys lempet (godkjent)",
+        d: `${pct.toFixed(1)}% godtas iht. PBL § 31-2.`,
+        ref: "TEK17 § 13-7 + PBL § 31-2"
+      });
+    } else {
+      findings.push({
+        type: "ok", t: "Dagslys OK",
+        d: `${pct.toFixed(1)}% glassflate.`,
+        ref: "TEK17 § 13-7"
+      });
+    }
+  }
+
+  // 4. RADON
+  if (krav.krav_radon) {
+    if (input.radon == null || input.radon === "") {
+      findings.push({
+        type: "warn",
+        t: "Radon ikke målt",
+        d: "Bestill langtidsmåling (≥ 60 dager). Resultatet avgjør om aktivt radonanlegg trengs.",
+        ref: "TEK17 § 13-5"
+      });
+      tiltak.push({ name: "Radonsperre under nytt gulv",
+                    desc: "Diffusjonstett membran + sugerør under sperren. Aktivt anlegg installeres kun hvis måling viser > 100 Bq/m³.",
+                    kostnad: 18000 });
+    } else if (input.radon > 200) {
+      findings.push({
+        type: "fail",
+        t: `Radon ${input.radon} Bq/m³ over grense`,
+        d: "Aktivt radonanlegg er pålagt før bruksendring kan godkjennes.",
+        ref: "TEK17 § 13-5"
+      });
+      tiltak.push({ name: "Aktivt radonanlegg",
+                    desc: "Vifte + radonsperre + sugerør under gulv.",
+                    kostnad: 28000 });
+    } else if (input.radon > 100) {
+      findings.push({
+        type: "warn",
+        t: `Radon ${input.radon} Bq/m³ over tiltaksgrense`,
+        d: "Tiltak anbefales (passivt sugesystem klargjøres).",
+        ref: "TEK17 § 13-5"
+      });
+      tiltak.push({ name: "Passivt radonanlegg",
+                    desc: "Sugerør under sperren, klargjort for aktivering hvis måling stiger.",
+                    kostnad: 15000 });
+    } else {
+      findings.push({
+        type: "ok", t: `Radon OK (${input.radon} Bq/m³)`,
+        d: "Under tiltaksgrense.", ref: "TEK17 § 13-5"
+      });
+    }
+  }
+
+  // 5. FUKT / DRENERING
+  if (!input.drenering) {
+    findings.push({
+      type: "fail",
+      t: "Mangler fungerende drenering",
+      d: "PBL § 31-3: sikkerhetsnivået må ikke bli verre. Drenering er forutsetning før kjelleren bruksendres.",
+      ref: "TEK17 § 13-13/14 + PBL § 31-3"
+    });
+    tiltak.push({ name: "Renovere drenering rundt grunnmur",
+                  desc: "Utgraving, ny knastefolie, drensrør (DN 100), returfylling.",
+                  kostnad: 80000 });
+  } else {
+    findings.push({
+      type: "ok", t: "Drenering på plass",
+      d: "Forutsetning for å bruksendre er oppfylt.",
+      ref: "TEK17 § 13-13"
+    });
+  }
+  // Innvendig isolering er alltid nødvendig ved bruksendring til oppholdsrom
+  if (input.ny_bruk !== "bad") {
+    tiltak.push({ name: "Innvendig isolering av kjellervegg",
+                  desc: "150 mm mineralull mellom stender, dampsperre, gips. Oppnår U ≤ 0,18 W/m²K.",
+                  kostnad: 60000 });
+  }
+
+  // 6. VENTILASJON
+  if (krav.krav_radon && !input.balansert_vent) {
+    findings.push({
+      type: "warn",
+      t: "Anbefales: balansert ventilasjon",
+      d: "Kjeller-soverom bør ha balansert ventilasjon m/varmegjenvinning. Spesielt viktig for radonkontroll og fuktbalanse.",
+      ref: "TEK17 § 13-1"
+    });
+    tiltak.push({ name: "Balansert ventilasjon m/varmegjenvinning",
+                  desc: "Sentralt aggregat + kanaler. Anbefales for hele boligen samtidig.",
+                  kostnad: 100000 });
+  }
+
+  // 7. HYBEL — egen ekstra
+  if (input.ny_bruk === "hybel") {
+    findings.push({
+      type: "warn",
+      t: "Hybel utløser strenge krav",
+      d: "Egen branncelle (EI 60), egen utgang, eget brannvarslingsanlegg, R'w ≥ 55 dB lyd mellom etasjer.",
+      ref: "TEK17 § 11 + § 13-9"
+    });
+    tiltak.push({ name: "Branncellevegg EI 60 mot hovedboenhet",
+                  desc: "Skille i etasjeskille og evt. felles vegg.",
+                  kostnad: 45000 });
+    tiltak.push({ name: "Egen inngang fra ute",
+                  desc: "Trapp eller dør utvides/etableres.",
+                  kostnad: 70000 });
+    tiltak.push({ name: "Eget brannvarslingsanlegg",
+                  desc: "Separat sentral, røyk- og varmevarsler.",
+                  kostnad: 12000 });
+    tiltak.push({ name: "Lydisolasjon mellom etasjer",
+                  desc: "Etasjeskille bygges om til R'w ≥ 55 dB.",
+                  kostnad: 55000 });
+  }
+
+  // ENERGI-LEMPNING
+  if (eldre) {
+    lempninger.push({
+      regel: "Energi (TEK17 § 14)",
+      tekst: "Krav til U-verdi gjelder kun nye/endrede bygningsdeler — ikke hele bygget. Eksisterende konstruksjoner som ikke endres er ikke belastet."
+    });
+  }
+
+  // SOKNADSTYPE
+  const fails = findings.filter(f => f.type === "fail").length;
+  const warns = findings.filter(f => f.type === "warn").length;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+
+  let status, statusText, statusDesc;
+  if (fails === 0 && warns === 0) {
+    status = "green"; statusText = "Klar til søknad";
+    statusDesc = "Alle TEK17-krav er oppfylt. Du kan generere søknadspakke.";
+  } else if (fails === 0) {
+    status = "amber"; statusText = "Klar — med tiltak";
+    statusDesc = `${warns} forhold krever oppfølging, men kan dokumenteres i søknaden.`;
+  } else {
+    status = "red"; statusText = "Kritiske avvik";
+    statusDesc = `${fails} krav må rettes før søknad kan sendes.`;
+  }
+
+  return {
+    status, statusText, statusDesc,
+    findings, tiltak, lempninger,
+    eldre,
+    soknadstype: krav.soknad,
+    ansvarsrett: krav.ansvarsrett,
+    tiltaksklasse: input.ny_bruk === "hybel" ? 2 : 1,
+    totalKostnad,
+    krav, room, input
+  };
+}
+
+// ==========================================================================
+// FJERN-VEGG — REGEL-MOTOR
+// ==========================================================================
+
+function evaluateVegg(input) {
+  const findings = [];
+  const tiltak = [];
+  const lempninger = [];
+
+  // bjelkedimensjon-kalk (forenklet, port av structural.py)
+  const L = input.spennvidde / 1000;
+  const qd = input.last * 1.5;
+  const M = qd * L * L / 8;
+  const fm = 30; // GL30c MPa
+  const b = L < 4 ? 90 : L < 6 ? 115 : 140;
+  const h_min = Math.sqrt((6 * M * 1e6) / (b * fm));
+  const std = [180, 225, 270, 315, 360, 405, 450, 495, 540, 630, 720];
+  const h = std.find(v => v >= h_min) || 720;
+
+  findings.push({
+    type: "fail",
+    t: "Krever ansvarsrett (PBL § 20-3)",
+    d: "Endring av bærekonstruksjon utløser alltid søknad med ansvarsrett. Ansvarlig prosjekterende konstruksjon (PRO-RIB) må signere endelig dimensjon.",
+    ref: "PBL § 20-3"
+  });
+  findings.push({
+    type: "warn",
+    t: "Brannmotstand på bjelken må sjekkes",
+    d: "Bjelken må ha R 30 (BKL1) eller R 60 (BKL2). Limtre kan kreve ekstra tiltak.",
+    ref: "TEK17 § 11-12"
+  });
+  findings.push({
+    type: "ok",
+    t: `Foreslått bjelke: ${b}×${h} mm Limtre GL30c`,
+    d: `Spennvidde ${input.spennvidde} mm, last ${input.last} kN/m. Kapasitetsmoment ${(b*h*h*fm/6/1e6).toFixed(1)} kNm > krav ${M.toFixed(1)} kNm.`,
+    ref: "NS-EN 1995"
+  });
+
+  tiltak.push({ name: `Limtre-bjelke ${b}×${h} mm`,
+                desc: "Limtre GL30c, ferdig overflatebehandlet. Leveres med dragar-sko (varmgalv. stål).",
+                kostnad: Math.round(L * 4500) });
+  tiltak.push({ name: "Riving + bortkjøring av eksisterende vegg",
+                desc: "Container, støvavskjerming, midlertidig avstiving under riveperioden.",
+                kostnad: 25000 });
+  tiltak.push({ name: "Konstruksjonsberegning (RIB)",
+                desc: "Eurokode-beregning iht. NS-EN 1995, gjennomboyning < L/300, brannmotstand R 30 minimum.",
+                kostnad: 15000 });
+  tiltak.push({ name: "Innkledning av bjelke (estetikk + brann)",
+                desc: "Gips-innkledning eller eksponert. Brannmaling om eksponert.",
+                kostnad: 12000 });
+
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+
+  return {
+    status: "amber",
+    statusText: "Klar — krever arkitekt-KS",
+    statusDesc: "Tiltaket er gjennomførbart, men må gå gjennom konstruksjonsfag (PRO-RIB) før søknad sendes.",
+    findings, tiltak, lempninger,
+    soknadstype: "PBL § 20-3 (med ansvarsrett)",
+    ansvarsrett: true,
+    tiltaksklasse: 1,
+    totalKostnad,
+    bjelke: { b, h, type: "Limtre GL30c", spennvidde: input.spennvidde, last: input.last },
+    input,
+  };
+}
+
+// ==========================================================================
+// ICONS (inline SVG)
+// ==========================================================================
+
+const ICONS = {
+  arrow: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  back:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>',
+  search:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  pin:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  home:  '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-7 9 7v9a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>',
+  shield:'<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/><path d="m9 12 2 2 4-4"/></svg>',
+  check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>',
+  cross: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  warn:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="m10.3 3.86-8.58 14.86A2 2 0 0 0 3.44 22h17.12a2 2 0 0 0 1.72-3.28L13.7 3.86a2 2 0 0 0-3.4 0z"/></svg>',
+  info:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 11v5M12 7h.01"/></svg>',
+  shieldOk: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/><path d="m9 12 2 2 4-4"/></svg>',
+  alert: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+  bolt:  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+  doc:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  download: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+  bell:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>',
+  // Tiltak icons
+  kjeller: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-6 9 6v13"/><path d="M3 13h18M9 21v-5h6v5"/></svg>',
+  wall:    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V3h18v18z"/><path d="M3 9h18M3 15h18M9 3v6m6 0v6M9 15v6"/></svg>',
+  garasje: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
+  tilbygg: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l8-5v18z"/><path d="M14 11h7v10h-7"/><path d="M17 8v3M17 14v3"/></svg>',
+  fasade:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7l9-5 9 5v14z"/><rect x="7" y="11" width="3" height="4"/><rect x="14" y="11" width="3" height="4"/><path d="M9 21v-3h6v3"/></svg>',
+  tak:     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 12 4l10 8"/><path d="M5 11v8h14v-8"/></svg>',
+  sol:     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>',
+  anneks:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 5l9 6"/><path d="M5 10v10h14V10"/><rect x="10" y="14" width="4" height="6"/></svg>',
+  levegg:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5h16v16"/><path d="M4 9h16M4 13h16M4 17h16"/></svg>',
+  vindu:   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 12h18M12 3v18"/></svg>',
+  brygge:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/><path d="M5 13h14M7 13V7M12 13V5M17 13V8"/></svg>',
+  ai:      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>',
+  bankid:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M7 10h10M7 14h6M7 18h4"/></svg>',
+  vipps:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-2-7a1 1 0 100-2 1 1 0 000 2zm4 0a1 1 0 100-2 1 1 0 000 2zm-2 4a3 3 0 002.6-1.5l1.7 1A5 5 0 0112 17a5 5 0 01-4.3-2.5l1.7-1A3 3 0 0012 15z"/></svg>',
+  send:    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>',
+  party:   '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01M22 8h.01M15 2h.01M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38a2.65 2.65 0 0 0-2.61 3l.03.18a2.65 2.65 0 0 1-3 2.61L10 13"/><path d="M19 5 8 16"/></svg>',
+};
+
+// Mock plantegning thumbnails as inline SVG
+function planSvg(label) {
+  return `
+  <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+    <rect width="200" height="150" fill="#fff"/>
+    <g stroke="#1a1917" stroke-width="2" fill="none">
+      <rect x="20" y="20" width="160" height="110"/>
+      <line x1="100" y1="20" x2="100" y2="80"/>
+      <line x1="20" y1="80" x2="180" y2="80"/>
+      <line x1="100" y1="80" x2="100" y2="130"/>
+    </g>
+    <g stroke="#1a1917" stroke-width="1" fill="none">
+      <rect x="40" y="60" width="20" height="3" fill="#fff"/>
+      <rect x="115" y="40" width="3" height="20" fill="#fff"/>
+      <rect x="40" y="100" width="14" height="3" fill="#fff"/>
+    </g>
+    <text x="55" y="55" font-family="sans-serif" font-size="6" fill="#666">Stue</text>
+    <text x="135" y="55" font-family="sans-serif" font-size="6" fill="#666">Kjøkken</text>
+    <text x="55" y="110" font-family="sans-serif" font-size="6" fill="#666">Soverom</text>
+    <text x="135" y="110" font-family="sans-serif" font-size="6" fill="#666">Bad</text>
+  </svg>`;
+}
+function snittSvg() {
+  return `
+  <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+    <rect width="200" height="150" fill="#fff"/>
+    <g stroke="#1a1917" stroke-width="1.5" fill="none">
+      <line x1="10" y1="125" x2="190" y2="125"/>
+      <polygon points="10,80 100,40 190,80 180,80 100,50 20,80"/>
+      <rect x="20" y="80" width="160" height="45"/>
+      <rect x="20" y="125" width="160" height="3" fill="#888"/>
+    </g>
+    <g stroke="#888" stroke-dasharray="2,2" stroke-width="0.5">
+      <line x1="5" y1="125" x2="5" y2="40"/>
+    </g>
+    <text x="100" y="100" font-family="sans-serif" font-size="6" fill="#666" text-anchor="middle">1. etasje</text>
+  </svg>`;
+}
+function fasadeSvg() {
+  return `
+  <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+    <rect width="200" height="150" fill="#fff"/>
+    <g stroke="#1a1917" stroke-width="1.2" fill="none">
+      <line x1="10" y1="120" x2="190" y2="120"/>
+      <polygon points="30,75 100,35 170,75 170,120 30,120"/>
+      <rect x="55" y="85" width="20" height="20" fill="#e8f0f8"/>
+      <rect x="125" y="85" width="20" height="20" fill="#e8f0f8"/>
+      <rect x="92" y="92" width="16" height="28" fill="#d0c0a0"/>
+    </g>
+  </svg>`;
+}
+function sitSvg() {
+  return `
+  <svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+    <rect width="200" height="150" fill="#fff"/>
+    <g fill="none" stroke="#1a1917" stroke-width="1">
+      <rect x="15" y="15" width="170" height="120" stroke-width="1.5"/>
+      <rect x="35" y="35" width="130" height="80" stroke-dasharray="3,3" stroke="#c44"/>
+      <rect x="60" y="55" width="50" height="40" fill="#888"/>
+      <path d="M 130 130 L 130 80 L 100 80" stroke="#a07040" stroke-width="3"/>
+    </g>
+    <text x="85" y="80" font-family="sans-serif" font-size="6" fill="#fff" text-anchor="middle">Bygget</text>
+  </svg>`;
+}
+
+// ==========================================================================
+// STATE MACHINE & ROUTER
+// ==========================================================================
+
+const state = {
+  screen: "splash",
+  user: null,
+  property: null,
+  selectedTiltak: null,
+  wizard: null,
+  result: null,
+  showSheet: null,
+};
+
+function navigate(screen, data) {
+  if (data) Object.assign(state, data);
+  state.screen = screen;
+  render();
+  // scroll up on view change
+  setTimeout(() => {
+    const main = document.querySelector(".view");
+    if (main) main.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }, 0);
+}
+
+function back() {
+  // contextual back
+  if (state.screen === "address") return navigate("splash");
+  if (state.screen === "dashboard") return navigate("address");
+  if (state.screen === "tiltak-grid") return navigate("dashboard");
+  if (state.screen === "wizard") {
+    if (state.wizard.step > 0) {
+      state.wizard.step -= 1;
+      return render();
+    }
+    return navigate("tiltak-grid");
+  }
+  if (state.screen === "loading") return; // can't back during loading
+  if (state.screen === "result") return navigate("tiltak-grid");
+  if (state.screen === "soknad-preview") return navigate("result");
+  if (state.screen === "soknad-sent") return navigate("dashboard");
+  navigate("dashboard");
+}
+
+// ==========================================================================
+// RENDER ROOT
+// ==========================================================================
+
+function render() {
+  const root = document.getElementById("app");
+  let html = `<div class="shell">`;
+  switch (state.screen) {
+    case "splash":         html += renderSplash(); break;
+    case "bankid":         html += renderBankID(); break;
+    case "address":        html += renderAddress(); break;
+    case "loading-prop":   html += renderLoading("Henter eiendomsdata fra Matrikkelen…"); break;
+    case "dashboard":      html += renderDashboard(); break;
+    case "tiltak-grid":    html += renderTiltakGrid(); break;
+    case "wizard":         html += renderWizard(); break;
+    case "loading":        html += renderLoading("Sjekker TEK17, SAK10 og PBL…"); break;
+    case "result":         html += renderResult(); break;
+    case "soknad-preview": html += renderSoknadPreview(); break;
+    case "loading-send":   html += renderLoading("Sender til Altinn / DiBK Fellestjenester Bygg…"); break;
+    case "soknad-sent":    html += renderSoknadSent(); break;
+    default:               html += `<div class="view"><h1>404</h1></div>`;
+  }
+  html += `</div>`;
+
+  if (state.showSheet) {
+    html += renderSheet();
+  }
+
+  root.innerHTML = html;
+  attachHandlers();
+}
+
+// ==========================================================================
+// VIEW RENDERERS
+// ==========================================================================
+
+function renderTopbar(opts = {}) {
+  const title = opts.title || "";
+  const back = opts.back !== false;
+  return `
+    <div class="topbar">
+      <div style="width:36px;">
+        ${back ? `<button class="back" data-action="back">${ICONS.back}</button>` : ''}
+      </div>
+      <div class="title">${title}</div>
+      <div class="right" style="width:36px; justify-content: flex-end;">
+        ${opts.right || ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderSplash() {
+  return `
+  <div class="hero">
+    <div class="orb">${ICONS.shield}</div>
+    <h1>Fra <em>idé</em> til <em>ferdigattest</em>.</h1>
+    <p>MittBygg gir deg byggesøknader, tegninger og fagtjenester for hjemmet ditt — på minutter, ikke uker.</p>
+    <div style="margin-top: 36px; display:flex; flex-direction: column; gap: 10px;">
+      <button class="btn primary lg" data-action="start-bankid">
+        ${ICONS.bankid} Logg inn med BankID
+      </button>
+      <button class="btn ghost" data-action="start-demo">Prøv demo (uten BankID)</button>
+    </div>
+  </div>
+  <div style="background: white; padding: 20px; border-top: 1px solid var(--gray-100); text-align: center;">
+    <p class="tiny muted">Drives på sikker norsk infrastruktur · GDPR · Datalagring i EU</p>
+  </div>
+  `;
+}
+
+function renderBankID() {
+  return `
+  ${renderTopbar({ title: "BankID", back: true })}
+  <div class="view" style="justify-content: center; align-items: center; gap: 24px;">
+    <div class="orb" style="background: linear-gradient(135deg, #2156a8, #143670);">
+      ${ICONS.bankid}
+    </div>
+    <div style="text-align: center;">
+      <h2>Bekreft pålogging</h2>
+      <p class="mt-2">Åpne BankID-appen på telefonen og bekreft.</p>
+    </div>
+    <div class="card pad-sm" style="width: 100%; max-width: 280px; text-align: center;">
+      <div class="mono" style="font-size: 28px; letter-spacing: 4px; color: var(--green-500);">7K-21-99</div>
+      <p class="tiny muted mt-2">Engangskode</p>
+    </div>
+    <div class="spinner"></div>
+    <p class="tiny muted">Venter på bekreftelse…</p>
+    <button class="btn ghost sm" data-action="bankid-done">▸ Simuler innlogging</button>
+  </div>
+  `;
+}
+
+function renderAddress() {
+  const query = state.addressQuery || "";
+  const filtered = query.length >= 2
+    ? ADDRESSES.filter(a =>
+        a.street.toLowerCase().includes(query.toLowerCase()) ||
+        a.postal.includes(query) ||
+        a.city.toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
+
+  return `
+  ${renderTopbar({ title: "", back: true, right: `
+    <div style="width:36px; height:36px; border-radius: 50%; background: var(--green-500); color: white; display: grid; place-items: center; font-weight: 700; font-size: 14px;">${(state.user?.initial || 'D')}</div>
+  ` })}
+  <div class="view">
+    <div>
+      <h1>Hvilken eiendom?</h1>
+      <p class="lead mt-2">Søk etter adresse, postnummer eller gnr/bnr.</p>
+    </div>
+    <div class="input-wrap" style="margin-top: 8px;">
+      <span class="icon">${ICONS.search}</span>
+      <input type="text" id="addr-input" placeholder="f.eks. Solbakken 12" value="${query}" autocomplete="off"/>
+    </div>
+    ${filtered.length > 0 ? `
+      <div class="suggestions">
+        ${filtered.map(a => `
+          <div class="row" data-action="select-address" data-id="${a.id}">
+            <div class="pin">${ICONS.pin}</div>
+            <div class="body">
+              <div class="a">${a.street}</div>
+              <div class="b">${a.postal} ${a.city} · gnr ${a.matrikkel.gnr}/${a.matrikkel.bnr}</div>
+            </div>
+            <div>${ICONS.arrow}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : query.length === 0 ? `
+      <div class="card flat" style="background: var(--gray-50); margin-top: 8px;">
+        <h4 style="margin-bottom: 12px;">Forslag</h4>
+        ${ADDRESSES.slice(0, 4).map(a => `
+          <div class="row" style="display:flex; gap: 12px; padding: 8px 0; cursor: pointer; border-bottom: 1px solid var(--gray-100);" data-action="select-address" data-id="${a.id}">
+            <div style="color: var(--gray-400);">${ICONS.pin}</div>
+            <div style="flex:1;">
+              <div style="font-weight: 600; font-size: 14px;">${a.street}</div>
+              <div class="tiny muted">${a.postal} ${a.city}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : `
+      <p class="muted small" style="text-align: center; padding: 24px;">Ingen treff. Prøv en annen adresse.</p>
+    `}
+  </div>
+  `;
+}
+
+function renderLoading(text) {
+  return `
+  ${renderTopbar({ back: false })}
+  <div class="loading-view">
+    <div class="big-spinner"></div>
+    <h3>${text}</h3>
+    <p class="muted small">Henter fra Kartverket og DiBK…</p>
+  </div>
+  `;
+}
+
+function renderDashboard() {
+  const p = state.property;
+  const sakerCount = p.bygg.tidligereSaker.length;
+  const tegninger = p.bygg.tegninger || [];
+  const tegningerCount = tegninger.length;
+  const arkivKilder = [...new Set(tegninger.map(t => t.kilde))];
+  return `
+  ${renderTopbar({ title: "Min eiendom", back: true, right: `
+    <button class="back" style="width:36px; height:36px;">${ICONS.bell}</button>
+  ` })}
+  <div class="view">
+    <div class="property-hero">
+      <h2>${p.street}</h2>
+      <p style="margin-top: 4px;">${p.postal} ${p.city}</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="num">${p.bygg.BRA}</div>
+          <div class="lbl">m² BRA</div>
+        </div>
+        <div class="stat">
+          <div class="num">${p.bygg.byggeAar}</div>
+          <div class="lbl">Byggeår</div>
+        </div>
+        <div class="stat">
+          <div class="num">${p.bygg.etasjer}${p.bygg.kjeller ? '+K' : ''}</div>
+          <div class="lbl">Etasjer</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn primary lg full" data-action="start-tiltak" style="margin-top: 4px;">
+      Hva vil du gjøre? ${ICONS.arrow}
+    </button>
+
+    <div class="section-head">
+      <h3>Eiendomsinfo</h3>
+      <span class="lnk" data-action="show-info-sheet">Se alt</span>
+    </div>
+    <div class="card flat">
+      <div class="kv-list">
+        <div class="row"><span class="k">Gnr/Bnr</span><span class="v">${p.matrikkel.gnr}/${p.matrikkel.bnr}</span></div>
+        <div class="row"><span class="k">Kommune</span><span class="v">${p.matrikkel.kommune}</span></div>
+        <div class="row"><span class="k">Tomt</span><span class="v">${p.bygg.tomt} m²</span></div>
+        <div class="row"><span class="k">Byggegrenser</span><span class="v">${p.bygg.byggegrenser.nord} m fra alle sider</span></div>
+        <div class="row"><span class="k">Reguleringsplan</span><span class="v" style="text-align: right; max-width: 60%;">${p.bygg.regplan}</span></div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h3>Tidligere saker</h3>
+      ${sakerCount > 0 ? `<span class="pill">${sakerCount} stk</span>` : ''}
+    </div>
+    ${sakerCount === 0 ? `
+      <div class="card flat" style="text-align: center; padding: 24px;">
+        <p class="muted small">Ingen byggesaker registrert i DiBK-arkivet.</p>
+      </div>
+    ` : `
+      <div class="card flat" style="padding: 0;">
+        ${p.bygg.tidligereSaker.map((s, i, arr) => `
+          <div style="padding: 14px 20px; ${i < arr.length-1 ? 'border-bottom: 1px solid var(--gray-100);' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 600; font-size: 14px;">${s.type}</div>
+                <div class="tiny muted" style="margin-top: 2px;">${s.aar} · ${s.status}</div>
+              </div>
+              <span class="pill ${s.status === 'Avslag' ? 'red' : 'green'}">${s.status}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+
+    <div class="section-head">
+      <h3>Tegninger på arkiv</h3>
+      ${tegningerCount > 0
+        ? `<span class="lnk" data-action="show-arkiv-sheet">Se alle (${tegningerCount})</span>`
+        : ''}
+    </div>
+    ${tegningerCount === 0 ? `
+      <div class="card flat" style="text-align: center; padding: 24px;">
+        <p class="muted small">Ingen digitale tegninger funnet i kommunens arkiv.</p>
+        <p class="tiny muted mt-2">Du kan laste opp egne tegninger eller bestille originalene fra ${p.matrikkel.kommune} kommune.</p>
+      </div>
+    ` : `
+      <div class="card flat" style="padding: 0;">
+        ${tegninger.slice(0, 3).map((t, i, arr) => `
+          <div style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; ${i < arr.length-1 ? 'border-bottom: 1px solid var(--gray-100);' : ''}">
+            <div style="width: 36px; height: 44px; border-radius: 4px; background: ${t.type === 'PDF' ? '#fde0e0' : t.type === 'IFC' ? '#e3edf7' : '#fef3d6'}; color: ${t.type === 'PDF' ? '#c53030' : t.type === 'IFC' ? '#2156a8' : '#946800'}; display: grid; place-items: center; flex-shrink: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.05em;">
+              ${t.type}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.title}</div>
+              <div class="tiny muted" style="margin-top: 2px;">${t.year} · ${t.kilde} · ${t.saksnr}</div>
+            </div>
+            <div style="color: var(--gray-400);">${ICONS.download}</div>
+          </div>
+        `).join('')}
+        ${tegningerCount > 3 ? `
+          <div style="padding: 12px 16px; text-align: center; border-top: 1px solid var(--gray-100); background: var(--gray-50);">
+            <button class="btn ghost sm" data-action="show-arkiv-sheet">+ ${tegningerCount - 3} flere tegninger</button>
+          </div>
+        ` : ''}
+      </div>
+      <div class="alert info" style="margin-top: 12px;">
+        <span class="ic">${ICONS.info}</span>
+        <div>Hentet fra ${arkivKilder.join(' og ')}. Lastes ned automatisk når du starter et tiltak.</div>
+      </div>
+    `}
+
+    <div class="section-head">
+      <h3>Aktive prosjekter</h3>
+    </div>
+    <div class="card flat" style="text-align: center; padding: 24px;">
+      <p class="muted small">Ingen pågående prosjekter.</p>
+      <button class="btn ghost sm mt-3" data-action="start-tiltak">+ Nytt tiltak</button>
+    </div>
+  </div>
+  `;
+}
+
+function renderTiltakGrid() {
+  return `
+  ${renderTopbar({ title: "Velg tiltak", back: true })}
+  <div class="view">
+    <div>
+      <h2>Hva vil du gjøre?</h2>
+      <p class="muted mt-2 small">Velg det som ligner mest. AI-en hjelper deg med detaljene.</p>
+    </div>
+    <div class="tiltak-grid">
+      ${TILTAK.map(t => `
+        <button class="tiltak-card ${!t.available ? 'opacity-50' : ''}"
+                ${t.available ? `data-action="select-tiltak" data-id="${t.id}"` : `data-action="select-tiltak-disabled" data-id="${t.id}"`}>
+          <div class="icon ${t.iconClass}">${ICONS[t.icon]}</div>
+          <div class="name">${t.name}</div>
+          <div class="desc">${t.desc}</div>
+          <div class="meta">
+            ${t.tags.map(tag => `<span class="pill ${tag.c}">${tag.t}</span>`).join('')}
+            ${!t.available ? '<span class="pill">Kommer</span>' : ''}
+          </div>
+        </button>
+      `).join('')}
+    </div>
+  </div>
+  `;
+}
+
+function renderWizard() {
+  const w = state.wizard;
+  if (w.kind === "kjeller") return renderKjellerWizard();
+  if (w.kind === "vegg")    return renderVeggWizard();
+  return `<div class="view"><p>Ukjent wizard</p></div>`;
+}
+
+// --------------------------------------------------------------------------
+// KJELLER WIZARD
+// --------------------------------------------------------------------------
+
+function renderKjellerWizard() {
+  const w = state.wizard;
+  const totalSteps = 4;
+  const segs = Array.from({ length: totalSteps }, (_, i) =>
+    `<div class="seg ${i <= w.step ? 'done' : ''}"></div>`
+  ).join('');
+
+  let body;
+  if (w.step === 0) body = renderKjellerStep0();
+  else if (w.step === 1) body = renderKjellerStep1();
+  else if (w.step === 2) body = renderKjellerStep2();
+  else if (w.step === 3) body = renderKjellerStep3();
+
+  return `
+  ${renderTopbar({ title: `Bruksendring kjeller`, back: true, right: `
+    <span class="muted small">${w.step + 1}/${totalSteps}</span>
+  ` })}
+  <div class="progress" style="padding: 0 20px 12px; background: white;">${segs}</div>
+  <div class="view">${body}</div>
+  `;
+}
+
+function renderKjellerStep0() {
+  const rooms = getKjellerRooms(state.property.id);
+  const w = state.wizard;
+  return `
+    <div>
+      <h2>Hvilket rom?</h2>
+      <p class="muted small mt-2">Vi har funnet disse rommene i kjelleren din.</p>
+    </div>
+    <div>
+      ${rooms.map(r => `
+        <div class="radio-card ${w.data.room === r.id ? 'selected' : ''}"
+             data-action="kjeller-pick-room" data-id="${r.id}">
+          <div class="lead-icon">${ICONS.kjeller}</div>
+          <div class="body">
+            <div class="t">${r.name}</div>
+            <div class="d">${r.area} m² · takhøyde ${r.height} mm · ${r.vinduer.toLowerCase()}</div>
+          </div>
+          <div class="check"></div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="alert info">
+      <span class="ic">${ICONS.info}</span>
+      <div>Romdataene er hentet fra eksisterende tegninger på fil hos kommunen. Du kan korrigere senere.</div>
+    </div>
+    <div class="cta-stack">
+      <button class="btn primary full ${!w.data.room ? 'opacity-50' : ''}" data-action="kjeller-next" ${!w.data.room ? 'disabled' : ''}>
+        Neste ${ICONS.arrow}
+      </button>
+    </div>
+  `;
+}
+
+function renderKjellerStep1() {
+  const w = state.wizard;
+  return `
+    <div>
+      <h2>Hva skal det bli?</h2>
+      <p class="muted small mt-2">Velg ny bruk av rommet.</p>
+    </div>
+    <div>
+      ${Object.entries(KJELLER_BRUK).map(([key, b]) => `
+        <div class="radio-card ${w.data.ny_bruk === key ? 'selected' : ''}"
+             data-action="kjeller-pick-bruk" data-id="${key}">
+          <div class="body">
+            <div class="t">${b.label}</div>
+            <div class="d">${b.desc}</div>
+          </div>
+          <div class="check"></div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="cta-stack">
+      <button class="btn primary full ${!w.data.ny_bruk ? 'opacity-50' : ''}" data-action="kjeller-next" ${!w.data.ny_bruk ? 'disabled' : ''}>
+        Neste ${ICONS.arrow}
+      </button>
+    </div>
+  `;
+}
+
+function renderKjellerStep2() {
+  const w = state.wizard;
+  return `
+    <div>
+      <h2>Tilstand i dag</h2>
+      <p class="muted small mt-2">Hjelper oss vurdere PBL § 31-2 lempninger og tiltakskostnad.</p>
+    </div>
+
+    <div class="field">
+      <label class="label">Radonmåling (Bq/m³)</label>
+      <div class="input-wrap">
+        <input type="number" id="radon-input" placeholder="La stå tom hvis ikke målt" value="${w.data.radon ?? ''}" />
+      </div>
+      <p class="tiny muted mt-2">Tiltaksgrense 100 · Grenseverdi 200 · Anbefalt 60-dagers måling</p>
+    </div>
+
+    <div class="toggle-row" data-action="toggle-drenering">
+      <div class="body">
+        <div class="t">Drenering er på plass</div>
+        <div class="d">Utvendig drensrør, knastefolie, fuktbeskyttelse</div>
+      </div>
+      <button class="toggle ${w.data.drenering ? 'on' : ''}"></button>
+    </div>
+
+    <div class="toggle-row" data-action="toggle-vent">
+      <div class="body">
+        <div class="t">Balansert ventilasjon</div>
+        <div class="d">Med varmegjenvinning (anbefalt for kjeller)</div>
+      </div>
+      <button class="toggle ${w.data.balansert_vent ? 'on' : ''}"></button>
+    </div>
+
+    <div class="cta-stack">
+      <button class="btn primary full" data-action="kjeller-next">Neste ${ICONS.arrow}</button>
+    </div>
+  `;
+}
+
+function renderKjellerStep3() {
+  const w = state.wizard;
+  const propBuiltAfter2010 = state.property.bygg.byggeAar >= 2010;
+  return `
+    <div>
+      <h2>Bekreft og beregn</h2>
+      <p class="muted small mt-2">Vi sjekker mot TEK17, SAK10 og PBL — inkludert lempninger for eldre bygg.</p>
+    </div>
+
+    <div class="card flat">
+      <div class="kv-list">
+        <div class="row"><span class="k">Eiendom</span><span class="v">${state.property.street}</span></div>
+        <div class="row"><span class="k">Byggeår</span><span class="v">${state.property.bygg.byggeAar} ${propBuiltAfter2010 ? '' : '· lempninger'}</span></div>
+        <div class="row"><span class="k">Rom</span><span class="v">${getKjellerRooms(state.property.id).find(r => r.id === w.data.room)?.name}</span></div>
+        <div class="row"><span class="k">Ny bruk</span><span class="v">${KJELLER_BRUK[w.data.ny_bruk].label}</span></div>
+        <div class="row"><span class="k">Radon</span><span class="v">${w.data.radon ? w.data.radon + ' Bq/m³' : 'Ikke målt'}</span></div>
+        <div class="row"><span class="k">Drenering</span><span class="v">${w.data.drenering ? 'Ja' : 'Nei'}</span></div>
+        <div class="row"><span class="k">Balansert vent.</span><span class="v">${w.data.balansert_vent ? 'Ja' : 'Nei'}</span></div>
+      </div>
+    </div>
+
+    <div class="alert info">
+      <span class="ic">${ICONS.info}</span>
+      <div><strong>Slik beregnes resultatet:</strong> Vi går gjennom TEK17 § 11 (brann), § 12-7 (takhøyde), § 13-5 (radon), § 13-7 (dagslys) og § 14 (energi), kombinert med PBL §§ 20-1, 20-3, 20-4, 31-2.</div>
+    </div>
+
+    <div class="cta-stack">
+      <button class="btn primary full lg" data-action="kjeller-evaluate">
+        ${ICONS.bolt} Beregn nå
+      </button>
+    </div>
+  `;
+}
+
+// --------------------------------------------------------------------------
+// FJERN VEGG WIZARD
+// --------------------------------------------------------------------------
+
+function renderVeggWizard() {
+  const w = state.wizard;
+  const totalSteps = 2;
+  const segs = Array.from({ length: totalSteps }, (_, i) =>
+    `<div class="seg ${i <= w.step ? 'done' : ''}"></div>`
+  ).join('');
+  let body;
+  if (w.step === 0) body = renderVeggStep0();
+  if (w.step === 1) body = renderVeggStep1();
+  return `
+  ${renderTopbar({ title: `Fjern bærevegg`, back: true, right: `
+    <span class="muted small">${w.step + 1}/${totalSteps}</span>
+  ` })}
+  <div class="progress" style="padding: 0 20px 12px; background: white;">${segs}</div>
+  <div class="view">${body}</div>
+  `;
+}
+
+function renderVeggStep0() {
+  const w = state.wizard;
+  return `
+    <div>
+      <h2>Hvor stor åpning?</h2>
+      <p class="muted small mt-2">Spennvidde = avstand mellom de gjenværende veggene/søylene.</p>
+    </div>
+
+    <div class="field">
+      <label class="label">Spennvidde (mm)</label>
+      <div class="input-wrap">
+        <input type="number" id="span-input" placeholder="4500" value="${w.data.spennvidde ?? 4500}"/>
+      </div>
+      <p class="tiny muted mt-2">Vanlig åpning i bolig: 3000–6000 mm</p>
+    </div>
+
+    <div class="field">
+      <label class="label">Last ovenfra (kN/m)</label>
+      <div class="input-wrap">
+        <input type="number" id="last-input" step="0.5" value="${w.data.last ?? 8}"/>
+      </div>
+      <p class="tiny muted mt-2">Boligetasje + tak: 6–10 kN/m. Ekstra etasje over: +5 kN/m.</p>
+    </div>
+
+    <div class="alert amber">
+      <span class="ic">${ICONS.alert}</span>
+      <div><strong>Krever ansvarsrett.</strong> Fjerning av bærevegg utløser alltid søknad med ansvarsrett (PBL § 20-3). Endelig dimensjon må signeres av PRO-RIB.</div>
+    </div>
+
+    <div class="cta-stack">
+      <button class="btn primary full" data-action="vegg-next">Neste ${ICONS.arrow}</button>
+    </div>
+  `;
+}
+
+function renderVeggStep1() {
+  const w = state.wizard;
+  return `
+    <div>
+      <h2>Bekreft</h2>
+    </div>
+    <div class="card flat">
+      <div class="kv-list">
+        <div class="row"><span class="k">Eiendom</span><span class="v">${state.property.street}</span></div>
+        <div class="row"><span class="k">Spennvidde</span><span class="v">${w.data.spennvidde} mm</span></div>
+        <div class="row"><span class="k">Last</span><span class="v">${w.data.last} kN/m</span></div>
+        <div class="row"><span class="k">Bjelketype</span><span class="v">Limtre GL30c</span></div>
+      </div>
+    </div>
+    <div class="cta-stack">
+      <button class="btn primary full lg" data-action="vegg-evaluate">
+        ${ICONS.bolt} Foreslå bjelke
+      </button>
+    </div>
+  `;
+}
+
+// --------------------------------------------------------------------------
+// RESULT
+// --------------------------------------------------------------------------
+
+function renderResult() {
+  const r = state.result;
+  return `
+  ${renderTopbar({ title: "Resultat", back: true, right: `
+    <button class="back" data-action="share-result" style="width:36px; height:36px;">${ICONS.download}</button>
+  ` })}
+  <div class="view">
+    <div class="result-badge ${r.status}">
+      <div class="ic">
+        ${r.status === 'green' ? ICONS.shieldOk
+        : r.status === 'amber' ? ICONS.alert
+        : ICONS.alert}
+      </div>
+      <div class="text">
+        <div class="t">${r.statusText}</div>
+        <div class="d">${r.statusDesc}</div>
+      </div>
+    </div>
+
+    ${r.lempninger && r.lempninger.length > 0 ? `
+      <div class="card flat" style="background: var(--green-50); border-color: #c5dccd;">
+        <h4 style="color: var(--green-700); margin-bottom: 8px;">${ICONS.shieldOk} Lempninger anvendt (PBL § 31-2)</h4>
+        <ul style="padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; list-style: none;">
+          ${r.lempninger.map(l => `
+            <li style="font-size: 13px;">
+              <strong>${l.regel}.</strong> ${l.tekst}
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    ` : ''}
+
+    <div class="section-head"><h3>Regelsjekk</h3></div>
+    <ul class="checklist">
+      ${r.findings.map(f => `
+        <li>
+          <div class="ic ${f.type === 'ok' ? 'ok' : f.type === 'warn' ? 'warn' : 'fail'}">
+            ${f.type === 'ok' ? ICONS.check : f.type === 'warn' ? ICONS.warn : ICONS.cross}
+          </div>
+          <div class="body">
+            <div class="t">${f.t}</div>
+            <div class="d">${f.d}</div>
+            <div class="ref">${f.ref}</div>
+          </div>
+        </li>
+      `).join('')}
+    </ul>
+
+    <div class="section-head"><h3>Søknadsplikt</h3></div>
+    <div class="card flat">
+      <div class="kv-list">
+        <div class="row"><span class="k">Hjemmel</span><span class="v mono small">${r.soknadstype}</span></div>
+        <div class="row"><span class="k">Ansvarsrett</span><span class="v">${r.ansvarsrett ? 'JA — krever ANS-foretak' : 'NEI — du står ansvarlig selv'}</span></div>
+        <div class="row"><span class="k">Tiltaksklasse</span><span class="v">TK${r.tiltaksklasse}</span></div>
+      </div>
+    </div>
+
+    ${r.tiltak.length > 0 ? `
+      <div class="section-head">
+        <h3>Anbefalte tiltak</h3>
+        <span class="pill">${r.tiltak.length} stk</span>
+      </div>
+      <ul class="checklist">
+        ${r.tiltak.map(t => `
+          <li>
+            <div class="ic todo">${ICONS.bolt}</div>
+            <div class="body">
+              <div class="t" style="display: flex; justify-content: space-between; gap: 8px;">
+                <span>${t.name}</span>
+                <span style="color: var(--orange-600);">${formatKr(t.kostnad)}</span>
+              </div>
+              <div class="d">${t.desc}</div>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+
+      <div class="cost-card">
+        <div>
+          <div class="muted small">Estimert totalkostnad (eks. mva)</div>
+          <div class="total">${formatKr(r.totalKostnad)}</div>
+        </div>
+        <div class="row"><span class="k">Materialer + arbeid</span><span class="v">${formatKr(Math.round(r.totalKostnad * 0.75))}</span></div>
+        <div class="row"><span class="k">Søknad + tegninger (gjennom MittBygg)</span><span class="v">${formatKr(Math.round(r.totalKostnad * 0.05) + 4900)}</span></div>
+        <div class="row"><span class="k">Reserve (10%)</span><span class="v">${formatKr(Math.round(r.totalKostnad * 0.10))}</span></div>
+      </div>
+    ` : ''}
+
+    ${r.bjelke ? `
+      <div class="section-head"><h3>Bjelke-anbefaling</h3></div>
+      <div class="card flat">
+        <div style="display:flex; align-items:center; gap: 16px;">
+          <div style="width: 70px; height: 70px; border-radius: 12px; background: linear-gradient(135deg, #d6b88a, #b89968); display: grid; place-items: center; color: #5a4520; font-weight: 700; font-size: 11px; text-align: center; padding: 4px;">
+            ${r.bjelke.b}×<br>${r.bjelke.h}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px;">${r.bjelke.b} × ${r.bjelke.h} mm</div>
+            <div class="small muted">${r.bjelke.type}</div>
+            <div class="tiny muted mt-2">Spennvidde ${r.bjelke.spennvidde} mm · Last ${r.bjelke.last} kN/m</div>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="section-head"><h3>Tidslinje</h3></div>
+    <div class="card flat">
+      <div class="timeline">
+        <div class="step done">
+          <div class="dot">${ICONS.check}</div>
+          <div class="body">
+            <div class="t">Regelsjekk fullført</div>
+            <div class="d">Akkurat nå</div>
+          </div>
+        </div>
+        <div class="step current">
+          <div class="dot">2</div>
+          <div class="body">
+            <div class="t">Generer søknadspakke</div>
+            <div class="d">~3 minutter</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="dot">3</div>
+          <div class="body">
+            <div class="t">Nabovarsel + frist</div>
+            <div class="d">14 dager</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="dot">4</div>
+          <div class="body">
+            <div class="t">Kommunal saksbehandling</div>
+            <div class="d">${r.ansvarsrett ? '12 uker' : '3–12 uker'}</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="dot">5</div>
+          <div class="body">
+            <div class="t">Igangsetting + utførelse</div>
+            <div class="d">Etter rammetillatelse</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="dot">6</div>
+          <div class="body">
+            <div class="t">Ferdigattest</div>
+            <div class="d">3 uker etter ferdigmelding</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-stack">
+      ${r.status === 'red' ? `
+        <button class="btn secondary full" disabled>Søknad kan ikke lages — rett kritiske avvik først</button>
+        <button class="btn ghost" data-action="restart-wizard">Start på nytt</button>
+      ` : `
+        <button class="btn primary full lg" data-action="generate-soknad">
+          ${ICONS.doc} Generer søknadspakke
+        </button>
+        <button class="btn ghost" data-action="show-arkitekt-sheet">Snakk med arkitekt først</button>
+      `}
+    </div>
+  </div>
+  `;
+}
+
+// --------------------------------------------------------------------------
+// SØKNADS-PAKKE FORHÅNDSVISNING
+// --------------------------------------------------------------------------
+
+function renderSoknadPreview() {
+  const r = state.result;
+  return `
+  ${renderTopbar({ title: "Søknadspakke", back: true })}
+  <div class="view">
+    <div>
+      <h2>Klar til innsending</h2>
+      <p class="muted small mt-2">Alle dokumentene er generert. Sjekk gjennom før du sender.</p>
+    </div>
+
+    <div class="section-head"><h3>Tegninger (PDF)</h3></div>
+    <div class="thumbs">
+      <div class="thumb">${sitSvg()}<span class="lbl">Situasjonsplan 1:200</span></div>
+      <div class="thumb">${planSvg()}<span class="lbl">Plan FØR 1:50</span></div>
+      <div class="thumb">${planSvg()}<span class="lbl">Plan ETTER 1:50</span></div>
+      <div class="thumb">${snittSvg()}<span class="lbl">Snitt A-A 1:50</span></div>
+      <div class="thumb">${fasadeSvg()}<span class="lbl">Fasade nord 1:100</span></div>
+      <div class="thumb">${fasadeSvg()}<span class="lbl">Fasade sør 1:100</span></div>
+    </div>
+
+    <div class="section-head"><h3>Dokumenter</h3></div>
+    <ul class="checklist">
+      <li>
+        <div class="ic ok">${ICONS.check}</div>
+        <div class="body">
+          <div class="t">Søknadsskjema (DiBK ${r.ansvarsrett ? '5174' : '5153'})</div>
+          <div class="d">Forhåndsutfylt med din info</div>
+        </div>
+      </li>
+      <li>
+        <div class="ic ok">${ICONS.check}</div>
+        <div class="body">
+          <div class="t">Redegjørelse for tiltaket</div>
+          <div class="d">Beskriver bruksendringen og lempninger</div>
+        </div>
+      </li>
+      <li>
+        <div class="ic ok">${ICONS.check}</div>
+        <div class="body">
+          <div class="t">Brannkonsept (NS 3901)</div>
+          <div class="d">.docx · genereres ved innsending</div>
+        </div>
+      </li>
+      <li>
+        <div class="ic ok">${ICONS.check}</div>
+        <div class="body">
+          <div class="t">Energiberegning</div>
+          <div class="d">For nye bygningsdeler</div>
+        </div>
+      </li>
+      <li>
+        <div class="ic ok">${ICONS.check}</div>
+        <div class="body">
+          <div class="t">Nabovarsel (DiBK 5154)</div>
+          <div class="d">Klar til distribusjon — 3 naboer identifisert</div>
+        </div>
+      </li>
+      ${r.ansvarsrett ? `
+      <li>
+        <div class="ic warn">${ICONS.warn}</div>
+        <div class="body">
+          <div class="t">Erklæring om ansvarsrett</div>
+          <div class="d">Trenger ANS-foretak før innsending</div>
+        </div>
+      </li>
+      ` : ''}
+    </ul>
+
+    <div class="alert info">
+      <span class="ic">${ICONS.info}</span>
+      <div><strong>Pris:</strong> 4 900 kr for komplett pakke. Premium m/arkitekt-KS: 12 900 kr (anbefalt for ${r.ansvarsrett ? 'denne sak' : 'sikkerhets skyld'}).</div>
+    </div>
+
+    <div class="cta-stack">
+      <button class="btn primary full lg" data-action="send-soknad">
+        ${ICONS.send} Send via Altinn
+      </button>
+      <button class="btn ghost" data-action="back">Tilbake</button>
+    </div>
+  </div>
+  `;
+}
+
+// --------------------------------------------------------------------------
+// SØKNAD SENT
+// --------------------------------------------------------------------------
+
+function renderSoknadSent() {
+  const ref = "DBK-" + Math.floor(100000 + Math.random() * 900000);
+  return `
+  ${renderTopbar({ title: "Sendt", back: false })}
+  <div class="view" style="text-align: center; padding-top: 32px;">
+    <div class="orb" style="background: linear-gradient(135deg, #16a34a, #0a4f3c); margin-bottom: 24px;">
+      ${ICONS.party}
+    </div>
+    <h1>Søknad sendt!</h1>
+    <p class="lead mt-3">Søknaden er mottatt av Oslo kommune via DiBK Fellestjenester Bygg.</p>
+
+    <div class="card flat mt-6" style="text-align: left;">
+      <div class="kv-list">
+        <div class="row"><span class="k">Saksnummer</span><span class="v mono">${ref}</span></div>
+        <div class="row"><span class="k">Mottatt</span><span class="v">${new Date().toLocaleString('nb-NO')}</span></div>
+        <div class="row"><span class="k">Forventet svar</span><span class="v">${state.result?.ansvarsrett ? '12 uker' : '3 uker'}</span></div>
+        <div class="row"><span class="k">Status</span><span class="v"><span class="pill amber">Til behandling</span></span></div>
+      </div>
+    </div>
+
+    <div class="alert green mt-4" style="text-align: left;">
+      <span class="ic">${ICONS.bell}</span>
+      <div>Vi varsler deg på SMS når kommunen svarer eller naboer kommer med merknader.</div>
+    </div>
+
+    <div class="cta-stack mt-6">
+      <button class="btn primary full" data-action="goto-dashboard">Tilbake til min eiendom</button>
+    </div>
+  </div>
+  `;
+}
+
+// --------------------------------------------------------------------------
+// SHEETS / OVERLAYS
+// --------------------------------------------------------------------------
+
+function renderSheet() {
+  const s = state.showSheet;
+  let body;
+  if (s === "info")     body = sheetEiendomsinfo();
+  else if (s === "arkitekt") body = sheetArkitekt();
+  else if (s === "tiltak-disabled") body = sheetTiltakDisabled();
+  else if (s === "arkiv") body = sheetArkiv();
+  return `
+    <div class="scrim" data-action="close-sheet">
+      <div class="sheet" data-action="ignore-click">
+        <div class="grab"></div>
+        ${body}
+      </div>
+    </div>
+  `;
+}
+
+function sheetEiendomsinfo() {
+  const p = state.property;
+  return `
+    <h2>${p.street}</h2>
+    <p class="muted small mt-2">Komplett eiendomsdata fra Matrikkelen og kommunens kart.</p>
+    <div class="kv-list mt-4">
+      <div class="row"><span class="k">Adresse</span><span class="v">${p.street}, ${p.postal} ${p.city}</span></div>
+      <div class="row"><span class="k">Gnr/Bnr</span><span class="v">${p.matrikkel.gnr}/${p.matrikkel.bnr}</span></div>
+      <div class="row"><span class="k">Kommune</span><span class="v">${p.matrikkel.kommune}</span></div>
+      <div class="row"><span class="k">Tomt</span><span class="v">${p.bygg.tomt} m²</span></div>
+      <div class="row"><span class="k">BRA</span><span class="v">${p.bygg.BRA} m²</span></div>
+      <div class="row"><span class="k">Byggeår</span><span class="v">${p.bygg.byggeAar}</span></div>
+      <div class="row"><span class="k">Etasjer</span><span class="v">${p.bygg.etasjer}${p.bygg.kjeller ? ' + kjeller' : ''}${p.bygg.garasje ? ' + garasje' : ''}</span></div>
+      <div class="row"><span class="k">Reguleringsplan</span><span class="v" style="text-align: right;">${p.bygg.regplan}</span></div>
+      <div class="row"><span class="k">Byggegrenser</span><span class="v">N/S/Ø/V: ${p.bygg.byggegrenser.nord}/${p.bygg.byggegrenser.sor}/${p.bygg.byggegrenser.ost}/${p.bygg.byggegrenser.vest} m</span></div>
+    </div>
+    <div class="cta-stack">
+      <button class="btn primary full" data-action="close-sheet">Lukk</button>
+    </div>
+  `;
+}
+
+function sheetArkitekt() {
+  return `
+    <h2>Få arkitekt-vurdering</h2>
+    <p class="muted small mt-2">En lokal arkitekt går gjennom prosjektet, foreslår tilpasninger, og signerer søknaden om alt ser bra ut.</p>
+    <div class="card flat mt-4" style="background: var(--gray-50);">
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #c4d6cb, #6da690); color: white; display: grid; place-items: center; font-weight: 700;">EH</div>
+        <div style="flex:1;">
+          <div style="font-weight: 700;">Eva Holmen, MAH</div>
+          <div class="tiny muted">Holmen Arkitekter · Oslo · 12 år</div>
+        </div>
+        <span class="pill green">★ 4.9</span>
+      </div>
+      <div class="mt-3 small muted">Spesialitet: kjellerbruksendring, småhus i Oslo. 47 prosjekter via MittBygg.</div>
+      <div class="mt-3" style="display: flex; gap: 12px; font-size: 13px;">
+        <span><strong>8 000 kr</strong> · KS av søknadspakke</span>
+      </div>
+    </div>
+    <div class="cta-stack">
+      <button class="btn primary full" data-action="close-sheet">Velg Eva</button>
+      <button class="btn ghost" data-action="close-sheet">Se flere arkitekter</button>
+    </div>
+  `;
+}
+
+function sheetArkiv() {
+  const p = state.property;
+  const tegninger = p.bygg.tegninger || [];
+  const kilder = [...new Set(tegninger.map(t => t.kilde))];
+  // Group by saksnr for visual hierarchy
+  const grouped = {};
+  tegninger.forEach(t => {
+    if (!grouped[t.saksnr]) grouped[t.saksnr] = { saksnr: t.saksnr, year: t.year, kilde: t.kilde, items: [] };
+    grouped[t.saksnr].items.push(t);
+  });
+  const groups = Object.values(grouped).sort((a,b) => b.year - a.year);
+
+  return `
+    <h2>Tegninger på arkiv</h2>
+    <p class="muted small mt-2">Alt som ligger digitalt hos kommunen for ${p.street}.</p>
+    <div class="alert info mt-3">
+      <span class="ic">${ICONS.info}</span>
+      <div><strong>Kilde:</strong> ${kilder.join(' · ')}<br/>
+      <span class="tiny">I produksjon hentes tegningene live via kommunens saksinnsyn-API. Eldre saker må ofte bestilles manuelt fra kommunens arkiv.</span></div>
+    </div>
+    <div style="max-height: 60vh; overflow-y: auto; margin-top: 16px; margin-left: -8px; margin-right: -8px; padding: 0 8px;">
+      ${groups.map(g => `
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+            <h4 style="text-transform: none; letter-spacing: 0; color: var(--gray-700); font-size: 13px;">Sak ${g.saksnr}</h4>
+            <span class="tiny muted">${g.year}</span>
+          </div>
+          <div class="card flat" style="padding: 0;">
+            ${g.items.map((t, i, arr) => `
+              <div style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; ${i < arr.length-1 ? 'border-bottom: 1px solid var(--gray-100);' : ''}">
+                <div style="width: 32px; height: 40px; border-radius: 4px; background: ${t.type === 'PDF' ? '#fde0e0' : t.type === 'IFC' ? '#e3edf7' : '#fef3d6'}; color: ${t.type === 'PDF' ? '#c53030' : t.type === 'IFC' ? '#2156a8' : '#946800'}; display: grid; place-items: center; flex-shrink: 0; font-size: 8px; font-weight: 800; letter-spacing: 0.05em;">
+                  ${t.type}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: 13px;">${t.title}</div>
+                  <div class="tiny muted" style="margin-top: 1px;">${t.kilde}</div>
+                </div>
+                <button class="btn ghost sm" data-action="mock-download-tegning" style="padding: 6px 10px;">${ICONS.download}</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="cta-stack">
+      <button class="btn primary full" data-action="close-sheet">Ferdig</button>
+    </div>
+  `;
+}
+
+function sheetTiltakDisabled() {
+  const t = TILTAK.find(x => x.id === state.disabledTiltak);
+  return `
+    <h2>${t?.name}</h2>
+    <p class="muted small mt-2">${t?.desc}</p>
+    <div class="alert info mt-4">
+      <span class="ic">${ICONS.info}</span>
+      <div>Denne tiltakstypen er under utvikling og blir tilgjengelig i Stage 2 (Q3 2026). Bli varslet når den åpner.</div>
+    </div>
+    <div class="cta-stack">
+      <button class="btn primary full" data-action="close-sheet">Varsle meg</button>
+      <button class="btn ghost" data-action="close-sheet">Lukk</button>
+    </div>
+  `;
+}
+
+// ==========================================================================
+// HELPERS
+// ==========================================================================
+
+function formatKr(v) {
+  if (v == null) return "—";
+  return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " kr";
+}
+
+// ==========================================================================
+// EVENT HANDLERS
+// ==========================================================================
+
+function attachHandlers() {
+  document.querySelectorAll("[data-action]").forEach(el => {
+    const action = el.dataset.action;
+    el.addEventListener("click", e => {
+      e.stopPropagation();
+      handleAction(action, el, e);
+    });
+  });
+  // Close sheet on scrim click
+  // Address input live filter
+  const addrInput = document.getElementById("addr-input");
+  if (addrInput) {
+    addrInput.addEventListener("input", e => {
+      state.addressQuery = e.target.value;
+      render();
+      // refocus
+      setTimeout(() => {
+        const ai = document.getElementById("addr-input");
+        if (ai) {
+          ai.focus();
+          const v = ai.value; ai.value = ""; ai.value = v;
+        }
+      }, 0);
+    });
+    addrInput.focus();
+  }
+  const radonInput = document.getElementById("radon-input");
+  if (radonInput) {
+    radonInput.addEventListener("input", e => {
+      state.wizard.data.radon = e.target.value ? parseFloat(e.target.value) : null;
+    });
+  }
+  const spanInput = document.getElementById("span-input");
+  if (spanInput) {
+    spanInput.addEventListener("input", e => {
+      state.wizard.data.spennvidde = parseFloat(e.target.value) || 4500;
+    });
+  }
+  const lastInput = document.getElementById("last-input");
+  if (lastInput) {
+    lastInput.addEventListener("input", e => {
+      state.wizard.data.last = parseFloat(e.target.value) || 8;
+    });
+  }
+}
+
+function handleAction(action, el, e) {
+  switch (action) {
+    case "back": back(); break;
+    case "ignore-click": e.stopPropagation(); break;
+    case "close-sheet": state.showSheet = null; render(); break;
+
+    case "start-bankid": navigate("bankid"); break;
+    case "bankid-done":
+      state.user = { name: "Demo Bruker", initial: "D" };
+      navigate("address");
+      break;
+    case "start-demo":
+      state.user = { name: "Demo Bruker", initial: "D" };
+      navigate("address");
+      break;
+
+    case "select-address": {
+      const id = el.dataset.id;
+      const prop = ADDRESSES.find(a => a.id === id);
+      state.property = prop;
+      navigate("loading-prop");
+      setTimeout(() => navigate("dashboard"), 1100);
+      break;
+    }
+
+    case "show-info-sheet":
+      state.showSheet = "info"; render(); break;
+
+    case "show-arkiv-sheet":
+      state.showSheet = "arkiv"; render(); break;
+
+    case "mock-download-tegning":
+      // No-op: in production this fetches from kommunens saksinnsyn-API.
+      // Visual feedback only — pulse the button briefly.
+      el.style.background = "var(--green-50)";
+      el.style.color = "var(--green-500)";
+      setTimeout(() => { el.style.background = ""; el.style.color = ""; }, 600);
+      break;
+
+    case "start-tiltak":
+      navigate("tiltak-grid");
+      break;
+
+    case "select-tiltak": {
+      const id = el.dataset.id;
+      const t = TILTAK.find(x => x.id === id);
+      state.selectedTiltak = id;
+      if (t.wizard === "kjeller") {
+        state.wizard = { kind: "kjeller", step: 0,
+          data: { room: null, ny_bruk: null, radon: null,
+                  drenering: true, balansert_vent: false } };
+        navigate("wizard");
+      } else if (t.wizard === "vegg") {
+        state.wizard = { kind: "vegg", step: 0,
+          data: { spennvidde: 4500, last: 8 } };
+        navigate("wizard");
+      }
+      break;
+    }
+    case "select-tiltak-disabled": {
+      state.disabledTiltak = el.dataset.id;
+      state.showSheet = "tiltak-disabled";
+      render();
+      break;
+    }
+
+    // KJELLER WIZARD
+    case "kjeller-pick-room":
+      state.wizard.data.room = el.dataset.id; render(); break;
+    case "kjeller-pick-bruk":
+      state.wizard.data.ny_bruk = el.dataset.id; render(); break;
+    case "toggle-drenering":
+      state.wizard.data.drenering = !state.wizard.data.drenering; render(); break;
+    case "toggle-vent":
+      state.wizard.data.balansert_vent = !state.wizard.data.balansert_vent; render(); break;
+    case "kjeller-next":
+      state.wizard.step += 1; render(); break;
+    case "kjeller-evaluate":
+      navigate("loading");
+      setTimeout(() => {
+        state.result = evaluateKjeller({
+          propId: state.property.id,
+          byggeAar: state.property.bygg.byggeAar,
+          ...state.wizard.data,
+        });
+        navigate("result");
+      }, 1500);
+      break;
+
+    // VEGG WIZARD
+    case "vegg-next":
+      state.wizard.step += 1; render(); break;
+    case "vegg-evaluate":
+      navigate("loading");
+      setTimeout(() => {
+        state.result = evaluateVegg({
+          spennvidde: state.wizard.data.spennvidde,
+          last: state.wizard.data.last,
+        });
+        navigate("result");
+      }, 1500);
+      break;
+
+    case "restart-wizard":
+      navigate("tiltak-grid");
+      break;
+
+    case "share-result":
+      alert("Mock: lastet ned PDF-rapport.");
+      break;
+
+    case "generate-soknad":
+      navigate("soknad-preview");
+      break;
+
+    case "show-arkitekt-sheet":
+      state.showSheet = "arkitekt"; render(); break;
+
+    case "send-soknad":
+      navigate("loading-send");
+      setTimeout(() => navigate("soknad-sent"), 1800);
+      break;
+
+    case "goto-dashboard":
+      state.wizard = null;
+      state.result = null;
+      navigate("dashboard");
+      break;
+
+    default:
+      console.warn("Unknown action:", action);
+  }
+}
+
+// ==========================================================================
+// INIT
+// ==========================================================================
+
+render();
+</script>
+</body>
+</html>
