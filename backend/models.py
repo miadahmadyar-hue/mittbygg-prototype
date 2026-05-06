@@ -187,3 +187,8 @@ class BryggeInput(BaseModel):
 
 class AndreInput(BaseModel):
     beskrivelse: str
+
+
+class GeolograpportInput(BaseModel):
+    type: Literal["nybygg", "tilbygg", "kjeller", "brygge", "annet"]
+    timing: Literal["asap", "planlegging", "usikker"]

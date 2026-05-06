@@ -3,6 +3,7 @@ from models import (
     KjellerInput, KjellerResult, VeggInput, VeggResult, TiltakResult,
     GarasjeInput, TilbyggInput, FasadeInput, TakInput, SolcellerInput,
     AnneksInput, LevegInput, VinduInput, BryggeInput, AndreInput,
+    GeolograpportInput,
 )
 from regulations.kjeller   import evaluate_kjeller
 from regulations.vegg      import evaluate_vegg
@@ -16,6 +17,7 @@ from regulations.levegg    import evaluate_levegg
 from regulations.vindu     import evaluate_vindu
 from regulations.brygge    import evaluate_brygge
 from regulations.andre     import evaluate_andre
+from regulations.geolograpport import evaluate_geolograpport
 
 router = APIRouter()
 
@@ -53,5 +55,8 @@ def post_evaluate_vindu(inp: VinduInput)       -> TiltakResult:    return evalua
 @router.post("/evaluate/brygge",    response_model=TiltakResult)
 def post_evaluate_brygge(inp: BryggeInput)     -> TiltakResult:    return evaluate_brygge(inp)
 
-@router.post("/evaluate/andre",     response_model=TiltakResult)
-def post_evaluate_andre(inp: AndreInput)       -> TiltakResult:    return evaluate_andre(inp)
+@router.post("/evaluate/andre",        response_model=TiltakResult)
+def post_evaluate_andre(inp: AndreInput)           -> TiltakResult:    return evaluate_andre(inp)
+
+@router.post("/evaluate/geolograpport", response_model=TiltakResult)
+def post_evaluate_geolograpport(inp: GeolograpportInput) -> TiltakResult: return evaluate_geolograpport(inp)

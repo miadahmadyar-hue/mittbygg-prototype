@@ -1,6 +1,6 @@
 export type IconKey =
   | "kjeller" | "wall" | "garasje" | "tilbygg" | "fasade" | "tak"
-  | "sol" | "anneks" | "levegg" | "vindu" | "brygge" | "ai";
+  | "sol" | "anneks" | "levegg" | "vindu" | "brygge" | "ai" | "geolog";
 
 export interface TiltakTag {
   text: string;
@@ -114,5 +114,13 @@ export const TILTAK: Tiltak[] = [
     icon: "ai", iconClass: "warm",
     tags: [{ text: "AI-assistent", variant: "" }],
     slug: "andre", available: true,
+  },
+  {
+    id: "geolograpport",
+    name: "Geolograpport",
+    desc: "Grunnundersøkelse og geoteknisk rapport",
+    icon: "geolog", iconClass: "blue",
+    tags: [{ text: "Fagtjeneste", variant: "blue" }],
+    slug: "geolograpport", available: true,
   },
 ];

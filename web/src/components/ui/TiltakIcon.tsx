@@ -78,6 +78,13 @@ const SVGS: Record<IconKey, ReactNode> = {
       <path d="M8 12h8M12 8v8" />
     </svg>
   ),
+  geolog: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21h18M3 10l9-7 9 7" />
+      <path d="M12 14v7M8 14v3M16 14v5" />
+      <ellipse cx="12" cy="14" rx="5" ry="2" />
+    </svg>
+  ),
 };
 
 export function TiltakIcon({ k }: { k: IconKey }) {
