@@ -1155,8 +1155,8 @@ const TILTAK = [
     icon: "garasje",
     iconClass: "blue",
     tags: [{ t: "Ofte unntatt", c: "green" }],
-    wizard: "stub",
-    available: false,
+    wizard: "garasje",
+    available: true,
   },
   { id: "tilbygg",
     name: "Tilbygg",
@@ -1164,8 +1164,8 @@ const TILTAK = [
     icon: "tilbygg",
     iconClass: "warm",
     tags: [{ t: "Søknadspliktig", c: "amber" }],
-    wizard: "stub",
-    available: false,
+    wizard: "tilbygg",
+    available: true,
   },
   { id: "fasade",
     name: "Fasadeendring",
@@ -1173,8 +1173,8 @@ const TILTAK = [
     icon: "fasade",
     iconClass: "",
     tags: [{ t: "Avhenger", c: "" }],
-    wizard: "stub",
-    available: false,
+    wizard: "fasade",
+    available: true,
   },
   { id: "tak",
     name: "Skifte tak",
@@ -1182,8 +1182,8 @@ const TILTAK = [
     icon: "tak",
     iconClass: "blue",
     tags: [{ t: "Ofte unntatt", c: "green" }],
-    wizard: "stub",
-    available: false,
+    wizard: "tak",
+    available: true,
   },
   { id: "solceller",
     name: "Solceller",
@@ -1191,8 +1191,8 @@ const TILTAK = [
     icon: "sol",
     iconClass: "warm",
     tags: [{ t: "Ofte unntatt", c: "green" }],
-    wizard: "stub",
-    available: false,
+    wizard: "solceller",
+    available: true,
   },
   { id: "anneks",
     name: "Anneks / uthus",
@@ -1200,8 +1200,8 @@ const TILTAK = [
     icon: "anneks",
     iconClass: "",
     tags: [{ t: "Ofte unntatt", c: "green" }],
-    wizard: "stub",
-    available: false,
+    wizard: "anneks",
+    available: true,
   },
   { id: "levegg",
     name: "Levegg",
@@ -1209,8 +1209,8 @@ const TILTAK = [
     icon: "levegg",
     iconClass: "blue",
     tags: [{ t: "Ofte unntatt", c: "green" }],
-    wizard: "stub",
-    available: false,
+    wizard: "levegg",
+    available: true,
   },
   { id: "vindu",
     name: "Innsette nytt vindu",
@@ -1218,8 +1218,8 @@ const TILTAK = [
     icon: "vindu",
     iconClass: "",
     tags: [{ t: "Avhenger", c: "" }],
-    wizard: "stub",
-    available: false,
+    wizard: "vindu",
+    available: true,
   },
   { id: "brygge",
     name: "Brygge / stupebrett",
@@ -1227,8 +1227,17 @@ const TILTAK = [
     icon: "brygge",
     iconClass: "blue",
     tags: [{ t: "Søknadspliktig", c: "amber" }],
-    wizard: "stub",
-    available: false,
+    wizard: "brygge",
+    available: true,
+  },
+  { id: "geolograpport",
+    name: "Geolograpport",
+    desc: "Grunnundersøkelse for nybygg eller tilbygg",
+    icon: "geolog",
+    iconClass: "blue",
+    tags: [{ t: "Fagtjeneste", c: "" }],
+    wizard: "geolograpport",
+    available: true,
   },
   { id: "andre",
     name: "Noe annet",
@@ -1236,8 +1245,8 @@ const TILTAK = [
     icon: "ai",
     iconClass: "warm",
     tags: [{ t: "AI-assistent", c: "" }],
-    wizard: "stub",
-    available: false,
+    wizard: "andre",
+    available: true,
   },
 ];
 
@@ -1601,6 +1610,439 @@ function evaluateVegg(input) {
 }
 
 // ==========================================================================
+// GARASJE — REGEL-MOTOR
+// ==========================================================================
+function evaluateGarasje(input) {
+  const findings = [], tiltak = [];
+  const avstand = parseFloat(input.avstand) || 1.0;
+  const areal   = parseFloat(input.areal)   || 30;
+  const exempt  = areal <= 50 && avstand >= 1.0;
+
+  if (areal > 50) {
+    findings.push({ type: "fail", t: "Over 50 m² — søknadspliktig",
+      d: `${areal} m² overskrider 50 m²-grensen. Søknad etter PBL § 20-1 a.`, ref: "SAK10 § 4-1 b" });
+  } else {
+    findings.push({ type: "ok", t: `Areal ${areal} m² — innenfor grense`,
+      d: "Frittliggende garasje ≤ 50 m² i én etasje faller inn under unntaket.", ref: "SAK10 § 4-1 b" });
+  }
+  if (avstand < 1.0) {
+    findings.push({ type: "fail", t: "For nær nabogrense",
+      d: `${avstand} m fra grense. Minimum 1,0 m kreves for å bruke unntaket. Kortere avstand krever nabosamtykke.`, ref: "PBL § 29-4" });
+  } else {
+    findings.push({ type: "ok", t: `Avstand til grense: ${avstand} m — OK`,
+      d: "Tilfredsstiller kravet om minimum 1,0 m.", ref: "PBL § 29-4" });
+  }
+  findings.push({ type: "ok", t: "Nabovarsel ikke påkrevd",
+    d: "Frittstående bygg ≤ 50 m² unntatt søknad trenger ikke nabovarsel.", ref: "SAK10 § 4-1" });
+
+  const enhetspris = input.type === "carport" ? 4000 : input.type === "bod" ? 5000 : 8000;
+  tiltak.push({ name: input.type === "carport" ? "Carport" : input.type === "bod" ? "Bod/uthus" : "Garasje",
+    desc: "Grunnmur, vegger, tak, dør/port inkludert.", kostnad: areal * enhetspris });
+  tiltak.push({ name: "Grunnarbeider og betongplate",
+    desc: "Avrettingsarbeider, drensrør og støping av gulvplate.", kostnad: 40000 });
+
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  const fails = findings.filter(f => f.type === "fail").length;
+  return {
+    status: fails === 0 ? "green" : "red",
+    statusText: fails === 0 ? "Unntatt søknad" : "Søknad påkrevd",
+    statusDesc: fails === 0 ? "Du kan bygge uten søknad. Sett i gang!" : `${fails} avvik må rettes.`,
+    findings, tiltak, lempninger: [],
+    soknadstype: fails === 0 ? "Unntatt (SAK10 § 4-1 b)" : "PBL § 20-1 a",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// TILBYGG — REGEL-MOTOR
+// ==========================================================================
+function evaluateTilbygg(input) {
+  const findings = [], tiltak = [];
+  const areal   = parseFloat(input.areal)   || 20;
+  const avstand = parseFloat(input.avstand) || 4;
+
+  if (areal <= 15 && avstand >= 4) {
+    findings.push({ type: "ok", t: "Tilbygg ≤ 15 m² — unntatt søknad",
+      d: "Tilbygg i én etasje ≤ 15 m² og ≥ 4 m fra nabogrense er unntatt søknadsplikt.", ref: "SAK10 § 4-1 d" });
+  } else if (areal <= 50) {
+    findings.push({ type: "warn", t: `Tilbygg ${areal} m² — søknadspliktig`,
+      d: "Mellom 15 og 50 m² krever søknad, men kan behandles uten ansvarsrett (TK1).", ref: "PBL § 20-4 c" });
+  } else {
+    findings.push({ type: "fail", t: `Tilbygg ${areal} m² — krever ansvarsrett`,
+      d: "Over 50 m² regnes som vesentlig tilbygg og krever søknad med ansvarlig prosjekterende.", ref: "PBL § 20-3" });
+  }
+  if (avstand < 4) {
+    findings.push({ type: "fail", t: `Avstand ${avstand} m — for nær nabogrense`,
+      d: "Tilbygg nærmere enn 4 m fra nabogrense krever nabosamtykke eller dispensasjon.", ref: "PBL § 29-4" });
+  } else {
+    findings.push({ type: "ok", t: `Avstand ${avstand} m — tilfredsstiller krav`, d: "≥ 4 m fra nabogrense.", ref: "PBL § 29-4" });
+  }
+  findings.push({ type: "warn", t: "Reguleringsplan må sjekkes",
+    d: "Sjekk maks BYA (bebygd areal) i reguleringsplanen. Tilbygg kan sprenge tak for tillatt utnyttelse.", ref: "PBL § 12-7" });
+  if (input.type === "etasje") {
+    findings.push({ type: "warn", t: "Ny etasje — høydekrav",
+      d: "Ny full etasje øker gesims- og mønehøyde. Sjekk regulert maks høyde.", ref: "PBL § 29-4 + reguleringsplan" });
+  }
+
+  tiltak.push({ name: "Tilbygg inkl. fundament og takkonstruksjon",
+    desc: "Grunnmur, stenderverksvegg, isolasjon, vinduer, ytterkledning.", kostnad: areal * 18000 });
+  tiltak.push({ name: "Koble til eksisterende hus",
+    desc: "Åpne vegg, bjelkelag, tettelister, isolasjon av gjennomgang.", kostnad: 35000 });
+
+  const fails = findings.filter(f => f.type === "fail").length;
+  const warns = findings.filter(f => f.type === "warn").length;
+  const ansvarsrett = areal > 50;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: fails === 0 && warns === 0 ? "green" : fails === 0 ? "amber" : "red",
+    statusText: fails === 0 && warns === 0 ? "Unntatt søknad" : fails === 0 ? "Søknad — uten ansvarsrett" : "Krever ansvarsrett",
+    statusDesc: fails === 0 ? "Kan søkes av deg selv (TK1)." : `${fails} kritiske avvik.`,
+    findings, tiltak, lempninger: [],
+    soknadstype: areal <= 15 && avstand >= 4 ? "Unntatt (SAK10 § 4-1 d)" : ansvarsrett ? "PBL § 20-3 (ansvarsrett)" : "PBL § 20-4 c",
+    ansvarsrett, tiltaksklasse: ansvarsrett ? 2 : 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// FASADEENDRING — REGEL-MOTOR
+// ==========================================================================
+function evaluateFasade(input) {
+  const findings = [], tiltak = [];
+  const isVernet = input.vernet;
+  const endring = input.endring;
+
+  if (isVernet) {
+    findings.push({ type: "fail", t: "Verneverdig bygning — søknad + kulturminnefaglig vurdering",
+      d: "Fasadeendring på regulert verneverdig bygning krever søknad og uttalelse fra antikvarisk myndighet.", ref: "PBL § 20-1 + kulturminneloven" });
+  } else if (endring === "kledning" || endring === "farge") {
+    findings.push({ type: "ok", t: "Endring av kledning/farge — normalt unntatt",
+      d: "Skifte kledning til likt eller endre farge er vanligvis unntatt søknad.", ref: "SAK10 § 4-1" });
+  } else if (endring === "vindu_storre") {
+    findings.push({ type: "warn", t: "Utvidelse av vindusåpning — kan kreve søknad",
+      d: "Utvidelse av hull i fasaden er fasadeendring som kan være søknadspliktig avhengig av omfang.", ref: "PBL § 20-1 e" });
+  } else if (endring === "terrasse") {
+    findings.push({ type: "warn", t: "Terrasse — avhenger av høyde og areal",
+      d: "Terrasse over 0,5 m over bakken med areal > 10 m² er søknadspliktig.", ref: "PBL § 20-1 a" });
+    tiltak.push({ name: "Konstruksjon og dekke", desc: "Bjelkelag, terrassebord, rekkverk (100 cm over bakke > 0,5 m).", kostnad: 65000 });
+  } else {
+    findings.push({ type: "ok", t: "Fasadeendring innenfor samme uttrykk — unntatt",
+      d: "Endring som holder seg innenfor eksisterende fasadeuttrykk er normalt unntatt.", ref: "SAK10 § 4-1" });
+  }
+  findings.push({ type: "ok", t: "Nabovarsel ikke påkrevd ved unntak", d: "Unntatte tiltak krever ikke nabovarsel.", ref: "SAK10" });
+
+  if (endring === "kledning") tiltak.push({ name: "Ny ytterkledning", desc: "Stående/liggende trepanel inkl. vindsperre og beis.", kostnad: 120000 });
+  else if (endring === "vindu_storre") tiltak.push({ name: "Ny vindusåpning + vindu", desc: "Hulltaking, lintrebjelke, nytt vindu PVC/tre-alu.", kostnad: 35000 });
+
+  const fails = findings.filter(f => f.type === "fail").length;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0) || 15000;
+  return {
+    status: fails === 0 ? "green" : "red",
+    statusText: fails === 0 ? "Normalt unntatt søknad" : "Søknad påkrevd",
+    statusDesc: fails === 0 ? "Fasadeendringen kan gjennomføres." : "Kulturminnehensyn krever søknad.",
+    findings, tiltak, lempninger: [],
+    soknadstype: fails === 0 ? "Unntatt (SAK10 § 4-1)" : "PBL § 20-1 e",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// SKIFTE TAK — REGEL-MOTOR
+// ==========================================================================
+function evaluateTak(input) {
+  const findings = [], tiltak = [];
+  const isVernet = input.vernet;
+  const endring  = input.endring;
+
+  if (endring === "materiale") {
+    if (isVernet) {
+      findings.push({ type: "warn", t: "Verneverdig bygning — anbefal kulturminnekonsultasjon",
+        d: "Skifte taktekkemateriale på verneverdig bygning bør avklares med kommunens antikvar.", ref: "PBL § 31-1 + kulturminneloven" });
+    } else {
+      findings.push({ type: "ok", t: "Skifte tekkemateriale — unntatt søknad",
+        d: "Bytte tekkemateriale (f.eks. takstein til stein, shingel til papp) er normalt unntatt.", ref: "SAK10 § 4-1" });
+    }
+  } else if (endring === "form") {
+    findings.push({ type: "warn", t: "Ny takform — søknadspliktig",
+      d: "Endring av takform (f.eks. saltak til flatt tak) er fasadeendring og søknadspliktig.", ref: "PBL § 20-1 e" });
+    findings.push({ type: "warn", t: "Reguleringsplan kan begrense takform",
+      d: "Sjekk reguleringsbestemmelsene for tillatte taktyper og -vinkler i ditt område.", ref: "PBL § 12-7" });
+  }
+  findings.push({ type: "ok", t: "Brannteknisk krav — TEK17 oppfylles",
+    d: "Nytt tak skal tilfredsstille TEK17 krav til brannklasse (tak ≥ BROOF (t2)).", ref: "TEK17 § 11-9" });
+
+  tiltak.push({ name: "Ny taktekking", desc: "Riving av gammelt tak, ny undertak, lekter, takstein/stein.", kostnad: input.endring === "form" ? 280000 : 180000 });
+  if (input.isolasjon) tiltak.push({ name: "Etterisolering av taket", desc: "Mineralull i sperrerom, dampsperre, ny innkledning.", kostnad: 120000 });
+
+  const fails = findings.filter(f => f.type === "fail").length;
+  const warns = findings.filter(f => f.type === "warn").length;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: fails === 0 && warns === 0 ? "green" : fails === 0 ? "amber" : "red",
+    statusText: fails === 0 && warns === 0 ? "Unntatt søknad" : "Sjekk reguleringsplan",
+    statusDesc: fails === 0 ? "Takarbeidet kan starte." : "Søknad påkrevd.",
+    findings, tiltak, lempninger: [],
+    soknadstype: input.endring === "materiale" ? "Unntatt (SAK10 § 4-1)" : "PBL § 20-1 e",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// SOLCELLER — REGEL-MOTOR
+// ==========================================================================
+function evaluateSolceller(input) {
+  const findings = [], tiltak = [];
+  const isVernet = input.vernet;
+  const areal    = parseFloat(input.areal) || 20;
+
+  if (isVernet) {
+    findings.push({ type: "warn", t: "Verneverdig bygning — kommunen bør kontaktes",
+      d: "Solceller på verneverdig bygning kan kreve særskilt tillatelse og kulturminnefaglig vurdering.", ref: "Kulturminneloven + PBL § 31-1" });
+  } else {
+    findings.push({ type: "ok", t: "Solceller på tak — unntatt søknad",
+      d: "Solcelleanlegg som følger takflaten og ikke endrer byggets utseende vesentlig er unntatt søknad (SAK10 § 4-1 k) fra 2021.", ref: "SAK10 § 4-1 k (2021)" });
+  }
+  findings.push({ type: "ok", t: "Nettilknytning — melding til nettselskap",
+    d: "Anlegget meldes til nettselskapet (AMS-registrering). Ingen søknad til kommunen nødvendig.", ref: "Forskrift om elektriske forsyningsanlegg" });
+  findings.push({ type: "ok", t: "El-installasjon — krever autorisert installatør",
+    d: "Kobling mot husets elektriske anlegg skal utføres av autorisert elektroinstallatør.", ref: "Forskrift om elektriske lavspenningsanlegg" });
+
+  const kwp = Math.round(areal * 0.2 * 10) / 10;
+  tiltak.push({ name: `Solcellepaneler ${areal} m² (≈${kwp} kWp)`,
+    desc: "Monokrystallinske paneler, montasjebrakett for takstein, kabling.", kostnad: areal * 2200 });
+  tiltak.push({ name: "Inverter og sikringsskap",
+    desc: "String-inverter, overspenningsvern, smartmåler-tilkobling.", kostnad: 18000 });
+
+  const warns = findings.filter(f => f.type === "warn").length;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: warns === 0 ? "green" : "amber",
+    statusText: warns === 0 ? "Unntatt søknad" : "Sjekk med kommunen",
+    statusDesc: `${kwp} kWp anlegg gir ca. ${Math.round(kwp * 900)} kWh/år.`,
+    findings, tiltak, lempninger: [],
+    soknadstype: "Unntatt (SAK10 § 4-1 k)",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// ANNEKS / UTHUS — REGEL-MOTOR
+// ==========================================================================
+function evaluateAnneks(input) {
+  const findings = [], tiltak = [];
+  const areal   = parseFloat(input.areal)   || 25;
+  const avstand = parseFloat(input.avstand) || 2;
+  const exempt  = areal <= 50 && avstand >= 1.0;
+
+  if (areal > 50) {
+    findings.push({ type: "fail", t: `${areal} m² — over 50 m²-grensen`,
+      d: "Frittliggende bygning over 50 m² er søknadspliktig.", ref: "SAK10 § 4-1 b" });
+  } else {
+    findings.push({ type: "ok", t: `${areal} m² — innenfor unntaksgrensen`,
+      d: "Frittliggende bygning ≤ 50 m² i én etasje kan bygges uten søknad.", ref: "SAK10 § 4-1 b" });
+  }
+  if (avstand < 1.0) {
+    findings.push({ type: "fail", t: `Avstand ${avstand} m — for nær grense`,
+      d: "Minimum 1,0 m fra nabogrense for å bruke unntaket. Kortere krever nabosamtykke.", ref: "PBL § 29-4" });
+  } else {
+    findings.push({ type: "ok", t: `Avstand ${avstand} m fra nabogrense — OK`,
+      d: "Tilfredsstiller minstekravet for unntak.", ref: "PBL § 29-4" });
+  }
+  if (input.type === "anneks" && areal > 15) {
+    findings.push({ type: "warn", t: "Anneks med overnatting — sjekk kommuneplan",
+      d: "Anneks brukt til overnatting (hytte/gjestehus) kan reguleres særskilt. Sjekk kommuneplanens bestemmelser.", ref: "PBL § 12-7" });
+  }
+
+  const enhetspris = input.type === "anneks" ? 22000 : 12000;
+  tiltak.push({ name: input.type === "anneks" ? `Anneks ${areal} m²` : `Uthus/bod ${areal} m²`,
+    desc: "Platebæring/grunnmur, stenderverksvegg, isolert tak, vinduer.", kostnad: areal * enhetspris });
+
+  const fails = findings.filter(f => f.type === "fail").length;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: fails === 0 ? "green" : "red",
+    statusText: fails === 0 ? "Unntatt søknad" : "Søknad påkrevd",
+    statusDesc: fails === 0 ? "Du kan bygge uten søknad." : `${fails} avvik.`,
+    findings, tiltak, lempninger: [],
+    soknadstype: fails === 0 ? "Unntatt (SAK10 § 4-1 b)" : "PBL § 20-1 a",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// LEVEGG — REGEL-MOTOR
+// ==========================================================================
+function evaluateLevegg(input) {
+  const findings = [], tiltak = [];
+  const hoyde   = parseFloat(input.hoyde)   || 1.8;
+  const lengde  = parseFloat(input.lengde)  || 10;
+  const avstand = parseFloat(input.avstand) || 1;
+
+  if (hoyde <= 1.8 && lengde <= 10) {
+    findings.push({ type: "ok", t: "Levegg unntatt søknad",
+      d: `Levegg ≤ 1,8 m høy og ≤ 10 m lang er unntatt søknad.`, ref: "SAK10 § 4-1 e" });
+  } else if (hoyde <= 2.5) {
+    findings.push({ type: "warn", t: `${hoyde} m høy — kan kreve søknad`,
+      d: "Levegg mellom 1,8 m og 2,5 m kan kreve søknad avhengig av lengde og plassering. Avklar med kommunen.", ref: "SAK10 § 4-1 e" });
+  } else {
+    findings.push({ type: "fail", t: `${hoyde} m høy — søknadspliktig`,
+      d: "Levegg over 2,5 m er søknadspliktig.", ref: "PBL § 20-1 a" });
+  }
+  if (avstand < 1.0) {
+    findings.push({ type: "warn", t: "Nær nabogrense — nabovarsling anbefales",
+      d: "Plassering nærmere enn 1 m fra nabogrense bør avklares med nabo selv om leveggen er unntatt.", ref: "PBL § 29-4" });
+  } else {
+    findings.push({ type: "ok", t: "Avstand til grense OK", d: `${avstand} m fra nabogrense.`, ref: "PBL § 29-4" });
+  }
+
+  tiltak.push({ name: `Levegg ${hoyde}×${lengde} m`,
+    desc: "Stolper i bakken (betongfot), stenderverksrammer, trebehandlet kledning.", kostnad: hoyde * lengde * 1800 });
+
+  const fails = findings.filter(f => f.type === "fail").length;
+  const warns = findings.filter(f => f.type === "warn").length;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: fails === 0 && warns === 0 ? "green" : fails === 0 ? "amber" : "red",
+    statusText: fails === 0 && warns === 0 ? "Unntatt søknad" : fails === 0 ? "Trolig unntatt" : "Søknad påkrevd",
+    statusDesc: fails === 0 ? "Leveggen kan settes opp." : "Søknad til kommunen nødvendig.",
+    findings, tiltak, lempninger: [],
+    soknadstype: fails === 0 && warns === 0 ? "Unntatt (SAK10 § 4-1 e)" : "PBL § 20-1 a",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// VINDU — REGEL-MOTOR
+// ==========================================================================
+function evaluateVindu(input) {
+  const findings = [], tiltak = [];
+  const isNyttHull = input.type === "nytt_hull";
+  const isBrannvegg = input.brannvegg;
+
+  if (isBrannvegg) {
+    findings.push({ type: "fail", t: "Vindu i brannvegg/brannskille — søknad påkrevd",
+      d: "Vindu i vegg mot nabogrense (brannvegg) er søknadspliktig og krever brannklassifisert vindu (EI 30).", ref: "TEK17 § 11-6 + PBL § 20-1 e" });
+    tiltak.push({ name: "Brannklassifisert vindu EI 30",
+      desc: "Stålkarmsvindu med brannglasslaminat. Krever ansvarlig utførende.", kostnad: 28000 });
+  } else if (isNyttHull) {
+    findings.push({ type: "warn", t: "Nytt hull i fasaden — fasadeendring",
+      d: "Hulltaking i eksisterende fasade er en fasadeendring. Normalt unntatt søknad om det ikke endrer byggets karakter vesentlig.", ref: "SAK10 § 4-1" });
+  } else {
+    findings.push({ type: "ok", t: "Skifte vindu i eksisterende åpning — unntatt",
+      d: "Utskifting av vindu i eksisterende åpning er vedlikehold og unntatt søknad.", ref: "SAK10 § 4-1" });
+  }
+  findings.push({ type: "ok", t: "U-verdi krav — TEK17 § 14-3",
+    d: "Nytt vindu skal ha U-verdi ≤ 0,80 W/(m²K). Moderne vinduer ligger på 0,6–1,0. Tre-alu og PVC-vinduer tilfredsstiller kravet.", ref: "TEK17 § 14-3" });
+
+  tiltak.push({ name: `${isNyttHull ? "Hulltaking og" : "Skifte"} vindu (per vindu)`,
+    desc: "Tre-alu koblingsvindu, U 0,7, inkl. montering og tetting.", kostnad: isNyttHull ? 22000 : 14000 });
+
+  const fails = findings.filter(f => f.type === "fail").length;
+  const warns = findings.filter(f => f.type === "warn").length;
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: fails === 0 && warns === 0 ? "green" : fails === 0 ? "amber" : "red",
+    statusText: fails === 0 && warns === 0 ? "Unntatt søknad" : fails === 0 ? "Trolig unntatt" : "Søknad påkrevd",
+    statusDesc: fails === 0 ? "Vindusbyttet kan gjennomføres." : "Brannhensyn krever søknad.",
+    findings, tiltak, lempninger: [],
+    soknadstype: isBrannvegg ? "PBL § 20-1 e" : "Unntatt (SAK10 § 4-1)",
+    ansvarsrett: isBrannvegg, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// BRYGGE — REGEL-MOTOR
+// ==========================================================================
+function evaluateBrygge(input) {
+  const findings = [], tiltak = [];
+  const lengde  = parseFloat(input.lengde)  || 8;
+  const bredde  = parseFloat(input.bredde)  || 2.5;
+  const areal   = lengde * bredde;
+
+  findings.push({ type: "fail", t: "Brygge er søknadspliktig",
+    d: "Alle brygger (faste og flytende) i sjø og vassdrag er søknadspliktige etter PBL § 20-1 a. Det er ingen unntaksgrense.", ref: "PBL § 20-1 a" });
+  findings.push({ type: "warn", t: "Strandsonebehandling — 100-metersbeltet",
+    d: "Bryggen ligger i strandsonen (100 m fra sjø). Kommunen vurderer hensyn til allmennhetens tilgang og naturmangfold.", ref: "PBL § 1-8 (strandsone)" });
+  if (input.type === "fast") {
+    findings.push({ type: "warn", t: "Fast brygge krever geoteknisk vurdering",
+      d: "Stikkpæler eller betongfundament krever grunnundersøkelse. Anbefaler geolograpport.", ref: "TEK17 § 9-2" });
+    tiltak.push({ name: "Geolograpport (grunnundersøkelse)",
+      desc: "Prøvetaking, geoteknisk rapport, anbefalinger for pæling.", kostnad: 35000 });
+  }
+  findings.push({ type: "ok", t: "Nabovarsel påkrevd (PBL § 21-3)",
+    d: "Naboer og gjenboere varsles. Klagefristen er 2 uker.", ref: "PBL § 21-3" });
+
+  tiltak.push({ name: `Brygge ${lengde}×${bredde} m (${areal} m²)`,
+    desc: input.type === "flytende" ? "Flytende pontong, gangbane, fortøyning." : "Stikkpæler impregnert treverk, gangbane, rekkverk.",
+    kostnad: areal * (input.type === "flytende" ? 12000 : 18000) });
+
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: "red",
+    statusText: "Søknad påkrevd",
+    statusDesc: "Alle brygger krever søknad. Vi hjelper deg med søknadspakken.",
+    findings, tiltak, lempninger: [],
+    soknadstype: "PBL § 20-1 a + strandsonebehandling",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// GEOLOGRAPPORT — TJENESTE
+// ==========================================================================
+function evaluateGeolograpport(input) {
+  const findings = [], tiltak = [];
+
+  findings.push({ type: "ok", t: "Grunnundersøkelse anbefales ved nybygg og tilbygg",
+    d: "TEK17 § 9-2 krever at grunnforhold dokumenteres før byggestart for alle søknadspliktige tiltak.", ref: "TEK17 § 9-2" });
+  if (input.type === "nybygg" || input.type === "garasje") {
+    findings.push({ type: "warn", t: "Setningsskader — vanlig risiko i Oslo-regionen",
+      d: "Leirgrunn under Oslo kan gi setningsskader ved feil fundamentering. Grunnundersøkelse sikrer riktig fundamenttype.", ref: "NS-EN 1997 (Eurokode 7)" });
+  }
+  findings.push({ type: "ok", t: "Geolog tilgjengelig via MittBygg-markedsplassen",
+    d: "Vi kobler deg med sertifisert geotekniker innen 2 virkedager. Rapport normalt klar på 5–10 dager.", ref: "NGF Melding nr. 2" });
+  findings.push({ type: "ok", t: "Rapport kreves av kommunen ved søknad",
+    d: "Mange kommuner krever geoteknisk rapport som vedlegg til byggesøknaden. MittBygg inkluderer rapporten automatisk i søknadspakken.", ref: "SAK10 § 5-4" });
+
+  tiltak.push({ name: "Geoteknisk rapport (grunnundersøkelse)",
+    desc: "Prøvetaking (dreietrykksondering + prøvegrop), laboratorieanalyse, geoteknisk rapport med fundamentanbefalinger.",
+    kostnad: 28000 });
+  tiltak.push({ name: "Tillegg: radonmåling i grunn",
+    desc: "Kombineres gjerne med geoundersøkelse. Resultater inngår i søknadspakken.", kostnad: 4500 });
+
+  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  return {
+    status: "green",
+    statusText: "Bestill grunnundersøkelse",
+    statusDesc: "Geotekniker kontakter deg innen 2 virkedager.",
+    findings, tiltak, lempninger: [],
+    soknadstype: "Fagtjeneste — ikke søknadspliktig i seg selv",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad, input,
+  };
+}
+
+// ==========================================================================
+// ANDRE / AI — ENKEL RESPONS
+// ==========================================================================
+function evaluateAndre(input) {
+  return {
+    status: "amber",
+    statusText: "Vurderes manuelt",
+    statusDesc: "Beskrivelsen din er registrert. En rådgiver vurderer søknadsplikten.",
+    findings: [
+      { type: "ok", t: "Beskrivelse mottatt", d: `"${input.beskrivelse || 'Ingen beskrivelse'}"`, ref: "" },
+      { type: "warn", t: "Automatisk regelsjekk ikke tilgjengelig for dette tiltaket",
+        d: "Våre rådgivere ser på saken og gir deg svar innen 1 virkedag. Vi varsler per SMS/e-post.", ref: "" },
+      { type: "ok", t: "Alternativ: ring byggesaksavdelingen",
+        d: `De fleste kommuner har veiledningstelefon. ${state.property?.matrikkel?.kommune || 'Din'} kommune: se kommunens nettside.`, ref: "" },
+    ],
+    tiltak: [{ name: "Rådgivning via MittBygg", desc: "En byggesaksekspert gjennomgår tiltaket og gir skriftlig vurdering.", kostnad: 1500 }],
+    lempninger: [],
+    soknadstype: "Avklares ved manuell gjennomgang",
+    ansvarsrett: false, tiltaksklasse: 1, totalKostnad: 1500, input,
+  };
+}
+
+// ==========================================================================
 // ICONS (inline SVG)
 // ==========================================================================
 
@@ -1633,6 +2075,7 @@ const ICONS = {
   levegg:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5h16v16"/><path d="M4 9h16M4 13h16M4 17h16"/></svg>',
   vindu:   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 12h18M12 3v18"/></svg>',
   brygge:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/><path d="M5 13h14M7 13V7M12 13V5M17 13V8"/></svg>',
+  geolog:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 10l9-7 9 7"/><path d="M12 14v7M8 14v3M16 14v5"/><ellipse cx="12" cy="14" rx="5" ry="2"/></svg>',
   ai:      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>',
   bankid:  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M7 10h10M7 14h6M7 18h4"/></svg>',
   vipps:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-2-7a1 1 0 100-2 1 1 0 000 2zm4 0a1 1 0 100-2 1 1 0 000 2zm-2 4a3 3 0 002.6-1.5l1.7 1A5 5 0 0112 17a5 5 0 01-4.3-2.5l1.7-1A3 3 0 0012 15z"/></svg>',
@@ -2040,14 +2483,13 @@ function renderTiltakGrid() {
     </div>
     <div class="tiltak-grid">
       ${TILTAK.map(t => `
-        <button class="tiltak-card ${!t.available ? 'opacity-50' : ''}"
-                ${t.available ? `data-action="select-tiltak" data-id="${t.id}"` : `data-action="select-tiltak-disabled" data-id="${t.id}"`}>
-          <div class="icon ${t.iconClass}">${ICONS[t.icon]}</div>
+        <button class="tiltak-card"
+                data-action="select-tiltak" data-id="${t.id}">
+          <div class="icon ${t.iconClass}">${ICONS[t.icon] || ICONS.ai}</div>
           <div class="name">${t.name}</div>
           <div class="desc">${t.desc}</div>
           <div class="meta">
             ${t.tags.map(tag => `<span class="pill ${tag.c}">${tag.t}</span>`).join('')}
-            ${!t.available ? '<span class="pill">Kommer</span>' : ''}
           </div>
         </button>
       `).join('')}
@@ -2058,8 +2500,19 @@ function renderTiltakGrid() {
 
 function renderWizard() {
   const w = state.wizard;
-  if (w.kind === "kjeller") return renderKjellerWizard();
-  if (w.kind === "vegg")    return renderVeggWizard();
+  if (w.kind === "kjeller")       return renderKjellerWizard();
+  if (w.kind === "vegg")          return renderVeggWizard();
+  if (w.kind === "garasje")       return renderGarasjeWizard();
+  if (w.kind === "tilbygg")       return renderTilbyggWizard();
+  if (w.kind === "fasade")        return renderFasadeWizard();
+  if (w.kind === "tak")           return renderTakWizard();
+  if (w.kind === "solceller")     return renderSolcellerWizard();
+  if (w.kind === "anneks")        return renderAnneksWizard();
+  if (w.kind === "levegg")        return renderLeveggWizard();
+  if (w.kind === "vindu")         return renderVinduWizard();
+  if (w.kind === "brygge")        return renderBryggeWizard();
+  if (w.kind === "geolograpport") return renderGeolograpportWizard();
+  if (w.kind === "andre")         return renderAndreWizard();
   return `<div class="view"><p>Ukjent wizard</p></div>`;
 }
 
@@ -2298,6 +2751,352 @@ function renderVeggStep1() {
       </button>
     </div>
   `;
+}
+
+// --------------------------------------------------------------------------
+// GENERIC SIMPLE WIZARD WRAPPER (2-step: questions → confirm + evaluate)
+// --------------------------------------------------------------------------
+function renderSimpleWizard(title, totalSteps, stepFn) {
+  const w = state.wizard;
+  const segs = Array.from({ length: totalSteps }, (_, i) =>
+    `<div class="seg ${i <= w.step ? 'done' : ''}"></div>`).join('');
+  return `
+  ${renderTopbar({ title, back: true, right: `<span class="muted small">${w.step + 1}/${totalSteps}</span>` })}
+  <div class="progress" style="padding: 0 20px 12px; background: white;">${segs}</div>
+  <div class="view">${stepFn(w)}</div>`;
+}
+
+// --------------------------------------------------------------------------
+// GARASJE WIZARD
+// --------------------------------------------------------------------------
+function renderGarasjeWizard() {
+  return renderSimpleWizard("Bygge garasje", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Hva skal du bygge?</h2></div>
+      <div>
+        ${[["garasje","Garasje","Innelukkede vegger og port, isolert eller kald"],
+           ["carport","Carport","Tak og stolper – åpne sider"],
+           ["bod","Bod / uthus","Lagringsbod uten bilplass"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.type===id?'selected':''}" data-action="simple-pick" data-field="type" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="field"><label class="label">Areal (m²)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-1" placeholder="30" value="${w.data.areal||30}"/></div>
+        <p class="tiny muted mt-2">Under 50 m² kan være unntatt søknad</p></div>
+      <div class="field"><label class="label">Avstand til nabogrense (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-2" placeholder="2.5" step="0.5" value="${w.data.avstand||2.5}"/></div></div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.type?'opacity-50':''}" data-action="simple-next" ${!w.data.type?'disabled':''}>Neste ${ICONS.arrow}</button></div>
+    `;
+    return `
+      <div><h2>Bekreft</h2></div>
+      <div class="card flat"><div class="kv-list">
+        <div class="row"><span class="k">Type</span><span class="v">${w.data.type}</span></div>
+        <div class="row"><span class="k">Areal</span><span class="v">${w.data.areal} m²</span></div>
+        <div class="row"><span class="k">Avstand</span><span class="v">${w.data.avstand} m</span></div>
+      </div></div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// TILBYGG WIZARD
+// --------------------------------------------------------------------------
+function renderTilbyggWizard() {
+  return renderSimpleWizard("Tilbygg", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Type tilbygg</h2></div>
+      <div>
+        ${[["etasje1","Tilbygg i 1. etasje","Nytt rom eller utvidet stue/kjøkken i plan"],
+           ["etasje","Ny etasje","Heve huset med en full ekstra etasje"],
+           ["terrasse_tak","Innglasset terrasse","Overbygget terrasse / vinterhage"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.type===id?'selected':''}" data-action="simple-pick" data-field="type" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="field"><label class="label">Areal tilbygg (m²)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-1" placeholder="20" value="${w.data.areal||20}"/></div>
+        <p class="tiny muted mt-2">Under 15 m² + ≥ 4 m fra grense = trolig unntatt</p></div>
+      <div class="field"><label class="label">Avstand til nabogrense (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-2" placeholder="5" step="0.5" value="${w.data.avstand||5}"/></div></div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.type?'opacity-50':''}" data-action="simple-next" ${!w.data.type?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Bekreft</h2></div>
+      <div class="card flat"><div class="kv-list">
+        <div class="row"><span class="k">Type</span><span class="v">${w.data.type}</span></div>
+        <div class="row"><span class="k">Areal</span><span class="v">${w.data.areal} m²</span></div>
+        <div class="row"><span class="k">Avstand</span><span class="v">${w.data.avstand} m</span></div>
+        <div class="row"><span class="k">Eiendom</span><span class="v">${state.property.street}</span></div>
+      </div></div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// FASADEENDRING WIZARD
+// --------------------------------------------------------------------------
+function renderFasadeWizard() {
+  return renderSimpleWizard("Fasadeendring", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Hva endrer du?</h2></div>
+      <div>
+        ${[["kledning","Ny ytterkledning","Skifte til ny trebehandlet/murkledning"],
+           ["farge","Farge/overflate","Male om fasaden"],
+           ["vindu_storre","Større vindusåpning","Utvide hull i fasaden"],
+           ["terrasse","Terrasse","Bygge ny terrasse"],
+           ["dor","Ny dør","Bytte til ny dør eller endre åpning"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.endring===id?'selected':''}" data-action="simple-pick" data-field="endring" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.endring?'opacity-50':''}" data-action="simple-next" ${!w.data.endring?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Bygget ditt</h2></div>
+      <div class="toggle-row" data-action="simple-toggle" data-field="vernet">
+        <div class="body"><div class="t">Verneverdig/antikvarisk bygning</div><div class="d">Regulert som bevaringsverdig eller listeført kulturminne</div></div>
+        <button class="toggle ${w.data.vernet?'on':''}"></button>
+      </div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// SKIFTE TAK WIZARD
+// --------------------------------------------------------------------------
+function renderTakWizard() {
+  return renderSimpleWizard("Skifte tak", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Hva gjør du med taket?</h2></div>
+      <div>
+        ${[["materiale","Bytte tekkemateriale","F.eks. fra shingel til takstein eller papp"],
+           ["form","Endre takform","F.eks. sadel til flatt tak, endre vinkel"],
+           ["loft","Bygge ut loft","Etablere rom i taketasjen"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.endring===id?'selected':''}" data-action="simple-pick" data-field="endring" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.endring?'opacity-50':''}" data-action="simple-next" ${!w.data.endring?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Noen spørsmål til</h2></div>
+      <div class="toggle-row" data-action="simple-toggle" data-field="vernet">
+        <div class="body"><div class="t">Verneverdig bygning</div><div class="d">Regulert som bevaringsverdig</div></div>
+        <button class="toggle ${w.data.vernet?'on':''}"></button>
+      </div>
+      <div class="toggle-row" data-action="simple-toggle" data-field="isolasjon">
+        <div class="body"><div class="t">Etterisolere taket samtidig</div><div class="d">Øker energieffektiviteten</div></div>
+        <button class="toggle ${w.data.isolasjon?'on':''}"></button>
+      </div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// SOLCELLER WIZARD
+// --------------------------------------------------------------------------
+function renderSolcellerWizard() {
+  return renderSimpleWizard("Solceller", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Montering</h2></div>
+      <div>
+        ${[["tak_integrert","Integrert i takflaten","Panelene erstatter tekkemateriale"],
+           ["tak_pamontering","Påmontering på tak","Montert på brakett over eksisterende tak"],
+           ["vegg","Veggmontert","Vertikalt på fasade"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.type===id?'selected':''}" data-action="simple-pick" data-field="type" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="field"><label class="label">Areal paneler (m²)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-1" placeholder="20" value="${w.data.areal||20}"/></div>
+        <p class="tiny muted mt-2">Typisk bolig: 15–30 m² (≈ 3–6 kWp)</p></div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.type?'opacity-50':''}" data-action="simple-next" ${!w.data.type?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Bygningstype</h2></div>
+      <div class="toggle-row" data-action="simple-toggle" data-field="vernet">
+        <div class="body"><div class="t">Verneverdig bygning</div><div class="d">Kulturminneregistrert eller antikvarisk</div></div>
+        <button class="toggle ${w.data.vernet?'on':''}"></button>
+      </div>
+      <div class="alert info"><span class="ic">${ICONS.info}</span>
+        <div>Solceller er unntatt søknad siden 2021. Kun melding til nettselskapet nødvendig.</div></div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// ANNEKS WIZARD
+// --------------------------------------------------------------------------
+function renderAnneksWizard() {
+  return renderSimpleWizard("Anneks / uthus", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Hva skal du bygge?</h2></div>
+      <div>
+        ${[["anneks","Anneks / gjestehytte","Frittliggende rom for overnatting"],
+           ["uthus","Uthus / verksted","Lagring, hobbylokale, verksted"],
+           ["bod","Hagebod","Enkel bod for redskaper"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.type===id?'selected':''}" data-action="simple-pick" data-field="type" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="field"><label class="label">Areal (m²)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-1" placeholder="25" value="${w.data.areal||25}"/></div>
+        <p class="tiny muted mt-2">Under 50 m² er normalt unntatt søknad</p></div>
+      <div class="field"><label class="label">Avstand til nabogrense (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-2" placeholder="2" step="0.5" value="${w.data.avstand||2}"/></div></div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.type?'opacity-50':''}" data-action="simple-next" ${!w.data.type?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Bekreft</h2></div>
+      <div class="card flat"><div class="kv-list">
+        <div class="row"><span class="k">Type</span><span class="v">${w.data.type}</span></div>
+        <div class="row"><span class="k">Areal</span><span class="v">${w.data.areal} m²</span></div>
+        <div class="row"><span class="k">Avstand til grense</span><span class="v">${w.data.avstand} m</span></div>
+      </div></div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// LEVEGG WIZARD
+// --------------------------------------------------------------------------
+function renderLeveggWizard() {
+  return renderSimpleWizard("Levegg", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Leveggens dimensjoner</h2></div>
+      <div class="field"><label class="label">Høyde (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-1" placeholder="1.8" step="0.1" value="${w.data.hoyde||1.8}"/></div>
+        <p class="tiny muted mt-2">Under 1,8 m er normalt unntatt</p></div>
+      <div class="field"><label class="label">Lengde (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-2" placeholder="6" step="0.5" value="${w.data.lengde||6}"/></div>
+        <p class="tiny muted mt-2">Maks 10 m for unntak</p></div>
+      <div class="field"><label class="label">Avstand til nabogrense (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-3" placeholder="1" step="0.5" value="${w.data.avstand||1}"/></div></div>
+      <div class="cta-stack"><button class="btn primary full" data-action="simple-next">Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Bekreft</h2></div>
+      <div class="card flat"><div class="kv-list">
+        <div class="row"><span class="k">Høyde</span><span class="v">${w.data.hoyde} m</span></div>
+        <div class="row"><span class="k">Lengde</span><span class="v">${w.data.lengde} m</span></div>
+        <div class="row"><span class="k">Avstand til grense</span><span class="v">${w.data.avstand} m</span></div>
+      </div></div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// VINDU WIZARD
+// --------------------------------------------------------------------------
+function renderVinduWizard() {
+  return renderSimpleWizard("Nytt vindu", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Hva skal gjøres?</h2></div>
+      <div>
+        ${[["skifte","Skifte vindu i eksisterende åpning","Samme størrelse, ny ramme og glass"],
+           ["nytt_hull","Nytt hull i fasaden","Ny vindusåpning der det ikke var et tidligere"],
+           ["storre","Gjøre eksisterende åpning større","Utvide hull, sette inn større vindu"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.type===id?'selected':''}" data-action="simple-pick" data-field="type" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.type?'opacity-50':''}" data-action="simple-next" ${!w.data.type?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Vegg og plassering</h2></div>
+      <div class="toggle-row" data-action="simple-toggle" data-field="brannvegg">
+        <div class="body"><div class="t">Vinduet er i vegg mot nabogrense</div><div class="d">Brannvegg / vegg ≤ 4 m fra nabotomt</div></div>
+        <button class="toggle ${w.data.brannvegg?'on':''}"></button>
+      </div>
+      ${w.data.brannvegg ? `<div class="alert amber"><span class="ic">${ICONS.alert}</span><div>Vindu i brannvegg krever søknad og brannklassifisert glass (EI 30).</div></div>` : ''}
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// BRYGGE WIZARD
+// --------------------------------------------------------------------------
+function renderBryggeWizard() {
+  return renderSimpleWizard("Brygge / stupebrett", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Type brygge</h2></div>
+      <div>
+        ${[["fast","Fast brygge","Pæler i bunn, permanent konstruksjon"],
+           ["flytende","Flytende brygge","Pontong, fortøyes til land"],
+           ["stupebrett","Stupebrett / badebrygge","Liten plattform uten biler"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.type===id?'selected':''}" data-action="simple-pick" data-field="type" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="field"><label class="label">Lengde (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-1" placeholder="8" value="${w.data.lengde||8}"/></div></div>
+      <div class="field"><label class="label">Bredde (m)</label>
+        <div class="input-wrap"><input type="number" id="simple-num-2" placeholder="2.5" step="0.5" value="${w.data.bredde||2.5}"/></div></div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.type?'opacity-50':''}" data-action="simple-next" ${!w.data.type?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Bekreft</h2></div>
+      <div class="card flat"><div class="kv-list">
+        <div class="row"><span class="k">Type</span><span class="v">${w.data.type}</span></div>
+        <div class="row"><span class="k">Dimensjon</span><span class="v">${w.data.lengde}×${w.data.bredde} m</span></div>
+        <div class="row"><span class="k">Areal</span><span class="v">${(w.data.lengde*w.data.bredde).toFixed(1)} m²</span></div>
+      </div></div>
+      <div class="alert amber"><span class="ic">${ICONS.alert}</span>
+        <div>Alle brygger er søknadspliktige. Vi hjelper deg med hele søknadspakken.</div></div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Beregn</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// GEOLOGRAPPORT WIZARD
+// --------------------------------------------------------------------------
+function renderGeolograpportWizard() {
+  return renderSimpleWizard("Geolograpport", 2, w => {
+    if (w.step === 0) return `
+      <div><h2>Hvilket prosjekt gjelder det?</h2></div>
+      <div>
+        ${[["nybygg","Nybygg / bolig","Nytt hus, garasje eller frittliggende bygg"],
+           ["tilbygg","Tilbygg","Utvidelse av eksisterende bygg"],
+           ["kjeller","Kjellerarbeid","Senke gulv, drenering, bruksendring"],
+           ["brygge","Brygge","Fast brygge med pæler i grunn"],
+           ["annet","Annet / usikker","Vil ha oversikt over grunnforholdene"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.type===id?'selected':''}" data-action="simple-pick" data-field="type" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="cta-stack"><button class="btn primary full ${!w.data.type?'opacity-50':''}" data-action="simple-next" ${!w.data.type?'disabled':''}>Neste ${ICONS.arrow}</button></div>`;
+    return `
+      <div><h2>Når trenger du rapporten?</h2></div>
+      <div>
+        ${[["asap","Så snart som mulig","Innen 1–2 uker"],
+           ["planlegging","I planleggingsfasen","2–4 uker"],
+           ["usikker","Vet ikke ennå","Ønsker prisoversikt"]].map(([id,t,d]) => `
+          <div class="radio-card ${w.data.timing===id?'selected':''}" data-action="simple-pick" data-field="timing" data-id="${id}">
+            <div class="body"><div class="t">${t}</div><div class="d">${d}</div></div>
+            <div class="check"></div>
+          </div>`).join('')}
+      </div>
+      <div class="alert info"><span class="ic">${ICONS.info}</span>
+        <div>Geotekniker kontakter deg innen 2 virkedager. Rapporten inngår i søknadspakken din.</div></div>
+      <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Se pris og bestill</button></div>`;
+  });
+}
+
+// --------------------------------------------------------------------------
+// ANDRE / AI WIZARD
+// --------------------------------------------------------------------------
+function renderAndreWizard() {
+  return renderSimpleWizard("Annet tiltak", 1, w => `
+    <div><h2>Beskriv tiltaket</h2><p class="muted small mt-2">Skriv fritt — hva vil du bygge, rive eller endre?</p></div>
+    <div class="field">
+      <textarea id="andre-besk" rows="5" style="width:100%; border:1px solid var(--gray-200); border-radius:8px; padding:12px; font-family:inherit; font-size:14px; resize:vertical;" placeholder="F.eks. «Vil bygge et lite drivhus på 10 m² inntil låven»">${w.data.beskrivelse||''}</textarea>
+    </div>
+    <div class="alert info"><span class="ic">${ICONS.info}</span>
+      <div>Rådgiverne våre ser på beskrivelsen og gir deg svar innen 1 virkedag.</div></div>
+    <div class="cta-stack"><button class="btn primary full lg" data-action="simple-evaluate">${ICONS.bolt} Send inn</button></div>
+  `);
 }
 
 // --------------------------------------------------------------------------
@@ -2774,17 +3573,26 @@ function attachHandlers() {
     });
   }
   const spanInput = document.getElementById("span-input");
-  if (spanInput) {
-    spanInput.addEventListener("input", e => {
-      state.wizard.data.spennvidde = parseFloat(e.target.value) || 4500;
-    });
-  }
+  if (spanInput) spanInput.addEventListener("input", e => { state.wizard.data.spennvidde = parseFloat(e.target.value) || 4500; });
   const lastInput = document.getElementById("last-input");
-  if (lastInput) {
-    lastInput.addEventListener("input", e => {
-      state.wizard.data.last = parseFloat(e.target.value) || 8;
-    });
-  }
+  if (lastInput) lastInput.addEventListener("input", e => { state.wizard.data.last = parseFloat(e.target.value) || 8; });
+
+  // Generic simple wizard number fields → map to data keys
+  const numFieldMap = [
+    ["simple-num-1", { garasje:"areal", tilbygg:"areal", solceller:"areal", anneks:"areal", levegg:"hoyde", brygge:"lengde" }],
+    ["simple-num-2", { garasje:"avstand", tilbygg:"avstand", anneks:"avstand", levegg:"lengde", brygge:"bredde" }],
+    ["simple-num-3", { levegg:"avstand" }],
+  ];
+  numFieldMap.forEach(([id, kindMap]) => {
+    const el = document.getElementById(id);
+    if (el && state.wizard) {
+      const field = kindMap[state.wizard.kind];
+      if (field) el.addEventListener("input", e => { state.wizard.data[field] = parseFloat(e.target.value) || 0; });
+    }
+  });
+
+  const andreBesk = document.getElementById("andre-besk");
+  if (andreBesk) andreBesk.addEventListener("input", e => { state.wizard.data.beskrivelse = e.target.value; });
 }
 
 function handleAction(action, el, e) {
@@ -2834,16 +3642,35 @@ function handleAction(action, el, e) {
       const id = el.dataset.id;
       const t = TILTAK.find(x => x.id === id);
       state.selectedTiltak = id;
-      if (t.wizard === "kjeller") {
-        state.wizard = { kind: "kjeller", step: 0,
-          data: { room: null, ny_bruk: null, radon: null,
-                  drenering: true, balansert_vent: false } };
-        navigate("wizard");
-      } else if (t.wizard === "vegg") {
-        state.wizard = { kind: "vegg", step: 0,
-          data: { spennvidde: 4500, last: 8 } };
-        navigate("wizard");
+      const kind = t.wizard;
+      if (kind === "kjeller") {
+        state.wizard = { kind, step: 0, data: { room: null, ny_bruk: null, radon: null, drenering: true, balansert_vent: false } };
+      } else if (kind === "vegg") {
+        state.wizard = { kind, step: 0, data: { spennvidde: 4500, last: 8 } };
+      } else if (kind === "garasje") {
+        state.wizard = { kind, step: 0, data: { type: null, areal: 30, avstand: 2.5 } };
+      } else if (kind === "tilbygg") {
+        state.wizard = { kind, step: 0, data: { type: null, areal: 20, avstand: 5 } };
+      } else if (kind === "fasade") {
+        state.wizard = { kind, step: 0, data: { endring: null, vernet: false } };
+      } else if (kind === "tak") {
+        state.wizard = { kind, step: 0, data: { endring: null, vernet: false, isolasjon: false } };
+      } else if (kind === "solceller") {
+        state.wizard = { kind, step: 0, data: { type: null, areal: 20, vernet: false } };
+      } else if (kind === "anneks") {
+        state.wizard = { kind, step: 0, data: { type: null, areal: 25, avstand: 2 } };
+      } else if (kind === "levegg") {
+        state.wizard = { kind, step: 0, data: { hoyde: 1.8, lengde: 6, avstand: 1 } };
+      } else if (kind === "vindu") {
+        state.wizard = { kind, step: 0, data: { type: null, brannvegg: false } };
+      } else if (kind === "brygge") {
+        state.wizard = { kind, step: 0, data: { type: null, lengde: 8, bredde: 2.5 } };
+      } else if (kind === "geolograpport") {
+        state.wizard = { kind, step: 0, data: { type: null, timing: null } };
+      } else if (kind === "andre") {
+        state.wizard = { kind, step: 0, data: { beskrivelse: "" } };
       }
+      navigate("wizard");
       break;
     }
     case "select-tiltak-disabled": {
@@ -2882,13 +3709,38 @@ function handleAction(action, el, e) {
     case "vegg-evaluate":
       navigate("loading");
       setTimeout(() => {
-        state.result = evaluateVegg({
-          spennvidde: state.wizard.data.spennvidde,
-          last: state.wizard.data.last,
-        });
+        state.result = evaluateVegg({ spennvidde: state.wizard.data.spennvidde, last: state.wizard.data.last });
         navigate("result");
       }, 1500);
       break;
+
+    // GENERIC SIMPLE WIZARDS
+    case "simple-pick":
+      state.wizard.data[el.dataset.field] = el.dataset.id; render(); break;
+    case "simple-toggle":
+      state.wizard.data[el.dataset.field] = !state.wizard.data[el.dataset.field]; render(); break;
+    case "simple-next":
+      state.wizard.step += 1; render(); break;
+    case "simple-evaluate": {
+      navigate("loading");
+      const kind = state.wizard.kind;
+      const d = state.wizard.data;
+      setTimeout(() => {
+        if (kind === "garasje")       state.result = evaluateGarasje(d);
+        else if (kind === "tilbygg")  state.result = evaluateTilbygg(d);
+        else if (kind === "fasade")   state.result = evaluateFasade(d);
+        else if (kind === "tak")      state.result = evaluateTak(d);
+        else if (kind === "solceller")state.result = evaluateSolceller(d);
+        else if (kind === "anneks")   state.result = evaluateAnneks(d);
+        else if (kind === "levegg")   state.result = evaluateLevegg(d);
+        else if (kind === "vindu")    state.result = evaluateVindu(d);
+        else if (kind === "brygge")   state.result = evaluateBrygge(d);
+        else if (kind === "geolograpport") state.result = evaluateGeolograpport(d);
+        else if (kind === "andre")    state.result = evaluateAndre(d);
+        navigate("result");
+      }, 1400);
+      break;
+    }
 
     case "restart-wizard":
       navigate("tiltak-grid");
