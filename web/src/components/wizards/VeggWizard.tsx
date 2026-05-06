@@ -8,7 +8,8 @@ import { Alert } from "@/components/ui/Alert";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
 import { SoknadPreview, SoknadSent } from "./SoknadFlow";
-import { evaluateVegg, type VeggResult } from "@/lib/regulations/vegg";
+import type { VeggResult } from "@/lib/regulations/vegg";
+import { evaluateVeggApi } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -29,17 +30,13 @@ export function VeggWizard({ p }: { p: Address }) {
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const [data, setData] = useState<Data>({ spennvidde: 4500, last: 8 });
 
-  const evaluate = () => {
+  const evaluate = async () => {
     setPhase({ kind: "loading" });
-    setTimeout(() => {
-      setPhase({
-        kind: "result",
-        result: evaluateVegg({
-          spennvidde: data.spennvidde,
-          last: data.last,
-        }),
-      });
-    }, 1500);
+    const result = await evaluateVeggApi({
+      spennvidde: data.spennvidde,
+      last: data.last,
+    });
+    setPhase({ kind: "result", result });
   };
 
   if (phase.kind === "loading") {

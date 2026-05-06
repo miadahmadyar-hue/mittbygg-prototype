@@ -13,7 +13,8 @@ import { SoknadPreview, SoknadSent } from "./SoknadFlow";
 import {
   KJELLER_BRUK, getKjellerRooms, type KjellerBrukId,
 } from "@/lib/data/kjellerBruk";
-import { evaluateKjeller, type KjellerResult } from "@/lib/regulations/kjeller";
+import type { KjellerResult } from "@/lib/regulations/kjeller";
+import { evaluateKjellerApi } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -45,21 +46,19 @@ export function KjellerWizard({ p }: { p: Address }) {
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const [data, setData] = useState<WizardData>(INITIAL);
 
-  const evaluate = () => {
+  const evaluate = async () => {
     if (!data.room || !data.ny_bruk) return;
     setPhase({ kind: "loading" });
-    setTimeout(() => {
-      const result = evaluateKjeller({
-        propId: p.id,
-        byggeAar: p.bygg.byggeAar,
-        room: data.room!,
-        ny_bruk: data.ny_bruk!,
-        radon: data.radon,
-        drenering: data.drenering,
-        balansert_vent: data.balansert_vent,
-      });
-      setPhase({ kind: "result", result });
-    }, 1500);
+    const result = await evaluateKjellerApi({
+      propId: p.id,
+      byggeAar: p.bygg.byggeAar,
+      room: data.room!,
+      ny_bruk: data.ny_bruk!,
+      radon: data.radon,
+      drenering: data.drenering,
+      balansert_vent: data.balansert_vent,
+    });
+    setPhase({ kind: "result", result });
   };
 
   const sendSoknad = () => {
