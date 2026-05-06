@@ -38,6 +38,8 @@ export interface KjellerInput {
   radon: number | null;
   drenering: boolean;
   balansert_vent: boolean;
+  bra?: number | null;
+  etasjer?: number | null;
 }
 
 export interface KjellerResult {

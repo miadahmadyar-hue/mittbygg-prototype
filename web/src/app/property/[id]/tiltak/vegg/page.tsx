@@ -1,14 +1,12 @@
 import { notFound } from "next/navigation";
-import { findAddress } from "@/lib/data/addresses";
+import { getProperty } from "@/lib/data/fetchProperty";
 import { VeggWizard } from "@/components/wizards/VeggWizard";
 
-interface Props {
-  params: Promise<{ id: string }>;
-}
+interface Props { params: Promise<{ id: string }> }
 
 export default async function VeggPage({ params }: Props) {
   const { id } = await params;
-  const property = findAddress(id);
+  const property = await getProperty(id);
   if (!property) notFound();
-  return <VeggWizard p={property} />;
+  return <VeggWizard p={property!} />;
 }

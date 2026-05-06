@@ -27,15 +27,16 @@ export interface Address {
   matrikkel: { gnr: string; bnr: string; kommune: string };
   bygg: {
     byggeAar: number;
-    BRA: number;
-    etasjer: number;
+    BRA: number | null;
+    etasjer: number | null;
     kjeller: boolean;
     garasje: boolean;
-    tomt: number;
+    tomt: number | null;
     regplan: string;
     byggegrenser: { nord: number; sor: number; ost: number; vest: number };
     tidligereSaker: Sak[];
     tegninger?: Tegning[];
+    bygg_source?: "matrikkel" | "eiendomsinfo" | "default";
   };
 }
 

@@ -1,9 +1,3 @@
-/**
- * Tiltak (project type) catalog — porting from prototype.
- * Only kjeller-bruksendring and fjern-vegg are wired up; rest are
- * placeholder for visual completeness and Stage 2 build-out.
- */
-
 export type IconKey =
   | "kjeller" | "wall" | "garasje" | "tilbygg" | "fasade" | "tak"
   | "sol" | "anneks" | "levegg" | "vindu" | "brygge" | "ai";
@@ -20,7 +14,6 @@ export interface Tiltak {
   icon: IconKey;
   iconClass: "" | "warm" | "blue";
   tags: TiltakTag[];
-  /** What URL slug the wizard lives at (under /property/[id]/tiltak/...) */
   slug: string | null;
   available: boolean;
 }
@@ -43,73 +36,83 @@ export const TILTAK: Tiltak[] = [
     slug: "vegg", available: true,
   },
   {
-    id: "garasje", name: "Bygge garasje",
+    id: "garasje",
+    name: "Bygge garasje",
     desc: "Frittliggende garasje, carport eller bod",
     icon: "garasje", iconClass: "blue",
     tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: null, available: false,
+    slug: "garasje", available: true,
   },
   {
-    id: "tilbygg", name: "Tilbygg",
+    id: "tilbygg",
+    name: "Tilbygg",
     desc: "Utvide huset med ekstra rom eller etasje",
     icon: "tilbygg", iconClass: "warm",
     tags: [{ text: "Søknadspliktig", variant: "amber" }],
-    slug: null, available: false,
+    slug: "tilbygg", available: true,
   },
   {
-    id: "fasade", name: "Fasadeendring",
+    id: "fasade",
+    name: "Fasadeendring",
     desc: "Nye vinduer, kledning eller terrasse",
     icon: "fasade", iconClass: "",
     tags: [{ text: "Avhenger", variant: "" }],
-    slug: null, available: false,
+    slug: "fasade", available: true,
   },
   {
-    id: "tak", name: "Skifte tak",
+    id: "tak",
+    name: "Skifte tak",
     desc: "Nytt tekkemateriale eller takform",
     icon: "tak", iconClass: "blue",
     tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: null, available: false,
+    slug: "tak", available: true,
   },
   {
-    id: "solceller", name: "Solceller",
+    id: "solceller",
+    name: "Solceller",
     desc: "Solcelleanlegg på tak eller vegg",
     icon: "sol", iconClass: "warm",
-    tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: null, available: false,
+    tags: [{ text: "Unntatt søknad", variant: "green" }],
+    slug: "solceller", available: true,
   },
   {
-    id: "anneks", name: "Anneks / uthus",
+    id: "anneks",
+    name: "Anneks / uthus",
     desc: "Frittliggende anneks ≤ 50 m²",
     icon: "anneks", iconClass: "",
     tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: null, available: false,
+    slug: "anneks", available: true,
   },
   {
-    id: "levegg", name: "Levegg",
+    id: "levegg",
+    name: "Levegg",
     desc: "Skjerm mot innsyn eller vind",
     icon: "levegg", iconClass: "blue",
     tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: null, available: false,
+    slug: "levegg", available: true,
   },
   {
-    id: "vindu", name: "Innsette nytt vindu",
+    id: "vindu",
+    name: "Innsette nytt vindu",
     desc: "Nytt vindu på fasade",
     icon: "vindu", iconClass: "",
     tags: [{ text: "Avhenger", variant: "" }],
-    slug: null, available: false,
+    slug: "vindu", available: true,
   },
   {
-    id: "brygge", name: "Brygge / stupebrett",
+    id: "brygge",
+    name: "Brygge / stupebrett",
     desc: "Privat brygge på sjøtomt",
     icon: "brygge", iconClass: "blue",
     tags: [{ text: "Søknadspliktig", variant: "amber" }],
-    slug: null, available: false,
+    slug: "brygge", available: true,
   },
   {
-    id: "andre", name: "Noe annet",
+    id: "andre",
+    name: "Noe annet",
     desc: "Beskriv tiltaket – AI hjelper deg videre",
     icon: "ai", iconClass: "warm",
     tags: [{ text: "AI-assistent", variant: "" }],
-    slug: null, available: false,
+    slug: "andre", available: true,
   },
 ];

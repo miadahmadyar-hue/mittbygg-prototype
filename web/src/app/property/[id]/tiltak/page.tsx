@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { findAddress } from "@/lib/data/addresses";
+import { getProperty } from "@/lib/data/fetchProperty";
 import { TiltakGrid } from "@/components/TiltakGrid";
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 
 export default async function TiltakPage({ params }: Props) {
   const { id } = await params;
-  const property = findAddress(id);
+  const property = await getProperty(id);
   if (!property) notFound();
   return <TiltakGrid propertyId={id} />;
 }

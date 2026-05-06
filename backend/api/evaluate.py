@@ -1,16 +1,57 @@
 from fastapi import APIRouter
-from models import KjellerInput, KjellerResult, VeggInput, VeggResult
-from regulations.kjeller import evaluate_kjeller
-from regulations.vegg import evaluate_vegg
+from models import (
+    KjellerInput, KjellerResult, VeggInput, VeggResult, TiltakResult,
+    GarasjeInput, TilbyggInput, FasadeInput, TakInput, SolcellerInput,
+    AnneksInput, LevegInput, VinduInput, BryggeInput, AndreInput,
+)
+from regulations.kjeller   import evaluate_kjeller
+from regulations.vegg      import evaluate_vegg
+from regulations.garasje   import evaluate_garasje
+from regulations.tilbygg   import evaluate_tilbygg
+from regulations.fasade    import evaluate_fasade
+from regulations.tak       import evaluate_tak
+from regulations.solceller import evaluate_solceller
+from regulations.anneks    import evaluate_anneks
+from regulations.levegg    import evaluate_levegg
+from regulations.vindu     import evaluate_vindu
+from regulations.brygge    import evaluate_brygge
+from regulations.andre     import evaluate_andre
 
 router = APIRouter()
 
 
-@router.post("/evaluate/kjeller", response_model=KjellerResult)
-def post_evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
-    return evaluate_kjeller(inp)
+@router.post("/evaluate/kjeller",   response_model=KjellerResult)
+def post_evaluate_kjeller(inp: KjellerInput)   -> KjellerResult:   return evaluate_kjeller(inp)
 
+@router.post("/evaluate/vegg",      response_model=VeggResult)
+def post_evaluate_vegg(inp: VeggInput)         -> VeggResult:      return evaluate_vegg(inp)
 
-@router.post("/evaluate/vegg", response_model=VeggResult)
-def post_evaluate_vegg(inp: VeggInput) -> VeggResult:
-    return evaluate_vegg(inp)
+@router.post("/evaluate/garasje",   response_model=TiltakResult)
+def post_evaluate_garasje(inp: GarasjeInput)   -> TiltakResult:    return evaluate_garasje(inp)
+
+@router.post("/evaluate/tilbygg",   response_model=TiltakResult)
+def post_evaluate_tilbygg(inp: TilbyggInput)   -> TiltakResult:    return evaluate_tilbygg(inp)
+
+@router.post("/evaluate/fasade",    response_model=TiltakResult)
+def post_evaluate_fasade(inp: FasadeInput)     -> TiltakResult:    return evaluate_fasade(inp)
+
+@router.post("/evaluate/tak",       response_model=TiltakResult)
+def post_evaluate_tak(inp: TakInput)           -> TiltakResult:    return evaluate_tak(inp)
+
+@router.post("/evaluate/solceller", response_model=TiltakResult)
+def post_evaluate_solceller(inp: SolcellerInput) -> TiltakResult:  return evaluate_solceller(inp)
+
+@router.post("/evaluate/anneks",    response_model=TiltakResult)
+def post_evaluate_anneks(inp: AnneksInput)     -> TiltakResult:    return evaluate_anneks(inp)
+
+@router.post("/evaluate/levegg",    response_model=TiltakResult)
+def post_evaluate_levegg(inp: LevegInput)      -> TiltakResult:    return evaluate_levegg(inp)
+
+@router.post("/evaluate/vindu",     response_model=TiltakResult)
+def post_evaluate_vindu(inp: VinduInput)       -> TiltakResult:    return evaluate_vindu(inp)
+
+@router.post("/evaluate/brygge",    response_model=TiltakResult)
+def post_evaluate_brygge(inp: BryggeInput)     -> TiltakResult:    return evaluate_brygge(inp)
+
+@router.post("/evaluate/andre",     response_model=TiltakResult)
+def post_evaluate_andre(inp: AndreInput)       -> TiltakResult:    return evaluate_andre(inp)

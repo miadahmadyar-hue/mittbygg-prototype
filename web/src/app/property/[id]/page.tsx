@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { findAddress } from "@/lib/data/addresses";
+import { getProperty } from "@/lib/data/fetchProperty";
 import { PropertyDashboard } from "@/components/PropertyDashboard";
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 
 export default async function PropertyPage({ params }: Props) {
   const { id } = await params;
-  const property = findAddress(id);
+  const property = await getProperty(id);
   if (!property) notFound();
-  return <PropertyDashboard p={property} />;
+  return <PropertyDashboard p={property!} />;
 }

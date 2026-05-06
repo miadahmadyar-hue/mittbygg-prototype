@@ -87,6 +87,43 @@ const DEFAULT_ROOMS: KjellerRoom[] = [
   { id: "bod",       name: "Bod",       area: 16, height: 2280, vinduer: "Ingen" },
 ];
 
-export function getKjellerRooms(propId: string): KjellerRoom[] {
-  return ROOMS_BY_PROP_ID[propId] || DEFAULT_ROOMS;
+export function getKjellerRooms(
+  propId: string,
+  bygg?: { BRA?: number | null; etasjer?: number | null; byggeAar?: number } | null,
+): KjellerRoom[] {
+  if (ROOMS_BY_PROP_ID[propId]) return ROOMS_BY_PROP_ID[propId];
+  if (bygg?.BRA || bygg?.etasjer) return deriveKjellerRooms(bygg.byggeAar ?? 1975, bygg.BRA, bygg.etasjer);
+  return DEFAULT_ROOMS;
+}
+
+function deriveKjellerRooms(
+  byggeAar: number,
+  bra: number | null | undefined,
+  etasjer: number | null | undefined,
+): KjellerRoom[] {
+  const floors = Math.max(etasjer ?? 2, 1);
+  const totalBra = bra ?? 140;
+  const basementArea = Math.max(22, Math.floor(totalBra / floors));
+
+  let height: number;
+  if (byggeAar < 1945) height = 2100;
+  else if (byggeAar < 1960) height = 2150;
+  else if (byggeAar < 1980) height = 2200;
+  else if (byggeAar < 1995) height = 2280;
+  else height = 2400;
+
+  let mainVinduer: string;
+  if (byggeAar < 1955) mainVinduer = "Ingen";
+  else if (byggeAar < 1975) mainVinduer = "Lite vindu (0,6×0,5 m)";
+  else mainVinduer = "Lite vindu (0,8×0,6 m)";
+
+  const fellesrom = Math.max(14, Math.floor(basementArea * 0.45));
+  const vaskerom  = Math.max(6,  Math.floor(basementArea * 0.20));
+  const bod       = Math.max(6,  basementArea - fellesrom - vaskerom);
+
+  return [
+    { id: "fellesrom", name: "Fellesrom", area: fellesrom, height, vinduer: mainVinduer },
+    { id: "vaskerom",  name: "Vaskerom",  area: vaskerom,  height, vinduer: "Ingen" },
+    { id: "bod",       name: "Bod",       area: bod,       height, vinduer: "Ingen" },
+  ];
 }

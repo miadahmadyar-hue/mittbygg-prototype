@@ -48,10 +48,16 @@ export function PropertyDashboard({ p }: { p: Address }) {
           <h2 className="text-[22px] font-bold tracking-tight relative">{p.street}</h2>
           <p className="text-white/75 mt-1 relative">{p.postal} {p.city}</p>
           <div className="grid grid-cols-3 gap-4 mt-5 relative">
-            <Stat num={p.bygg.BRA} lbl="m² BRA" />
+            <Stat num={p.bygg.BRA ?? "—"} lbl="m² BRA" />
             <Stat num={p.bygg.byggeAar} lbl="Byggeår" />
-            <Stat num={`${p.bygg.etasjer}${p.bygg.kjeller ? "+K" : ""}`} lbl="Etasjer" />
+            <Stat num={`${p.bygg.etasjer ?? "—"}${p.bygg.kjeller ? "+K" : ""}`} lbl="Etasjer" />
           </div>
+          {p.bygg.bygg_source && p.bygg.bygg_source !== "default" && (
+            <div className="mt-3 relative flex items-center gap-1.5 text-[11px] text-green-200/80">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 13 4 4L19 7"/></svg>
+              Hentet fra Matrikkel
+            </div>
+          )}
         </div>
 
         <Link href={`/property/${p.id}/tiltak`} className="contents">
@@ -70,7 +76,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
         <div className="bg-white border border-gray-100 rounded-xl">
           <KV k="Gnr/Bnr" v={`${p.matrikkel.gnr}/${p.matrikkel.bnr}`} />
           <KV k="Kommune" v={p.matrikkel.kommune} />
-          <KV k="Tomt" v={`${p.bygg.tomt} m²`} />
+          <KV k="Tomt" v={p.bygg.tomt ? `${p.bygg.tomt} m²` : "Ukjent"} />
           <KV k="Byggegrenser" v={`${p.bygg.byggegrenser.nord} m fra alle sider`} />
           <KV k="Reguleringsplan" v={p.bygg.regplan} last align="right" />
         </div>
@@ -160,10 +166,10 @@ export function PropertyDashboard({ p }: { p: Address }) {
           <KV k="Adresse" v={`${p.street}, ${p.postal} ${p.city}`} />
           <KV k="Gnr/Bnr" v={`${p.matrikkel.gnr}/${p.matrikkel.bnr}`} />
           <KV k="Kommune" v={p.matrikkel.kommune} />
-          <KV k="Tomt" v={`${p.bygg.tomt} m²`} />
-          <KV k="BRA" v={`${p.bygg.BRA} m²`} />
+          <KV k="Tomt" v={p.bygg.tomt ? `${p.bygg.tomt} m²` : "Ukjent"} />
+          <KV k="BRA" v={p.bygg.BRA != null ? `${p.bygg.BRA} m²` : "Ukjent"} />
           <KV k="Byggeår" v={String(p.bygg.byggeAar)} />
-          <KV k="Etasjer" v={`${p.bygg.etasjer}${p.bygg.kjeller ? " + kjeller" : ""}${p.bygg.garasje ? " + garasje" : ""}`} />
+          <KV k="Etasjer" v={`${p.bygg.etasjer ?? "—"}${p.bygg.kjeller ? " + kjeller" : ""}${p.bygg.garasje ? " + garasje" : ""}`} />
           <KV k="Reguleringsplan" v={p.bygg.regplan} align="right" />
           <KV
             k="Byggegrenser"

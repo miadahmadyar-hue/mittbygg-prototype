@@ -9,6 +9,7 @@ import { RadioCard } from "@/components/ui/RadioCard";
 import { ToggleRow } from "@/components/ui/Toggle";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
+import { BetalingModal } from "./BetalingModal";
 import { SoknadPreview, SoknadSent } from "./SoknadFlow";
 import {
   KJELLER_BRUK, getKjellerRooms, type KjellerBrukId,
@@ -22,6 +23,7 @@ type Phase =
   | { kind: "wizard"; step: 0 | 1 | 2 | 3 }
   | { kind: "loading" }
   | { kind: "result"; result: KjellerResult }
+  | { kind: "betaling"; result: KjellerResult }
   | { kind: "preview"; result: KjellerResult }
   | { kind: "sending"; result: KjellerResult }
   | { kind: "sent"; result: KjellerResult };
@@ -59,16 +61,22 @@ export function KjellerWizard({ p }: { p: Address }) {
       radon: data.radon,
       drenering: data.drenering,
       balansert_vent: data.balansert_vent,
+      bra: p.bygg.BRA ?? null,
+      etasjer: p.bygg.etasjer ?? null,
     });
     setPhase({ kind: "result", result });
   };
 
-  const handleDownloadPdf = async () => {
+  const handleGoToBetaling = async () => {
     if (phase.kind !== "result") return;
+    setPhase({ kind: "betaling", result: phase.result });
+  };
+
+  const doDownloadAfterPayment = async (result: KjellerResult) => {
     setPdfLoading(true);
     try {
       await downloadKjellerSoknad(
-        phase.result,
+        result,
         p.street,
         Number(p.matrikkel.gnr),
         Number(p.matrikkel.bnr),
@@ -97,9 +105,18 @@ export function KjellerWizard({ p }: { p: Address }) {
       <ResultView
         r={phase.result}
         onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
-        onDownloadPdf={handleDownloadPdf}
+        onDownloadPdf={handleGoToBetaling}
         pdfLoading={pdfLoading}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
+      />
+    );
+  }
+  if (phase.kind === "betaling") {
+    return (
+      <BetalingModal
+        totalKostnad={phase.result.totalKostnad}
+        onBetal={() => doDownloadAfterPayment(phase.result)}
+        onBack={() => setPhase({ kind: "result", result: phase.result })}
       />
     );
   }
@@ -123,7 +140,7 @@ export function KjellerWizard({ p }: { p: Address }) {
 
   // Wizard phase
   const step = phase.step;
-  const rooms = getKjellerRooms(p.id);
+  const rooms = getKjellerRooms(p.id, p.bygg);
 
   const back = () => {
     if (step === 0) router.push(`/property/${p.id}/tiltak`);

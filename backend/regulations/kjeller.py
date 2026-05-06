@@ -72,13 +72,23 @@ DEFAULT_ROOMS = [
 ]
 
 
-def get_kjeller_rooms(prop_id: str) -> list:
-    return ROOMS_BY_PROP_ID.get(prop_id, DEFAULT_ROOMS)
+def get_kjeller_rooms(
+    prop_id: str,
+    bra: int | None = None,
+    etasjer: int | None = None,
+    bygge_aar: int = 1975,
+) -> list:
+    if prop_id in ROOMS_BY_PROP_ID:
+        return ROOMS_BY_PROP_ID[prop_id]
+    if bra or etasjer:
+        from api.matrikkel_enrichment import derive_rooms
+        return derive_rooms(bygge_aar, bra, etasjer)
+    return DEFAULT_ROOMS
 
 
 def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
     krav = KJELLER_BRUK[inp.ny_bruk]
-    rooms = get_kjeller_rooms(inp.propId)
+    rooms = get_kjeller_rooms(inp.propId, bra=inp.bra, etasjer=inp.etasjer, bygge_aar=inp.byggeAar)
     room = next((r for r in rooms if r["id"] == inp.room), rooms[0])
     eldre = inp.byggeAar < 2010
 

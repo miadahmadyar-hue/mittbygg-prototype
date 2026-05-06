@@ -30,6 +30,8 @@ class KjellerInput(BaseModel):
     radon: Optional[float] = None
     drenering: bool = True
     balansert_vent: bool = False
+    bra: Optional[int] = None      # gross floor area — used for room derivation
+    etasjer: Optional[int] = None  # floor count — used for room derivation
 
 
 class KjellerResult(BaseModel):
@@ -99,6 +101,7 @@ class Bygg(BaseModel):
     tomt: Optional[int] = None
     regplan: str = "Kommuneplan"
     byggegrenser: str = "4 m fra nabo, 15 m fra vassdrag"
+    bygg_source: str = "default"
 
 
 class AddressResult(BaseModel):
@@ -110,3 +113,77 @@ class AddressResult(BaseModel):
     matrikkel: Matrikkel
     bygg: Bygg
     tidligereSaker: List[dict] = []
+
+
+# ── Generic tiltak result (shared by the 10 simple wizards) ──────────────────
+
+from typing import Any
+
+class TiltakResult(BaseModel):
+    status: Literal["green", "amber", "red"]
+    statusText: str
+    statusDesc: str
+    findings: List[Finding]
+    tiltak: List[Tiltak]
+    lempninger: List[Lempning]
+    soknadstype: str
+    ansvarsrett: bool
+    tiltaksklasse: Literal[1, 2]
+    totalKostnad: int
+    input: Any
+
+
+class GarasjeInput(BaseModel):
+    type: Literal["garasje", "carport", "bod"]
+    areal: float
+    avstand: float
+
+
+class TilbyggInput(BaseModel):
+    type: Literal["tilbygg_1etasje", "ny_etasje", "innglasset_terrasse"]
+    areal: float
+    avstand: float
+
+
+class FasadeInput(BaseModel):
+    type: Literal["kledning", "farge", "vindu_storre", "terrasse", "dor"]
+    verneverdig: bool
+
+
+class TakInput(BaseModel):
+    type: Literal["bytte_materiale", "endre_form", "bygge_loft"]
+    verneverdig: bool
+    etterisolere: bool
+
+
+class SolcellerInput(BaseModel):
+    type: Literal["integrert", "paamontering", "vegg"]
+    areal: float
+    verneverdig: bool
+
+
+class AnneksInput(BaseModel):
+    type: Literal["anneks", "uthus", "hagebod"]
+    areal: float
+    avstand: float
+
+
+class LevegInput(BaseModel):
+    hoyde: float
+    lengde: float
+    avstand: float
+
+
+class VinduInput(BaseModel):
+    type: Literal["skifte", "nytt_hull", "storre_apning"]
+    brannvegg: bool
+
+
+class BryggeInput(BaseModel):
+    type: Literal["fast", "flytende", "stupebrett"]
+    lengde: float
+    bredde: float
+
+
+class AndreInput(BaseModel):
+    beskrivelse: str
