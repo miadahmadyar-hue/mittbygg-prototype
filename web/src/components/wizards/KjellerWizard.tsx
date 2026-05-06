@@ -15,6 +15,7 @@ import {
 } from "@/lib/data/kjellerBruk";
 import type { KjellerResult } from "@/lib/regulations/kjeller";
 import { evaluateKjellerApi } from "@/lib/api/evaluate";
+import { downloadKjellerSoknad } from "@/lib/api/soknad";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -45,6 +46,7 @@ export function KjellerWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const [data, setData] = useState<WizardData>(INITIAL);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const evaluate = async () => {
     if (!data.room || !data.ny_bruk) return;
@@ -59,6 +61,22 @@ export function KjellerWizard({ p }: { p: Address }) {
       balansert_vent: data.balansert_vent,
     });
     setPhase({ kind: "result", result });
+  };
+
+  const handleDownloadPdf = async () => {
+    if (phase.kind !== "result") return;
+    setPdfLoading(true);
+    try {
+      await downloadKjellerSoknad(
+        phase.result,
+        p.street,
+        Number(p.matrikkel.gnr),
+        Number(p.matrikkel.bnr),
+        p.city,
+      );
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const sendSoknad = () => {
@@ -78,9 +96,9 @@ export function KjellerWizard({ p }: { p: Address }) {
     return (
       <ResultView
         r={phase.result}
-        onGenerateSoknad={() =>
-          setPhase({ kind: "preview", result: phase.result })
-        }
+        onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
+        onDownloadPdf={handleDownloadPdf}
+        pdfLoading={pdfLoading}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
       />
     );

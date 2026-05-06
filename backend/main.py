@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from api.address import router as address_router
 from api.property import router as property_router
 from api.evaluate import router as evaluate_router
+from api.soknad import router as soknad_router
 
 load_dotenv()
 
@@ -27,6 +28,7 @@ app.add_middleware(
 app.include_router(address_router, prefix="/api")
 app.include_router(property_router, prefix="/api")
 app.include_router(evaluate_router, prefix="/api")
+app.include_router(soknad_router, prefix="/api")
 
 
 @app.get("/health")

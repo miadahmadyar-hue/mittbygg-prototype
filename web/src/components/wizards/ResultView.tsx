@@ -52,10 +52,12 @@ const STATUS_CARDS: Record<
 interface Props {
   r: AnyResult;
   onGenerateSoknad: () => void;
+  onDownloadPdf?: () => Promise<void>;
+  pdfLoading?: boolean;
   onRestart: () => void;
 }
 
-export function ResultView({ r, onGenerateSoknad, onRestart }: Props) {
+export function ResultView({ r, onGenerateSoknad, onDownloadPdf, pdfLoading, onRestart }: Props) {
   const sCard = STATUS_CARDS[r.status];
 
   return (
@@ -205,13 +207,31 @@ export function ResultView({ r, onGenerateSoknad, onRestart }: Props) {
             </>
           ) : (
             <>
-              <Button size="lg" full onClick={onGenerateSoknad}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <path d="M14 2v6h6" />
-                </svg>
-                Generer søknadspakke
-              </Button>
+              {onDownloadPdf ? (
+                <Button
+                  size="lg"
+                  full
+                  disabled={pdfLoading}
+                  onClick={onDownloadPdf}
+                >
+                  {pdfLoading ? (
+                    <span className="spinner spinner-sm" />
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                    </svg>
+                  )}
+                  {pdfLoading ? "Genererer PDF…" : "Last ned søknadspakke (PDF)"}
+                </Button>
+              ) : (
+                <Button size="lg" full onClick={onGenerateSoknad}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                  </svg>
+                  Generer søknadspakke
+                </Button>
+              )}
               <Button variant="ghost" full onClick={onRestart}>
                 Start på nytt
               </Button>
