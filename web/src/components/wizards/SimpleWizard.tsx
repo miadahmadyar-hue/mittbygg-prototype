@@ -24,6 +24,8 @@ type Phase =
   | { kind: "sending"; result: TiltakResult }
   | { kind: "sent"; result: TiltakResult };
 
+type NonWizardPhase = Exclude<Phase, { kind: "wizard" }>;
+
 interface Props {
   p: Address;
   title: string;
@@ -81,7 +83,7 @@ export function SimpleWizard({
 
 interface ResultPhasesProps {
   phase: Phase;
-  setPhase: (p: Phase) => void;
+  setPhase: (p: NonWizardPhase) => void;
   p: Address;
   loadingText?: string;
 }
