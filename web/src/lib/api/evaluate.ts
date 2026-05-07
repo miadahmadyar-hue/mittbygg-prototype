@@ -74,3 +74,6 @@ export const evaluateVinduApi     = (i: unknown) => evalTiltak("vindu",     i);
 export const evaluateBryggeApi    = (i: unknown) => evalTiltak("brygge",    i);
 export const evaluateAndreApi         = (i: unknown) => evalTiltak("andre",         i);
 export const evaluateGeolograpportApi = (i: unknown) => evalTiltak("geolograpport", i);
+export const evaluateBruksendringApi  = (i: unknown) => evalTiltak("bruksendring",  i);
+export const evaluateTilleggsdelApi   = (i: unknown) => evalTiltak("tilleggsdel",   i);
+export const evaluateBoenhetApi       = (i: unknown) => evalTiltak("boenhet",       i);

@@ -7,6 +7,7 @@ async function fetchPropertyFromBackend(id: string): Promise<Address | null> {
     const res = await fetch(`${API_URL}/api/property/${id}`, {
       cache: "no-store",
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(2000),
     });
     if (!res.ok) return null;
     const d = await res.json();
@@ -44,5 +45,7 @@ async function fetchPropertyFromBackend(id: string): Promise<Address | null> {
 }
 
 export async function getProperty(id: string): Promise<Address | null> {
-  return (await fetchPropertyFromBackend(id)) ?? findAddress(id);
+  const local = findAddress(id);
+  if (local) return local;
+  return fetchPropertyFromBackend(id);
 }

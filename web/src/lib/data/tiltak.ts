@@ -1,6 +1,7 @@
 export type IconKey =
   | "kjeller" | "wall" | "garasje" | "tilbygg" | "fasade" | "tak"
-  | "sol" | "anneks" | "levegg" | "vindu" | "brygge" | "ai" | "geolog";
+  | "sol" | "anneks" | "levegg" | "vindu" | "brygge" | "ai" | "geolog"
+  | "bruksendring" | "tilleggsdel" | "boenhet";
 
 export interface TiltakTag {
   text: string;
@@ -122,5 +123,29 @@ export const TILTAK: Tiltak[] = [
     icon: "geolog", iconClass: "blue",
     tags: [{ text: "Fagtjeneste", variant: "blue" }],
     slug: "geolograpport", available: true,
+  },
+  {
+    id: "bruksendring",
+    name: "Bruksendring",
+    desc: "Endre bruk av rom eller bygning til ny kategori",
+    icon: "bruksendring", iconClass: "warm",
+    tags: [{ text: "Søknadspliktig", variant: "amber" }],
+    slug: "bruksendring", available: true,
+  },
+  {
+    id: "tilleggsdel",
+    name: "Tilleggsdel til hoveddel",
+    desc: "Gjøre bod, vaskerom eller garasje til oppholdsrom",
+    icon: "tilleggsdel", iconClass: "",
+    tags: [{ text: "Søknadspliktig", variant: "amber" }],
+    slug: "tilleggsdel", available: true,
+  },
+  {
+    id: "boenhet",
+    name: "Etablere ny boenhet",
+    desc: "Opprette hybel, sokkelleilighet eller tomannsbolig",
+    icon: "boenhet", iconClass: "warm",
+    tags: [{ text: "Krever ANS-rett", variant: "red" }],
+    slug: "boenhet", available: true,
   },
 ];

@@ -192,3 +192,22 @@ class AndreInput(BaseModel):
 class GeolograpportInput(BaseModel):
     type: Literal["nybygg", "tilbygg", "kjeller", "brygge", "annet"]
     timing: Literal["asap", "planlegging", "usikker"]
+
+
+class BruksendringInput(BaseModel):
+    fra: Literal["naring", "kontor", "garasje", "bod", "fritidsbolig", "annet"]
+    til: Literal["bolig", "hybel", "kontor", "naring"]
+    areal: float
+    verneverdig: bool
+
+
+class TilleggsdelInput(BaseModel):
+    romtype: Literal["bod", "gang", "vaskerom", "garasje", "teknisk"]
+    areal: float
+    formaal: Literal["soverom", "stue", "kontor", "bad"]
+
+
+class BoenhetInput(BaseModel):
+    type: Literal["hybel", "sokkelleilighet", "tomannsbolig"]
+    antall: int
+    areal: float

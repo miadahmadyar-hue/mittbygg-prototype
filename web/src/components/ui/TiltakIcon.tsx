@@ -85,6 +85,25 @@ const SVGS: Record<IconKey, ReactNode> = {
       <ellipse cx="12" cy="14" rx="5" ry="2" />
     </svg>
   ),
+  bruksendring: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M8 21H5a2 2 0 0 1-2-2v-3M21 16v3a2 2 0 0 1-2 2h-3" />
+      <path d="m9 15 3-3 3 3M12 12V7" />
+    </svg>
+  ),
+  tilleggsdel: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 12h18M12 3v9" />
+      <path d="M8 17h2M14 17h2" />
+    </svg>
+  ),
+  boenhet: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21V9l6-4v16M15 21V9l6-4v16" />
+      <path d="M3 13h6M15 13h6M9 21V5" />
+    </svg>
+  ),
 };
 
 export function TiltakIcon({ k }: { k: IconKey }) {
