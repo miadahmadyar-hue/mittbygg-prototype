@@ -1,4 +1,4 @@
-from backend.models import BruksendringInput, TiltakResult, TiltakFinding, TiltakTiltak
+from models import BruksendringInput, TiltakResult, TiltakFinding, TiltakTiltak
 
 
 def evaluate_bruksendring(inp: BruksendringInput) -> TiltakResult:

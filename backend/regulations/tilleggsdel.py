@@ -1,4 +1,4 @@
-from backend.models import TilleggsdelInput, TiltakResult, TiltakFinding, TiltakTiltak
+from models import TilleggsdelInput, TiltakResult, TiltakFinding, TiltakTiltak
 
 
 def evaluate_tilleggsdel(inp: TilleggsdelInput) -> TiltakResult:

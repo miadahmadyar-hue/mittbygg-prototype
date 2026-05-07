@@ -1,4 +1,4 @@
-from backend.models import GeolograpportInput, TiltakResult, TiltakFinding, TiltakTiltak
+from models import GeolograpportInput, TiltakResult, TiltakFinding, TiltakTiltak
 
 
 def evaluate_geolograpport(inp: GeolograpportInput) -> TiltakResult:

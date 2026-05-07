@@ -1,4 +1,4 @@
-from backend.models import BoenhetInput, TiltakResult, TiltakFinding, TiltakTiltak
+from models import BoenhetInput, TiltakResult, TiltakFinding, TiltakTiltak
 
 
 def evaluate_boenhet(inp: BoenhetInput) -> TiltakResult:
