@@ -24,7 +24,7 @@ export function AndreWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} loadingText="Analyserer tiltaketâ€¦" />;
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} loadingText="Analyserer tiltaket…" />;
 
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
@@ -42,7 +42,7 @@ export function AndreWizard({ p }: { p: Address }) {
               <textarea
                 className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={5}
-                placeholder="Beskriv tiltaket sÃ¥ detaljert som mulig â€” f.eks. stÃ¸pe platting, sette opp carport, rive garasjeâ€¦"
+                placeholder="Beskriv tiltaket sÃ¥ detaljert som mulig â€” f.eks. stÃ¸pe platting, sette opp carport, rive garasje…"
                 value={data.beskrivelse}
                 onChange={(e) => setData({ ...data, beskrivelse: e.target.value })}
               />
@@ -60,7 +60,7 @@ export function AndreWizard({ p }: { p: Address }) {
             <div><h2 className="text-[22px] font-bold tracking-tight">Bekreft og beregn</h2></div>
             <div className="bg-white border border-gray-100 rounded-xl">
               <KV k="Eiendom" v={p.street} />
-              <KV k="Beskrivelse" v={data.beskrivelse.length > 60 ? data.beskrivelse.slice(0, 60) + "â€¦" : data.beskrivelse} last />
+              <KV k="Beskrivelse" v={data.beskrivelse.length > 60 ? data.beskrivelse.slice(0, 60) + "…" : data.beskrivelse} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>

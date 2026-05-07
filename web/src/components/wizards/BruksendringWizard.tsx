@@ -31,7 +31,7 @@ export function BruksendringWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} loadingText="Sjekker PBL og reguleringsplanâ€¦" />;
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} loadingText="Sjekker PBL og reguleringsplan…" />;
 
   const step = phase.step;
   const back = () => {
