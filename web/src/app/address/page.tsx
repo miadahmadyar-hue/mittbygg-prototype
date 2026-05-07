@@ -6,10 +6,11 @@ import { Topbar } from "@/components/ui/Topbar";
 import { ADDRESSES, type Address } from "@/lib/data/addresses";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const KARTVERKET_URL = "https://ws.geonorge.no/adresser/v1/sok";
 
 async function searchBackend(q: string): Promise<Address[]> {
   const res = await fetch(`${API_URL}/api/address/search?q=${encodeURIComponent(q)}`, {
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(4000),
   });
   if (!res.ok) throw new Error("search failed");
   const data = await res.json();
@@ -39,6 +40,51 @@ async function searchBackend(q: string): Promise<Address[]> {
   }));
 }
 
+async function searchKartverket(q: string): Promise<Address[]> {
+  const url = new URL(KARTVERKET_URL);
+  url.searchParams.set("sok", q);
+  url.searchParams.set("fuzzy", "true");
+  url.searchParams.set("utkoordsys", "4258");
+  url.searchParams.set("treffPerSide", "8");
+  url.searchParams.set("sokemodus", "AND");
+
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(6000) });
+  if (!res.ok) throw new Error("kartverket failed");
+  const data = await res.json();
+
+  return (data.adresser ?? []).map((a: Record<string, unknown>) => {
+    const gnr     = parseInt(String(a.gardsnummer ?? "0")) || 0;
+    const bnr     = parseInt(String(a.bruksnummer ?? "0")) || 0;
+    const kommune = String(a.kommunenummer ?? "0000");
+    const nummer  = String(a.nummer ?? "");
+    const bokstav = String(a.bokstav ?? "");
+    const punkt   = (a.representasjonspunkt as Record<string,number>) ?? {};
+    return {
+      id:     `k_${kommune}_${gnr}_${bnr}`,
+      street: `${a.adressenavn ?? ""} ${nummer}${bokstav}`.trim(),
+      postal: String(a.postnummer ?? ""),
+      city:   String(a.kommunenavn ?? "").replace(/\b\w/g, c => c.toUpperCase()),
+      coords: [punkt.lat ?? 0, punkt.lon ?? 0] as [number, number],
+      matrikkel: { gnr: String(gnr), bnr: String(bnr), kommune },
+      bygg: {
+        byggeAar: 1975, BRA: null, etasjer: null,
+        kjeller: true, garasje: false, tomt: null,
+        regplan: "Kommuneplan",
+        byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+        tidligereSaker: [], bygg_source: "default",
+      },
+    };
+  });
+}
+
+async function search(q: string): Promise<Address[]> {
+  try {
+    return await searchBackend(q);
+  } catch {
+    return searchKartverket(q);
+  }
+}
+
 export default function AddressPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -55,7 +101,7 @@ export default function AddressPage() {
       setLoading(true);
       setError(false);
       try {
-        const res = await searchBackend(query.trim());
+        const res = await search(query.trim());
         setResults(res);
       } catch {
         setError(true);
