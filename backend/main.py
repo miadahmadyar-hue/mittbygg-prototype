@@ -12,7 +12,7 @@ load_dotenv()
 
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000",
+    "http://localhost:3000,http://127.0.0.1:3000,https://mittbygg-test.netlify.app",
 ).split(",")
 
 app = FastAPI(title="MittBygg API", version="1.0.0")
