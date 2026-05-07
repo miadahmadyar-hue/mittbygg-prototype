@@ -60,7 +60,23 @@ export async function evaluateVeggApi(input: VeggInput): Promise<VeggResult> {
 // ── New tiltak evaluate functions (backend-only, no client fallback needed) ───
 
 async function evalTiltak(slug: string, input: unknown): Promise<TiltakResult> {
-  return apiPost<TiltakResult>(`/api/evaluate/${slug}`, input);
+  try {
+    return await apiPost<TiltakResult>(`/api/evaluate/${slug}`, input);
+  } catch {
+    return {
+      status: "red",
+      statusText: "Tjenesten er ikke tilgjengelig",
+      statusDesc: "Kunne ikke koble til regelmotoren. Sjekk internettforbindelsen og prøv igjen.",
+      findings: [],
+      tiltak: [],
+      lempninger: [],
+      soknadstype: "ukjent",
+      ansvarsrett: false,
+      tiltaksklasse: 1,
+      totalKostnad: 0,
+      input: input as Record<string, unknown>,
+    };
+  }
 }
 
 export const evaluateGarasjeApi   = (i: unknown) => evalTiltak("garasje",   i);
