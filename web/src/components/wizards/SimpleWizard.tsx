@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
 import { SoknadPreview, SoknadSent } from "./SoknadFlow";
+import { BetalingModal } from "./BetalingModal";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
@@ -20,6 +21,7 @@ type Phase =
   | { kind: "wizard"; step: number }
   | { kind: "loading" }
   | { kind: "result"; result: TiltakResult }
+  | { kind: "betaling"; result: TiltakResult }
   | { kind: "preview"; result: TiltakResult }
   | { kind: "sending"; result: TiltakResult }
   | { kind: "sent"; result: TiltakResult };
@@ -121,7 +123,18 @@ export function ResultPhases({ phase, setPhase, p, loadingText }: ResultPhasesPr
       <ResultView
         r={phase.result as never}
         onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
+        onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
+      />
+    );
+  }
+
+  if (phase.kind === "betaling") {
+    return (
+      <BetalingModal
+        totalKostnad={phase.result.totalKostnad}
+        onBetal={async () => setPhase({ kind: "preview", result: phase.result })}
+        onBack={() => setPhase({ kind: "result", result: phase.result })}
       />
     );
   }

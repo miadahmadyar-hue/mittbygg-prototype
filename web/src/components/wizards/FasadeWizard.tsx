@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,10 +11,10 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Address } from "@/lib/data/addresses";
 
-type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "preview"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
+type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "preview"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 type FType = "kledning" | "farge" | "vindu_storre" | "terrasse" | "dor";
-const LABEL: Record<FType, string> = { kledning: "Ny ytterkledning", farge: "Farge / overflate", vindu_storre: "Større vindusåpning", terrasse: "Terrasse", dor: "Ny dør" };
-const DESC: Record<FType, string>  = { kledning: "Skifte kledning, panel eller puss", farge: "Male om fasaden eller endre overflate", vindu_storre: "Lage større vindu i eksisterende fasade", terrasse: "Ny terrasse eller uteplass", dor: "Skifte eller flytte ytterdør" };
+const LABEL: Record<FType, string> = { kledning: "Ny ytterkledning", farge: "Farge / overflate", vindu_storre: "StÃ¸rre vindusÃ¥pning", terrasse: "Terrasse", dor: "Ny dÃ¸r" };
+const DESC: Record<FType, string>  = { kledning: "Skifte kledning, panel eller puss", farge: "Male om fasaden eller endre overflate", vindu_storre: "Lage stÃ¸rre vindu i eksisterende fasade", terrasse: "Ny terrasse eller uteplass", dor: "Skifte eller flytte ytterdÃ¸r" };
 
 export function FasadeWizard({ p }: { p: Address }) {
   const router = useRouter();
@@ -28,7 +28,7 @@ export function FasadeWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} loadingText="Sjekker SAK10 og kulturminneregisteret…" />;
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} loadingText="Sjekker SAK10 og kulturminneregisteretâ€¦" />;
 
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
@@ -47,7 +47,7 @@ export function FasadeWizard({ p }: { p: Address }) {
               ))}
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -62,7 +62,7 @@ export function FasadeWizard({ p }: { p: Address }) {
               <KV k="Verneverdig" v={data.verneverdig ? "Ja" : "Nei"} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
