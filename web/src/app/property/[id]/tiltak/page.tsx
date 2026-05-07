@@ -1,14 +1,8 @@
-import { notFound } from "next/navigation";
-import { getProperty } from "@/lib/data/fetchProperty";
+"use client";
+import { useParams } from "next/navigation";
 import { TiltakGrid } from "@/components/TiltakGrid";
 
-interface Props {
-  params: Promise<{ id: string }>;
-}
-
-export default async function TiltakPage({ params }: Props) {
-  const { id } = await params;
-  const property = await getProperty(id);
-  if (!property) notFound();
-  return <TiltakGrid propertyId={id} />;
+export default function TiltakPage() {
+  const params = useParams();
+  return <TiltakGrid propertyId={params.id as string} />;
 }

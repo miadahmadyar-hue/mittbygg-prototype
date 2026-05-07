@@ -1,12 +1,4 @@
-import { notFound } from "next/navigation";
-import { getProperty } from "@/lib/data/fetchProperty";
+"use client";
+import { PropertyLoader } from "@/components/PropertyLoader";
 import { KjellerWizard } from "@/components/wizards/KjellerWizard";
-
-interface Props { params: Promise<{ id: string }> }
-
-export default async function KjellerPage({ params }: Props) {
-  const { id } = await params;
-  const property = await getProperty(id);
-  if (!property) notFound();
-  return <KjellerWizard p={property!} />;
-}
+export default function Page() { return <PropertyLoader>{(p) => <KjellerWizard p={p} />}</PropertyLoader>; }

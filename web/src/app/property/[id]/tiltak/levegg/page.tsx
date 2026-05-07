@@ -1,12 +1,4 @@
-import { notFound } from "next/navigation";
-import { getProperty } from "@/lib/data/fetchProperty";
+"use client";
+import { PropertyLoader } from "@/components/PropertyLoader";
 import { LevegWizard } from "@/components/wizards/LevegWizard";
-
-interface Props { params: Promise<{ id: string }> }
-
-export default async function LevegPage({ params }: Props) {
-  const { id } = await params;
-  const property = await getProperty(id);
-  if (!property) notFound();
-  return <LevegWizard p={property!} />;
-}
+export default function Page() { return <PropertyLoader>{(p) => <LevegWizard p={p} />}</PropertyLoader>; }

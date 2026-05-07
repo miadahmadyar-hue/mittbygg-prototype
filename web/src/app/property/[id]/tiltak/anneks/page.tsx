@@ -1,12 +1,4 @@
-import { notFound } from "next/navigation";
-import { getProperty } from "@/lib/data/fetchProperty";
+"use client";
+import { PropertyLoader } from "@/components/PropertyLoader";
 import { AnneksWizard } from "@/components/wizards/AnneksWizard";
-
-interface Props { params: Promise<{ id: string }> }
-
-export default async function AnneksPage({ params }: Props) {
-  const { id } = await params;
-  const property = await getProperty(id);
-  if (!property) notFound();
-  return <AnneksWizard p={property!} />;
-}
+export default function Page() { return <PropertyLoader>{(p) => <AnneksWizard p={p} />}</PropertyLoader>; }
