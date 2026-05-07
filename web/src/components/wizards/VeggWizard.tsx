@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/Alert";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
 import { SoknadPreview, SoknadSent } from "./SoknadFlow";
+import { BetalingModal } from "./BetalingModal";
 import type { VeggResult } from "@/lib/regulations/vegg";
 import { evaluateVeggApi } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
@@ -16,6 +17,7 @@ type Phase =
   | { kind: "wizard"; step: 0 | 1 }
   | { kind: "loading" }
   | { kind: "result"; result: VeggResult }
+  | { kind: "betaling"; result: VeggResult }
   | { kind: "preview"; result: VeggResult }
   | { kind: "sending"; result: VeggResult }
   | { kind: "sent"; result: VeggResult };
@@ -29,6 +31,7 @@ export function VeggWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const [data, setData] = useState<Data>({ spennvidde: 4500, last: 8 });
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const evaluate = async () => {
     setPhase({ kind: "loading" });
@@ -37,6 +40,19 @@ export function VeggWizard({ p }: { p: Address }) {
       last: data.last,
     });
     setPhase({ kind: "result", result });
+  };
+
+  const handleGoToBetaling = async () => {
+    if (phase.kind !== "result") return;
+    setPhase({ kind: "betaling", result: phase.result });
+  };
+
+  const doDownloadAfterPayment = async () => {
+    setPdfLoading(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    setPdfLoading(false);
+    if (phase.kind === "betaling")
+      setPhase({ kind: "preview", result: phase.result });
   };
 
   if (phase.kind === "loading") {
@@ -50,7 +66,18 @@ export function VeggWizard({ p }: { p: Address }) {
       <ResultView
         r={phase.result}
         onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
+        onDownloadPdf={handleGoToBetaling}
+        pdfLoading={pdfLoading}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
+      />
+    );
+  }
+  if (phase.kind === "betaling") {
+    return (
+      <BetalingModal
+        totalKostnad={phase.result.totalKostnad}
+        onBetal={doDownloadAfterPayment}
+        onBack={() => setPhase({ kind: "result", result: phase.result })}
       />
     );
   }
