@@ -112,7 +112,10 @@ export default function AddressPage() {
     }, 350);
   }, [query]);
 
-  const select = (id: string) => router.push(`/property/${id}`);
+  const select = (id: string, address?: Address) => {
+    if (address) sessionStorage.setItem(`property_${id}`, JSON.stringify(address));
+    router.push(`/property/${id}`);
+  };
   const showResults    = query.trim().length >= 2;
   const showQuickList  = query.trim().length === 0;
 
@@ -167,7 +170,7 @@ export default function AddressPage() {
         {showResults && !loading && results.length > 0 && (
           <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
             {results.map((a, i) => (
-              <SuggestionRow key={a.id} address={a} onClick={() => select(a.id)} last={i === results.length - 1} />
+              <SuggestionRow key={a.id} address={a} onClick={() => select(a.id, a)} last={i === results.length - 1} />
             ))}
           </div>
         )}
@@ -184,7 +187,7 @@ export default function AddressPage() {
           <div className="bg-gray-50 rounded-xl border border-gray-100 p-5 mt-2">
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Forslag</h4>
             {ADDRESSES.slice(0, 4).map((a) => (
-              <button key={a.id} type="button" onClick={() => select(a.id)}
+              <button key={a.id} type="button" onClick={() => select(a.id, a)}
                 className="flex items-center gap-3 w-full py-2 border-b border-gray-100 last:border-b-0 text-left cursor-pointer">
                 <span className="text-gray-400"><PinIcon /></span>
                 <div className="flex-1 min-w-0">
