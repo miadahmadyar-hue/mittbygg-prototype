@@ -115,6 +115,10 @@ class AddressResult(BaseModel):
     tidligereSaker: List[dict] = []
 
 
+# Aliases used by newer regulation engines
+TiltakFinding = Finding
+TiltakTiltak = Tiltak
+
 # ── Generic tiltak result (shared by the 10 simple wizards) ──────────────────
 
 from typing import Any
