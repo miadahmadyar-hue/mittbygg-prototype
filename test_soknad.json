@@ -1,0 +1,35 @@
+{
+  "result": {
+    "status": "amber",
+    "statusText": "Klar med tiltak",
+    "statusDesc": "2 forhold krever oppfolging",
+    "findings": [
+      {"type": "ok", "t": "Takhøyde OK", "d": "2280 mm tilfredsstiller lempet krav (2200 mm).", "ref": "TEK17 §12-7"},
+      {"type": "warn", "t": "Radon ikke malt", "d": "Bestill langtidsmaaling.", "ref": "TEK17 §13-5"}
+    ],
+    "tiltak": [
+      {"name": "Radonsperre under nytt gulv", "desc": "Diffusjonstett membran.", "kostnad": 18000}
+    ],
+    "lempninger": [
+      {"regel": "Takhøyde", "tekst": "2280 mm aksepteres iht. PBL §31-2."}
+    ],
+    "eldre": true,
+    "soknadstype": "PBL §20-1 d (bruksendring)",
+    "ansvarsrett": false,
+    "tiltaksklasse": 1,
+    "totalKostnad": 18000,
+    "input": {
+      "propId": "1",
+      "byggeAar": 1968,
+      "room": "fellesrom",
+      "ny_bruk": "soverom",
+      "radon": null,
+      "drenering": true,
+      "balansert_vent": false
+    }
+  },
+  "address": "Solbakken 12",
+  "gnr": 31,
+  "bnr": 418,
+  "kommune": "Oslo"
+}

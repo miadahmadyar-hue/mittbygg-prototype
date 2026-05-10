@@ -60,12 +60,6 @@ const SVGS: Record<IconKey, ReactNode> = {
       <path d="M4 9h16M4 13h16M4 17h16" />
     </svg>
   ),
-  vindu: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="1" />
-      <path d="M3 12h18M12 3v18" />
-    </svg>
-  ),
   brygge: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 19c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2" />
