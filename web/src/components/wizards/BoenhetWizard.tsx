@@ -40,7 +40,7 @@ export function BoenhetWizard({ p }: { p: Address }) {
           <>
             <div><h2 className="text-[22px] font-bold tracking-tight">Type boenhet</h2></div>
             <div className="space-y-2">
-              <RadioCard selected={data.type === "hybel"}           onClick={() => setData({ ...data, type: "hybel" })}           title="Hybel"              desc="Rom med bad og kjÃ¸kken innenfor eksisterende leilighet" />
+              <RadioCard selected={data.type === "hybel"}           onClick={() => setData({ ...data, type: "hybel" })}           title="Hybel"              desc="Rom med bad og kjøkken innenfor eksisterende leilighet" />
               <RadioCard selected={data.type === "sokkelleilighet"} onClick={() => setData({ ...data, type: "sokkelleilighet" })} title="Sokkelleilighet"    desc="Selvstendig leilighet i kjeller eller underetasje" />
               <RadioCard selected={data.type === "tomannsbolig"}    onClick={() => setData({ ...data, type: "tomannsbolig" })}    title="Tomannsbolig"      desc="To fullverdige boliger i samme bygg" />
             </div>
@@ -49,11 +49,11 @@ export function BoenhetWizard({ p }: { p: Address }) {
               <NumberField value={data.antall} onChange={(v) => setData({ ...data, antall: Math.max(1, Math.round(v)) })} step={1} unit="stk" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Areal per boenhet (mÂ²)</label>
-              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="mÂ²" />
-              <p className="text-xs text-gray-500 mt-1">Minimum 25 mÂ² for godkjent boenhet (TEK17 Â§ 12-2)</p>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Areal per boenhet (m²)</label>
+              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
+              <p className="text-xs text-gray-500 mt-1">Minimum 25 m² for godkjent boenhet (TEK17 § 12-2)</p>
             </div>
-            <Alert>Ny boenhet krever alltid sÃ¸knad med ansvarlig foretak.</Alert>
+            <Alert>Ny boenhet krever alltid søknad med ansvarlig foretak.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
@@ -67,11 +67,11 @@ export function BoenhetWizard({ p }: { p: Address }) {
               <KV k="Eiendom" v={p.street} />
               <KV k="Type" v={data.type === "hybel" ? "Hybel" : data.type === "sokkelleilighet" ? "Sokkelleilighet" : "Tomannsbolig"} />
               <KV k="Antall boenheter" v={String(data.antall)} />
-              <KV k="Areal per enhet" v={`${data.areal} mÂ²`} last />
+              <KV k="Areal per enhet" v={`${data.areal} m²`} last />
             </div>
-            <Alert>Dette tiltaket krever ansvarlig sÃ¸ker. Vi kobler deg med godkjent foretak.</Alert>
+            <Alert>Dette tiltaket krever ansvarlig søker. Vi kobler deg med godkjent foretak.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

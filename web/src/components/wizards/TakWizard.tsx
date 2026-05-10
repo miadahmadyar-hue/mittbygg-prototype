@@ -38,10 +38,10 @@ export function TakWizard({ p }: { p: Address }) {
       <div className="view">
         {step === 0 && (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Hva skal gjÃ¸res?</h2></div>
+            <div><h2 className="text-[22px] font-bold tracking-tight">Hva skal gjøres?</h2></div>
             <div className="space-y-2">
               <RadioCard selected={data.type === "bytte_materiale"} onClick={() => setData({ ...data, type: "bytte_materiale" })} title="Bytte tekkemateriale" desc="Skifte til ny takstein, shingel eller annet materiale" />
-              <RadioCard selected={data.type === "endre_form"} onClick={() => setData({ ...data, type: "endre_form" })} title="Endre takform" desc="Endre vinkel, gesims eller mÃ¸nehÃ¸yde" />
+              <RadioCard selected={data.type === "endre_form"} onClick={() => setData({ ...data, type: "endre_form" })} title="Endre takform" desc="Endre vinkel, gesims eller mønehøyde" />
               <RadioCard selected={data.type === "bygge_loft"} onClick={() => setData({ ...data, type: "bygge_loft" })} title="Bygge ut loft" desc="Innrede loft til oppholdsrom eller soverom" />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
@@ -59,11 +59,11 @@ export function TakWizard({ p }: { p: Address }) {
             </div>
             <div className="bg-white border border-gray-100 rounded-xl mt-2">
               <KV k="Eiendom" v={p.street} />
-              <KV k="ByggeÃ¥r" v={String(p.bygg.byggeAar)} />
+              <KV k="Byggeår" v={String(p.bygg.byggeAar)} />
               <KV k="Etterisolere" v={data.etterisolere ? "Ja" : "Nei"} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

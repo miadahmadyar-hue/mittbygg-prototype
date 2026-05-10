@@ -42,19 +42,19 @@ export function GarasjeWizard({ p }: { p: Address }) {
             <div><h2 className="text-[22px] font-bold tracking-tight">Type og dimensjoner</h2></div>
             <div className="space-y-2">
               {(["garasje", "carport", "bod"] as GType[]).map((t) => (
-                <RadioCard key={t} selected={data.type === t} onClick={() => setData({ ...data, type: t })} title={LABEL[t]} desc={t === "garasje" ? "Lukket garasje med port" : t === "carport" ? "Ã…pen carport med tak" : "Bod, uthus eller verksted"} />
+                <RadioCard key={t} selected={data.type === t} onClick={() => setData({ ...data, type: t })} title={LABEL[t]} desc={t === "garasje" ? "Lukket garasje med port" : t === "carport" ? "Åpen carport med tak" : "Bod, uthus eller verksted"} />
               ))}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Areal (mÂ²)</label>
-              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="mÂ²" />
-              <p className="text-xs text-gray-500 mt-1">Under 50 mÂ² er som regel unntatt sÃ¸knad</p>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Areal (m²)</label>
+              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
+              <p className="text-xs text-gray-500 mt-1">Under 50 m² er som regel unntatt søknad</p>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Avstand til nabogrense (m)</label>
               <NumberField value={data.avstand} onChange={(v) => setData({ ...data, avstand: v })} step={0.5} unit="m" />
             </div>
-            <Alert>Garasje â‰¤ 50 mÂ² og â‰¥ 1 m fra nabogrense er normalt unntatt sÃ¸knad (SAK10 Â§ 4-1 b).</Alert>
+            <Alert>Garasje ≤ 50 m² og ≥ 1 m fra nabogrense er normalt unntatt søknad (SAK10 § 4-1 b).</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
@@ -67,11 +67,11 @@ export function GarasjeWizard({ p }: { p: Address }) {
             <div className="bg-white border border-gray-100 rounded-xl">
               <KV k="Eiendom" v={p.street} />
               <KV k="Type" v={LABEL[data.type!]} />
-              <KV k="Areal" v={`${data.areal} mÂ²`} />
+              <KV k="Areal" v={`${data.areal} m²`} />
               <KV k="Avstand til nabo" v={`${data.avstand} m`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

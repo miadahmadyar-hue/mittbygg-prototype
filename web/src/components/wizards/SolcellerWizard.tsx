@@ -43,15 +43,15 @@ export function SolcellerWizard({ p }: { p: Address }) {
             <div><h2 className="text-[22px] font-bold tracking-tight">Monteringstype og areal</h2></div>
             <div className="space-y-2">
               <RadioCard selected={data.type === "integrert"}    onClick={() => setData({ ...data, type: "integrert" })}    title="Integrert i takflaten"  desc="Panel erstatter taktekkematerialet" />
-              <RadioCard selected={data.type === "paamontering"} onClick={() => setData({ ...data, type: "paamontering" })} title="PÃ¥montering pÃ¥ tak"       desc="Paneler montert pÃ¥ eksisterende tak" />
-              <RadioCard selected={data.type === "vegg"}         onClick={() => setData({ ...data, type: "vegg" })}         title="Veggmontert"            desc="Panel pÃ¥ fasade eller garasjevegg" />
+              <RadioCard selected={data.type === "paamontering"} onClick={() => setData({ ...data, type: "paamontering" })} title="Påmontering på tak"       desc="Paneler montert på eksisterende tak" />
+              <RadioCard selected={data.type === "vegg"}         onClick={() => setData({ ...data, type: "vegg" })}         title="Veggmontert"            desc="Panel på fasade eller garasjevegg" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Areal paneler (mÂ²)</label>
-              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="mÂ²" />
-              <p className="text-xs text-gray-500 mt-1">Typisk bolig: 15â€“30 mÂ² â‰ˆ {kwp} kWp â‰ˆ {Math.round(kwp * 900)} kWh/Ã¥r</p>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Areal paneler (m²)</label>
+              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
+              <p className="text-xs text-gray-500 mt-1">Typisk bolig: 15–30 m² ≈ {kwp} kWp ≈ {Math.round(kwp * 900)} kWh/år</p>
             </div>
-            <Alert>Solceller er unntatt sÃ¸knad siden 2021 (SAK10 Â§ 4-1 k). Kun melding til nettselskapet.</Alert>
+            <Alert>Solceller er unntatt søknad siden 2021 (SAK10 § 4-1 k). Kun melding til nettselskapet.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
@@ -61,14 +61,14 @@ export function SolcellerWizard({ p }: { p: Address }) {
         {step === 1 && (
           <>
             <div><h2 className="text-[22px] font-bold tracking-tight">Bygningstype</h2></div>
-            <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Verneverdig / antikvarisk bygning" desc="Kan kreve sÃ¦rskilt kulturminnevurdering" />
+            <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Verneverdig / antikvarisk bygning" desc="Kan kreve særskilt kulturminnevurdering" />
             <div className="bg-white border border-gray-100 rounded-xl mt-4">
               <KV k="Eiendom" v={p.street} />
-              <KV k="Areal" v={`${data.areal} mÂ²`} />
+              <KV k="Areal" v={`${data.areal} m²`} />
               <KV k="Effekt" v={`ca. ${kwp} kWp`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

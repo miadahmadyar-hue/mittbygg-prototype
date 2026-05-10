@@ -50,10 +50,10 @@ export function TilleggsdelWizard({ p }: { p: Address }) {
               ))}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">Areal (mÂ²)</label>
-              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="mÂ²" />
+              <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">Areal (m²)</label>
+              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
             </div>
-            <Alert>Tilleggsdel til hoveddel krever sÃ¸knad og at rommet oppfyller TEK17.</Alert>
+            <Alert>Tilleggsdel til hoveddel krever søknad og at rommet oppfyller TEK17.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button full disabled={!data.romtype} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
@@ -71,10 +71,10 @@ export function TilleggsdelWizard({ p }: { p: Address }) {
             <div className="bg-white border border-gray-100 rounded-xl mt-4">
               <KV k="Eiendom" v={p.street} />
               <KV k="Rom" v={ROM_LABEL[data.romtype!]} />
-              <KV k="Areal" v={`${data.areal} mÂ²`} last />
+              <KV k="Areal" v={`${data.areal} m²`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={!data.formaal} onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full disabled={!data.formaal} onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

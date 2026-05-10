@@ -38,17 +38,17 @@ export function AndreWizard({ p }: { p: Address }) {
           <>
             <div><h2 className="text-[22px] font-bold tracking-tight">Beskriv tiltaket</h2></div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Hva skal du gjÃ¸re?</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Hva skal du gjøre?</label>
               <textarea
                 className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={5}
-                placeholder="Beskriv tiltaket sÃ¥ detaljert som mulig â€” f.eks. stÃ¸pe platting, sette opp carport, rive garasje…"
+                placeholder="Beskriv tiltaket så detaljert som mulig â€” f.eks. støpe platting, sette opp carport, rive garasje…"
                 value={data.beskrivelse}
                 onChange={(e) => setData({ ...data, beskrivelse: e.target.value })}
               />
               <p className="text-xs text-gray-500 mt-1">{data.beskrivelse.length}/500 tegn</p>
             </div>
-            <Alert>Vi gir deg en fÃ¸rste vurdering. Komplekse tiltak kan kreve dialog med kommunen.</Alert>
+            <Alert>Vi gir deg en første vurdering. Komplekse tiltak kan kreve dialog med kommunen.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button full disabled={!data.beskrivelse.trim()} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
@@ -63,7 +63,7 @@ export function AndreWizard({ p }: { p: Address }) {
               <KV k="Beskrivelse" v={data.beskrivelse.length > 60 ? data.beskrivelse.slice(0, 60) + "…" : data.beskrivelse} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

@@ -44,7 +44,7 @@ export function GeolograpportWizard({ p }: { p: Address }) {
               <RadioCard selected={data.type === "nybygg"}   onClick={() => setData({ ...data, type: "nybygg" })}   title="Nybygg / bolig"    desc="Nytt hus, garasje eller frittliggende bygg" />
               <RadioCard selected={data.type === "tilbygg"}  onClick={() => setData({ ...data, type: "tilbygg" })}  title="Tilbygg"           desc="Utvidelse av eksisterende bygg" />
               <RadioCard selected={data.type === "kjeller"}  onClick={() => setData({ ...data, type: "kjeller" })}  title="Kjellerarbeid"     desc="Senke gulv, drenering, bruksendring" />
-              <RadioCard selected={data.type === "brygge"}   onClick={() => setData({ ...data, type: "brygge" })}   title="Brygge"            desc="Fast brygge med pÃ¦ler i grunn" />
+              <RadioCard selected={data.type === "brygge"}   onClick={() => setData({ ...data, type: "brygge" })}   title="Brygge"            desc="Fast brygge med pæler i grunn" />
               <RadioCard selected={data.type === "annet"}    onClick={() => setData({ ...data, type: "annet" })}    title="Annet / usikker"   desc="Vil ha oversikt over grunnforholdene" />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
@@ -55,13 +55,13 @@ export function GeolograpportWizard({ p }: { p: Address }) {
         )}
         {step === 1 && (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">NÃ¥r trenger du rapporten?</h2></div>
+            <div><h2 className="text-[22px] font-bold tracking-tight">Når trenger du rapporten?</h2></div>
             <div className="space-y-2">
-              <RadioCard selected={data.timing === "asap"}        onClick={() => setData({ ...data, timing: "asap" })}        title="SÃ¥ snart som mulig"    desc="Innen 1â€“2 uker" />
-              <RadioCard selected={data.timing === "planlegging"} onClick={() => setData({ ...data, timing: "planlegging" })} title="I planleggingsfasen"   desc="2â€“4 uker" />
-              <RadioCard selected={data.timing === "usikker"}     onClick={() => setData({ ...data, timing: "usikker" })}     title="Vet ikke ennÃ¥"         desc="Ã˜nsker prisoversikt" />
+              <RadioCard selected={data.timing === "asap"}        onClick={() => setData({ ...data, timing: "asap" })}        title="Så snart som mulig"    desc="Innen 1–2 uker" />
+              <RadioCard selected={data.timing === "planlegging"} onClick={() => setData({ ...data, timing: "planlegging" })} title="I planleggingsfasen"   desc="2–4 uker" />
+              <RadioCard selected={data.timing === "usikker"}     onClick={() => setData({ ...data, timing: "usikker" })}     title="Vet ikke ennå"         desc="Ønsker prisoversikt" />
             </div>
-            <Alert>Geotekniker kontakter deg innen 2 virkedager. Rapporten inngÃ¥r i sÃ¸knadspakken din.</Alert>
+            <Alert>Geotekniker kontakter deg innen 2 virkedager. Rapporten inngår i søknadspakken din.</Alert>
             <div className="bg-white border border-gray-100 rounded-xl mt-2">
               <KV k="Eiendom" v={p.street} />
               <KV k="Prosjekttype" v={data.type === "nybygg" ? "Nybygg / bolig" : data.type === "tilbygg" ? "Tilbygg" : data.type === "kjeller" ? "Kjellerarbeid" : data.type === "brygge" ? "Brygge" : "Annet / usikker"} last />

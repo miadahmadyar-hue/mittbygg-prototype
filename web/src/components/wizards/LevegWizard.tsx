@@ -35,11 +35,11 @@ export function LevegWizard({ p }: { p: Address }) {
       <div className="view">
         {step === 0 && (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">MÃ¥l og plassering</h2></div>
+            <div><h2 className="text-[22px] font-bold tracking-tight">Mål og plassering</h2></div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">HÃ¸yde (m)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Høyde (m)</label>
               <NumberField value={data.hoyde} onChange={(v) => setData({ ...data, hoyde: v })} step={0.1} unit="m" />
-              <p className="text-xs text-gray-500 mt-1">Under 1,8 m er normalt unntatt sÃ¸knad</p>
+              <p className="text-xs text-gray-500 mt-1">Under 1,8 m er normalt unntatt søknad</p>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Lengde (m)</label>
@@ -50,7 +50,7 @@ export function LevegWizard({ p }: { p: Address }) {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Avstand til nabogrense (m)</label>
               <NumberField value={data.avstand} onChange={(v) => setData({ ...data, avstand: v })} step={0.5} unit="m" />
             </div>
-            <Alert>Levegg â‰¤ 1,8 m hÃ¸y og â‰¤ 10 m lang er unntatt sÃ¸knad (SAK10 Â§ 4-1 e).</Alert>
+            <Alert>Levegg ≤ 1,8 m høy og ≤ 10 m lang er unntatt søknad (SAK10 § 4-1 e).</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button full onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
@@ -62,12 +62,12 @@ export function LevegWizard({ p }: { p: Address }) {
             <div><h2 className="text-[22px] font-bold tracking-tight">Bekreft og beregn</h2></div>
             <div className="bg-white border border-gray-100 rounded-xl">
               <KV k="Eiendom" v={p.street} />
-              <KV k="HÃ¸yde" v={`${data.hoyde} m`} />
+              <KV k="Høyde" v={`${data.hoyde} m`} />
               <KV k="Lengde" v={`${data.lengde} m`} />
               <KV k="Avstand til nabo" v={`${data.avstand} m`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

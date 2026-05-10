@@ -16,8 +16,8 @@ type Phase = { kind: "wizard"; step: 0 | 1 | 2 } | { kind: "loading" } | { kind:
 type FraType = "naring" | "kontor" | "garasje" | "bod" | "fritidsbolig" | "annet";
 type TilType = "bolig" | "hybel" | "kontor" | "naring";
 
-const FRA_LABEL: Record<FraType, string> = { naring: "NÃ¦ringslokale / butikk", kontor: "Kontor", garasje: "Garasje", bod: "Bod / lager", fritidsbolig: "Fritidsbolig / hytte", annet: "Annet" };
-const TIL_LABEL: Record<TilType, string> = { bolig: "Bolig", hybel: "Hybel / utleiedel", kontor: "Kontor", naring: "NÃ¦ring" };
+const FRA_LABEL: Record<FraType, string> = { naring: "Næringslokale / butikk", kontor: "Kontor", garasje: "Garasje", bod: "Bod / lager", fritidsbolig: "Fritidsbolig / hytte", annet: "Annet" };
+const TIL_LABEL: Record<TilType, string> = { bolig: "Bolig", hybel: "Hybel / utleiedel", kontor: "Kontor", naring: "Næring" };
 
 export function BruksendringWizard({ p }: { p: Address }) {
   const router = useRouter();
@@ -60,17 +60,17 @@ export function BruksendringWizard({ p }: { p: Address }) {
         )}
         {step === 1 && (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Hva skal ny bruk vÃ¦re?</h2></div>
+            <div><h2 className="text-[22px] font-bold tracking-tight">Hva skal ny bruk være?</h2></div>
             <div className="space-y-2">
               {(Object.keys(TIL_LABEL) as TilType[]).map((t) => (
                 <RadioCard key={t} selected={data.til === t} onClick={() => setData({ ...data, til: t })} title={TIL_LABEL[t]} desc="" />
               ))}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">Areal (mÂ²)</label>
-              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="mÂ²" />
+              <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">Areal (m²)</label>
+              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
             </div>
-            <Alert>Bruksendring er alltid sÃ¸knadspliktig etter PBL Â§ 20-1 d.</Alert>
+            <Alert>Bruksendring er alltid søknadspliktig etter PBL § 20-1 d.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button full disabled={!data.til} onClick={() => setPhase({ kind: "wizard", step: 2 })}>Neste â†’</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
@@ -85,10 +85,10 @@ export function BruksendringWizard({ p }: { p: Address }) {
               <KV k="Eiendom" v={p.street} />
               <KV k="Fra" v={FRA_LABEL[data.fra!]} />
               <KV k="Til" v={TIL_LABEL[data.til!]} />
-              <KV k="Areal" v={`${data.areal} mÂ²`} last />
+              <KV k="Areal" v={`${data.areal} m²`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nÃ¥</Button>
+              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
