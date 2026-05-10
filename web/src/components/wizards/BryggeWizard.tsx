@@ -26,7 +26,7 @@ export function BryggeWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} loadingText="Sjekker plan- og bygningsloven og havne- og farvannsloven…" />;
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="brygge" loadingText="Sjekker plan- og bygningsloven og havne- og farvannsloven…" />;
 
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });

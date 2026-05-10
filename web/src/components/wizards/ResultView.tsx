@@ -4,8 +4,8 @@ import { ReactNode } from "react";
 import type { KjellerResult } from "@/lib/regulations/kjeller";
 import type { VeggResult } from "@/lib/regulations/vegg";
 import { Topbar } from "@/components/ui/Topbar";
-
 import { Button } from "@/components/ui/Button";
+import { getPricing, formatKr, discountPct } from "@/lib/data/pricing";
 
 
 type AnyResult = KjellerResult | VeggResult;
@@ -51,13 +51,14 @@ const STATUS_CARDS: Record<
 
 interface Props {
   r: AnyResult;
+  slug?: string;
   onGenerateSoknad: () => void;
   onDownloadPdf?: () => Promise<void>;
   pdfLoading?: boolean;
   onRestart: () => void;
 }
 
-export function ResultView({ r, onGenerateSoknad, onDownloadPdf, pdfLoading, onRestart }: Props) {
+export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoading, onRestart }: Props) {
   const sCard = STATUS_CARDS[r.status];
 
   return (
@@ -135,11 +136,7 @@ export function ResultView({ r, onGenerateSoknad, onDownloadPdf, pdfLoading, onR
           <KV k="Tiltaksklasse" v={`TK${r.tiltaksklasse}`} last />
         </div>
 
-        <SectionHead>Søknadsprosess</SectionHead>
-        <div className="bg-white border border-gray-100 rounded-xl">
-          <KV k="Søknadspakke via MittBygg" v="fra 4 900 kr" />
-          <KV k="Kommunal gebyr" v="varierer per kommune" last />
-        </div>
+        <PricingCard slug={slug} />
 
         {"bjelke" in r && r.bjelke && (
           <>
@@ -323,5 +320,35 @@ function KV({ k, v, last, mono }: { k: string; v: string; last?: boolean; mono?:
       <span className="text-gray-500 shrink-0">{k}</span>
       <span className={`font-semibold ${mono ? "font-mono text-xs" : ""}`}>{v}</span>
     </div>
+  );
+}
+
+function PricingCard({ slug }: { slug?: string }) {
+  const p = getPricing(slug ?? "");
+  const pct = discountPct(p);
+  return (
+    <>
+      <SectionHead>Søknadsprosess — hva koster det?</SectionHead>
+      <div className="bg-gradient-to-br from-[#f0f7f2] to-[#e8f5ec] border border-[#c5dccd] rounded-2xl p-5 flex flex-col gap-4">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">Markedspris (arkitekt/konsulent)</div>
+            <div className="text-lg font-semibold text-gray-400 line-through">{formatKr(p.market)}</div>
+          </div>
+          <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+            -{pct}%
+          </div>
+        </div>
+        <div className="border-t border-[#c5dccd] pt-4">
+          <div className="text-xs text-gray-500 mb-1">Din pris via MittBygg</div>
+          <div className="text-3xl font-extrabold tracking-tight text-green-700">{formatKr(p.mittbygg)}</div>
+          <div className="text-sm text-green-600 font-semibold mt-1">Du sparer {formatKr(p.market - p.mittbygg)}</div>
+        </div>
+        {p.note && <div className="text-xs text-gray-500 border-t border-[#c5dccd] pt-3">{p.note}</div>}
+        <div className="text-xs text-gray-400 border-t border-[#c5dccd] pt-3">
+          Kommunalt gebyr kommer i tillegg — varierer per kommune og tiltaksstørrelse.
+        </div>
+      </div>
+    </>
   );
 }

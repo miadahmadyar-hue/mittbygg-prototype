@@ -88,9 +88,10 @@ interface ResultPhasesProps {
   setPhase: (p: NonWizardPhase) => void;
   p: Address;
   loadingText?: string;
+  slug?: string;
 }
 
-export function ResultPhases({ phase, setPhase, p, loadingText }: ResultPhasesProps) {
+export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPhasesProps) {
   const router = useRouter();
 
   if (phase.kind === "loading") {
@@ -122,6 +123,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText }: ResultPhasesPr
     return (
       <ResultView
         r={phase.result as never}
+        slug={slug}
         onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
         onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
