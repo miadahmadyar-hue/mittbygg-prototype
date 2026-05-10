@@ -52,7 +52,7 @@ export function LevegWizard({ p }: { p: Address }) {
             </div>
             <Alert>Levegg ≤ 1,8 m høy og ≤ 10 m lang er unntatt søknad (SAK10 § 4-1 e).</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -67,7 +67,7 @@ export function LevegWizard({ p }: { p: Address }) {
               <KV k="Avstand til nabo" v={`${data.avstand} m`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

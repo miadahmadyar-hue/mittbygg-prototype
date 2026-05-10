@@ -56,7 +56,7 @@ export function GarasjeWizard({ p }: { p: Address }) {
             </div>
             <Alert>Garasje ≤ 50 m² og ≥ 1 m fra nabogrense er normalt unntatt søknad (SAK10 § 4-1 b).</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -71,7 +71,7 @@ export function GarasjeWizard({ p }: { p: Address }) {
               <KV k="Avstand til nabo" v={`${data.avstand} m`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

@@ -54,7 +54,7 @@ export function BryggeWizard({ p }: { p: Address }) {
             </div>
             <Alert>Alle brygger krever søknad etter plan- og bygningsloven og havne- og farvannsloven.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -69,7 +69,7 @@ export function BryggeWizard({ p }: { p: Address }) {
               <KV k="Bredde" v={`${data.bredde} m`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

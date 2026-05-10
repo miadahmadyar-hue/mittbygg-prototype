@@ -53,7 +53,7 @@ export function SolcellerWizard({ p }: { p: Address }) {
             </div>
             <Alert>Solceller er unntatt søknad siden 2021 (SAK10 § 4-1 k). Kun melding til nettselskapet.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -68,7 +68,7 @@ export function SolcellerWizard({ p }: { p: Address }) {
               <KV k="Effekt" v={`ca. ${kwp} kWp`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

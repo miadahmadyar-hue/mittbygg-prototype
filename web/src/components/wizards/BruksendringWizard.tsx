@@ -53,7 +53,7 @@ export function BruksendringWizard({ p }: { p: Address }) {
               ))}
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.fra} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.fra} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -72,7 +72,7 @@ export function BruksendringWizard({ p }: { p: Address }) {
             </div>
             <Alert>Bruksendring er alltid søknadspliktig etter PBL § 20-1 d.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.til} onClick={() => setPhase({ kind: "wizard", step: 2 })}>Neste â†’</Button>
+              <Button full disabled={!data.til} onClick={() => setPhase({ kind: "wizard", step: 2 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -88,7 +88,7 @@ export function BruksendringWizard({ p }: { p: Address }) {
               <KV k="Areal" v={`${data.areal} m²`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

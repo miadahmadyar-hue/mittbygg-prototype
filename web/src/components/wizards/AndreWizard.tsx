@@ -50,7 +50,7 @@ export function AndreWizard({ p }: { p: Address }) {
             </div>
             <Alert>Vi gir deg en første vurdering. Komplekse tiltak kan kreve dialog med kommunen.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.beskrivelse.trim()} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.beskrivelse.trim()} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -63,7 +63,7 @@ export function AndreWizard({ p }: { p: Address }) {
               <KV k="Beskrivelse" v={data.beskrivelse.length > 60 ? data.beskrivelse.slice(0, 60) + "…" : data.beskrivelse} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

@@ -12,9 +12,9 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "preview"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
-type FType = "kledning" | "farge" | "vindu_storre" | "terrasse" | "dor";
-const LABEL: Record<FType, string> = { kledning: "Ny ytterkledning", farge: "Farge / overflate", vindu_storre: "Større vindusåpning", terrasse: "Terrasse", dor: "Ny dør" };
-const DESC: Record<FType, string>  = { kledning: "Skifte kledning, panel eller puss", farge: "Male om fasaden eller endre overflate", vindu_storre: "Lage større vindu i eksisterende fasade", terrasse: "Ny terrasse eller uteplass", dor: "Skifte eller flytte ytterdør" };
+type FType = "skifte_vindu" | "nytt_hull" | "vindu_storre" | "dor" | "kledning" | "farge" | "terrasse";
+const LABEL: Record<FType, string> = { skifte_vindu: "Skifte vindu / dør", nytt_hull: "Nytt hull i vegg", vindu_storre: "Større vindusåpning", dor: "Flytte ytterdør", kledning: "Ny ytterkledning", farge: "Farge / overflate", terrasse: "Terrasse" };
+const DESC: Record<FType, string>  = { skifte_vindu: "Samme størrelse, ny glass eller karm", nytt_hull: "Hull i eksisterende vegg uten endring av størrelse", vindu_storre: "Utvide eller forstørre eksisterende åpning", dor: "Flytte eller skifte plasseringen av ytterdør", kledning: "Skifte kledning, panel eller puss", farge: "Male om fasaden eller endre overflate", terrasse: "Ny terrasse eller uteplass" };
 
 export function FasadeWizard({ p }: { p: Address }) {
   const router = useRouter();
@@ -47,7 +47,7 @@ export function FasadeWizard({ p }: { p: Address }) {
               ))}
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -62,7 +62,7 @@ export function FasadeWizard({ p }: { p: Address }) {
               <KV k="Verneverdig" v={data.verneverdig ? "Ja" : "Nei"} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

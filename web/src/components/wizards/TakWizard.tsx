@@ -45,7 +45,7 @@ export function TakWizard({ p }: { p: Address }) {
               <RadioCard selected={data.type === "bygge_loft"} onClick={() => setData({ ...data, type: "bygge_loft" })} title="Bygge ut loft" desc="Innrede loft til oppholdsrom eller soverom" />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -63,7 +63,7 @@ export function TakWizard({ p }: { p: Address }) {
               <KV k="Etterisolere" v={data.etterisolere ? "Ja" : "Nei"} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

@@ -56,7 +56,7 @@ export function TilbyggWizard({ p }: { p: Address }) {
               <p className="text-xs text-gray-500 mt-1">Krav: minst 4 m fra nabogrense (PBL § 29-4)</p>
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -72,7 +72,7 @@ export function TilbyggWizard({ p }: { p: Address }) {
             </div>
             <Alert>Vi sjekker mot SAK10, PBL §§ 20-1, 20-3, 20-4 og §29-4 naboavstand.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

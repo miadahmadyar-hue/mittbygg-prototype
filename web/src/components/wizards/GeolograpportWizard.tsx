@@ -48,7 +48,7 @@ export function GeolograpportWizard({ p }: { p: Address }) {
               <RadioCard selected={data.type === "annet"}    onClick={() => setData({ ...data, type: "annet" })}    title="Annet / usikker"   desc="Vil ha oversikt over grunnforholdene" />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -67,7 +67,7 @@ export function GeolograpportWizard({ p }: { p: Address }) {
               <KV k="Prosjekttype" v={data.type === "nybygg" ? "Nybygg / bolig" : data.type === "tilbygg" ? "Tilbygg" : data.type === "kjeller" ? "Kjellerarbeid" : data.type === "brygge" ? "Brygge" : "Annet / usikker"} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={!data.timing} onClick={evaluate}>âš¡ Se pris og bestill</Button>
+              <Button size="lg" full disabled={!data.timing} onClick={evaluate}>⚡ Se pris og bestill</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

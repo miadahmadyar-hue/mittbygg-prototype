@@ -55,7 +55,7 @@ export function TilleggsdelWizard({ p }: { p: Address }) {
             </div>
             <Alert>Tilleggsdel til hoveddel krever søknad og at rommet oppfyller TEK17.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.romtype} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste â†’</Button>
+              <Button full disabled={!data.romtype} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
@@ -74,7 +74,7 @@ export function TilleggsdelWizard({ p }: { p: Address }) {
               <KV k="Areal" v={`${data.areal} m²`} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={!data.formaal} onClick={evaluate}>âš¡ Beregn nå</Button>
+              <Button size="lg" full disabled={!data.formaal} onClick={evaluate}>⚡ Beregn nå</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

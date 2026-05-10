@@ -4,9 +4,9 @@ import { ReactNode } from "react";
 import type { KjellerResult } from "@/lib/regulations/kjeller";
 import type { VeggResult } from "@/lib/regulations/vegg";
 import { Topbar } from "@/components/ui/Topbar";
-import { Pill } from "@/components/ui/Pill";
+
 import { Button } from "@/components/ui/Button";
-import { formatKr } from "@/lib/format";
+
 
 type AnyResult = KjellerResult | VeggResult;
 
@@ -135,33 +135,11 @@ export function ResultView({ r, onGenerateSoknad, onDownloadPdf, pdfLoading, onR
           <KV k="Tiltaksklasse" v={`TK${r.tiltaksklasse}`} last />
         </div>
 
-        {r.tiltak.length > 0 && (
-          <>
-            <SectionHead right={<Pill>{r.tiltak.length} stk</Pill>}>
-              Anbefalte tiltak
-            </SectionHead>
-            <ul className="space-y-2">
-              {r.tiltak.map((t, i) => (
-                <li key={i} className="flex gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl items-start">
-                  <div className="w-[22px] h-[22px] rounded-full bg-gray-100 text-gray-500 grid place-items-center shrink-0 mt-0.5">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm flex justify-between gap-2">
-                      <span>{t.name}</span>
-                      <span className="text-orange-600">{formatKr(t.kostnad)}</span>
-                    </div>
-                    <div className="text-[13px] text-gray-500 mt-0.5">{t.desc}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-
-            <CostCard total={r.totalKostnad} />
-          </>
-        )}
+        <SectionHead>Søknadsprosess</SectionHead>
+        <div className="bg-white border border-gray-100 rounded-xl">
+          <KV k="Søknadspakke via MittBygg" v="fra 4 900 kr" />
+          <KV k="Kommunal gebyr" v="varierer per kommune" last />
+        </div>
 
         {"bjelke" in r && r.bjelke && (
           <>
@@ -272,33 +250,6 @@ function FindingIcon({ type }: { type: "ok" | "warn" | "fail" }) {
   );
 }
 
-function CostCard({ total }: { total: number }) {
-  return (
-    <div className="bg-gradient-to-br from-[#fef4ec] to-[#fff8f2] border border-[#f8d4b3] rounded-xl p-5 flex flex-col gap-3">
-      <div>
-        <div className="text-sm text-gray-500">Estimert totalkostnad (eks. mva)</div>
-        <div className="text-3xl font-extrabold tracking-tight text-orange-600">
-          {formatKr(total)}
-        </div>
-      </div>
-      <CostRow k="Materialer + arbeid" v={Math.round(total * 0.75)} />
-      <CostRow
-        k="Søknad + tegninger (gjennom MittBygg)"
-        v={Math.round(total * 0.05) + 4900}
-      />
-      <CostRow k="Reserve (10 %)" v={Math.round(total * 0.10)} />
-    </div>
-  );
-}
-
-function CostRow({ k, v }: { k: string; v: number }) {
-  return (
-    <div className="flex justify-between text-[13px] py-1 border-t border-dashed border-orange-300/30">
-      <span className="text-gray-700">{k}</span>
-      <span className="font-semibold">{formatKr(v)}</span>
-    </div>
-  );
-}
 
 function Timeline({ ansvarsrett }: { ansvarsrett: boolean }) {
   const steps = [

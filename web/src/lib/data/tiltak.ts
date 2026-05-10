@@ -1,6 +1,6 @@
 export type IconKey =
   | "kjeller" | "wall" | "garasje" | "tilbygg" | "fasade" | "tak"
-  | "sol" | "anneks" | "levegg" | "vindu" | "brygge" | "ai" | "geolog"
+  | "sol" | "anneks" | "levegg" | "brygge" | "ai" | "geolog"
   | "bruksendring" | "tilleggsdel" | "boenhet";
 
 export interface TiltakTag {
@@ -30,19 +30,11 @@ export const TILTAK: Tiltak[] = [
   },
   {
     id: "fjern-vegg",
-    name: "Fjern bærevegg",
-    desc: "Åpen planløsning – med bjelke og dimensjonering",
+    name: "Endring i bærekonstruksjon",
+    desc: "Fjerne eller flytte bærevegg, bjelke eller søyle",
     icon: "wall", iconClass: "warm",
     tags: [{ text: "Krever ANS-rett", variant: "red" }],
     slug: "vegg", available: true,
-  },
-  {
-    id: "garasje",
-    name: "Bygge garasje",
-    desc: "Frittliggende garasje, carport eller bod",
-    icon: "garasje", iconClass: "blue",
-    tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: "garasje", available: true,
   },
   {
     id: "tilbygg",
@@ -53,9 +45,17 @@ export const TILTAK: Tiltak[] = [
     slug: "tilbygg", available: true,
   },
   {
+    id: "garasje",
+    name: "Bygge garasje / carport",
+    desc: "Frittliggende garasje, carport eller bod",
+    icon: "garasje", iconClass: "blue",
+    tags: [{ text: "Ofte unntatt", variant: "green" }],
+    slug: "garasje", available: true,
+  },
+  {
     id: "fasade",
     name: "Fasadeendring",
-    desc: "Nye vinduer, kledning eller terrasse",
+    desc: "Vindu, dør, kledning, hull i vegg eller terrasse",
     icon: "fasade", iconClass: "",
     tags: [{ text: "Avhenger", variant: "" }],
     slug: "fasade", available: true,
@@ -86,43 +86,19 @@ export const TILTAK: Tiltak[] = [
   },
   {
     id: "levegg",
-    name: "Levegg",
+    name: "Levegg / gjerde",
     desc: "Skjerm mot innsyn eller vind",
     icon: "levegg", iconClass: "blue",
     tags: [{ text: "Ofte unntatt", variant: "green" }],
     slug: "levegg", available: true,
   },
   {
-    id: "vindu",
-    name: "Innsette nytt vindu",
-    desc: "Nytt vindu på fasade",
-    icon: "vindu", iconClass: "",
-    tags: [{ text: "Avhenger", variant: "" }],
-    slug: "vindu", available: true,
-  },
-  {
     id: "brygge",
-    name: "Brygge / stupebrett",
+    name: "Brygge / sjøbod",
     desc: "Privat brygge på sjøtomt",
     icon: "brygge", iconClass: "blue",
     tags: [{ text: "Søknadspliktig", variant: "amber" }],
     slug: "brygge", available: true,
-  },
-  {
-    id: "andre",
-    name: "Noe annet",
-    desc: "Beskriv tiltaket – AI hjelper deg videre",
-    icon: "ai", iconClass: "warm",
-    tags: [{ text: "AI-assistent", variant: "" }],
-    slug: "andre", available: true,
-  },
-  {
-    id: "geolograpport",
-    name: "Geolograpport",
-    desc: "Grunnundersøkelse og geoteknisk rapport",
-    icon: "geolog", iconClass: "blue",
-    tags: [{ text: "Fagtjeneste", variant: "blue" }],
-    slug: "geolograpport", available: true,
   },
   {
     id: "bruksendring",
@@ -147,5 +123,21 @@ export const TILTAK: Tiltak[] = [
     icon: "boenhet", iconClass: "warm",
     tags: [{ text: "Krever ANS-rett", variant: "red" }],
     slug: "boenhet", available: true,
+  },
+  {
+    id: "geolograpport",
+    name: "Geolograpport",
+    desc: "Grunnundersøkelse og geoteknisk rapport",
+    icon: "geolog", iconClass: "blue",
+    tags: [{ text: "Fagtjeneste", variant: "blue" }],
+    slug: "geolograpport", available: true,
+  },
+  {
+    id: "andre",
+    name: "Noe annet",
+    desc: "Beskriv tiltaket – AI hjelper deg videre",
+    icon: "ai", iconClass: "warm",
+    tags: [{ text: "AI-assistent", variant: "" }],
+    slug: "andre", available: true,
   },
 ];
