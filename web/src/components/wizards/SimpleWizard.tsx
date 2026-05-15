@@ -135,6 +135,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
     return (
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
+        slug={slug}
         onBetal={async () => setPhase({ kind: "preview", result: phase.result })}
         onBack={() => setPhase({ kind: "result", result: phase.result })}
       />
