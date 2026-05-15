@@ -21,6 +21,7 @@ import { evaluateKjellerApi } from "@/lib/api/evaluate";
 import { downloadKjellerSoknad } from "@/lib/api/soknad";
 import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
 import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
+import { FALLBACK_ARCHITECT, FALLBACK_ENGINEER } from "@/lib/ai/fallbacks";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -124,17 +125,12 @@ export function KjellerWizard({ p }: { p: Address }) {
             callArchitectAgent({ ...reqBase, session_id: sessionId }).catch(() => null),
             callEngineerAgent(reqBase).catch(() => null),
           ]);
-          if (architect && engineer) {
-            setAiPhase({ kind: "done", result, architect, engineer });
-          } else {
-            setAiPhase(null);
-            setPhase({ kind: "sending", result });
-            await downloadKjellerSoknad(
-              result, p.street,
-              Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.city,
-            ).catch(() => {});
-            setPhase({ kind: "sent", result });
-          }
+          setAiPhase({
+            kind: "done",
+            result,
+            architect: architect ?? FALLBACK_ARCHITECT,
+            engineer:  engineer  ?? FALLBACK_ENGINEER,
+          });
         }}
       />
     );
