@@ -172,6 +172,8 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
             Number(p.matrikkel.gnr),
             Number(p.matrikkel.bnr),
             p.matrikkel.kommune,
+            architect as unknown as Record<string, unknown>,
+            engineer as unknown as Record<string, unknown>,
           ).catch(() => {});
           setPhase({ kind: "sent", result });
         }}

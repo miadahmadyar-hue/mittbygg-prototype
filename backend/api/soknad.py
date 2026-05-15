@@ -42,6 +42,8 @@ class TiltakSoknadRequest(BaseModel):
     gnr: int = 0
     bnr: int = 0
     kommune: str = ""
+    architect: dict | None = None
+    engineer: dict | None = None
 
 
 @router.post("/soknad/tiltak")
@@ -53,6 +55,8 @@ def post_tiltak_soknad(req: TiltakSoknadRequest) -> StreamingResponse:
         gnr=req.gnr,
         bnr=req.bnr,
         kommune=req.kommune,
+        architect=req.architect,
+        engineer=req.engineer,
     )
     filename = f"mittbygg-soknad-{req.slug}.pdf"
     return StreamingResponse(

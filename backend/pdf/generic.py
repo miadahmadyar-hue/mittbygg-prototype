@@ -84,6 +84,8 @@ def generate_generic_pdf(
     gnr: int = 0,
     bnr: int = 0,
     kommune: str = "",
+    architect: dict | None = None,
+    engineer: dict | None = None,
 ) -> bytes:
     title = SLUG_TITLE.get(slug, "Tiltak")
     pdf = _PDF(orientation="P", unit="mm", format="A4")
@@ -231,6 +233,122 @@ def generate_generic_pdf(
                 "Kostnadsestimater er veiledende, basert på gjennomsnittspriser for Oslo-regionen. "
                 "Innhent anbud fra minimum tre håndverkere for bindende pristilbud.")
             pdf.set_text_color(*C_DARK)
+
+    # ── AI ANALYSE ───────────────────────────────────────────────────────────────
+    if architect or engineer:
+        pdf.add_page()
+        pdf.set_y(15)
+
+        if architect:
+            pdf.section_title("Arkitekt-vurdering  (AI-generert)")
+
+            pdf.set_x(15)
+            pdf.set_font("Sans", "", 9)
+            pdf.set_text_color(*C_GRAY)
+            pdf.multi_cell(180, 4.5, architect.get("summary", ""))
+            pdf.set_text_color(*C_DARK)
+            pdf.ln(3)
+
+            ITEM_COLOR  = {"ok": C_GREEN, "warn": C_AMBER, "missing": C_GRAY}
+            ITEM_LABEL  = {"ok": "OK", "warn": "ADVARSEL", "missing": "MANGLER"}
+            for item in architect.get("items", []):
+                itype = item.get("type", "ok")
+                ic = ITEM_COLOR.get(itype, C_GRAY)
+                il = ITEM_LABEL.get(itype, "–")
+                pdf.set_x(15)
+                pdf.set_fill_color(*ic)
+                pdf.set_text_color(*C_WHITE)
+                pdf.set_font("Sans", "B", 7)
+                pdf.cell(18, 5.5, il, fill=True, align="C")
+                pdf.set_text_color(*C_DARK)
+                pdf.set_font("Sans", "", 9)
+                pdf.cell(162, 5.5, f"  {item.get('text', '')}", ln=True)
+                pdf.set_text_color(*C_DARK)
+                pdf.ln(1)
+
+            anbefalinger = architect.get("anbefalinger", [])
+            if anbefalinger:
+                pdf.ln(2)
+                pdf.set_x(15)
+                pdf.set_font("Sans", "B", 8.5)
+                pdf.set_text_color(*C_AMBER)
+                pdf.cell(180, 5, "Anbefalinger", ln=True)
+                pdf.set_text_color(*C_DARK)
+                for anbefaling in anbefalinger:
+                    pdf.set_x(15)
+                    pdf.set_font("Sans", "", 8.5)
+                    pdf.set_text_color(*C_GRAY)
+                    pdf.multi_cell(180, 4.5, f"→  {anbefaling}")
+                    pdf.set_text_color(*C_DARK)
+
+            pdf.ln(4)
+
+        if engineer:
+            pdf.section_title(f"Teknisk redegjørelse  (AI-generert)")
+
+            TYPE_COLOR = {
+                "last":   (249, 115, 22),
+                "energi": C_GREEN,
+                "brann":  C_RED,
+                "grunn":  C_GRAY,
+            }
+
+            # Table header
+            pdf.set_x(15)
+            pdf.set_fill_color(*C_DARK)
+            pdf.set_text_color(*C_WHITE)
+            pdf.set_font("Sans", "B", 8)
+            pdf.cell(18, 6, "Type",    fill=True, align="C")
+            pdf.cell(75, 6, "  Beregning",  fill=True)
+            pdf.cell(45, 6, "Verdi",   fill=True, align="C")
+            pdf.cell(42, 6, "Referanse", fill=True, ln=True)
+            pdf.set_text_color(*C_DARK)
+
+            for i, b in enumerate(engineer.get("beregninger", [])):
+                shade = i % 2 == 0
+                if shade:
+                    pdf.set_fill_color(*C_LIGHT)
+                tc = TYPE_COLOR.get(b.get("type", ""), C_GRAY)
+                pdf.set_x(15)
+                pdf.set_fill_color(*tc)
+                pdf.set_text_color(*C_WHITE)
+                pdf.set_font("Sans", "B", 7)
+                pdf.cell(18, 6, str(b.get("type", "")).upper(), fill=True, align="C")
+                pdf.set_text_color(*C_DARK)
+                if shade:
+                    pdf.set_fill_color(*C_LIGHT)
+                pdf.set_font("Sans", "", 8.5)
+                pdf.cell(75, 6, f"  {b.get('navn', '')}", fill=shade)
+                pdf.set_font("Sans", "B", 8.5)
+                pdf.cell(45, 6, b.get("verdi", ""), fill=shade, align="C")
+                pdf.set_font("Sans", "I", 7.5)
+                pdf.set_text_color(*C_SLATE)
+                pdf.cell(42, 6, b.get("referanse", ""), fill=shade, ln=True)
+                pdf.set_text_color(*C_DARK)
+
+            pdf.ln(3)
+            pdf.set_x(15)
+            pdf.set_font("Sans", "", 9)
+            pdf.set_text_color(*C_GRAY)
+            pdf.multi_cell(180, 4.5, engineer.get("konklusjon", ""))
+            pdf.set_text_color(*C_DARK)
+
+            notater = engineer.get("notater", [])
+            if notater:
+                pdf.ln(2)
+                pdf.set_x(15)
+                pdf.set_font("Sans", "B", 8.5)
+                pdf.set_text_color(*C_GREEN_DARK)
+                pdf.cell(180, 5, "Tekniske notater", ln=True)
+                pdf.set_text_color(*C_DARK)
+                for notat in notater:
+                    pdf.set_x(15)
+                    pdf.set_font("Sans", "", 8.5)
+                    pdf.set_text_color(*C_GRAY)
+                    pdf.multi_cell(180, 4.5, f"·  {notat}")
+                    pdf.set_text_color(*C_DARK)
+
+            pdf.ln(4)
 
     pdf.section_title("Neste steg")
     ansvarsrett = result.get("ansvarsrett", False)

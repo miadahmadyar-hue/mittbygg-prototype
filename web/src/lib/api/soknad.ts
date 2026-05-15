@@ -38,11 +38,13 @@ export async function downloadTiltakSoknad(
   gnr: number,
   bnr: number,
   kommune: string,
+  architect?: Record<string, unknown> | null,
+  engineer?: Record<string, unknown> | null,
 ): Promise<void> {
   const res = await fetch(`${API_URL}/api/soknad/tiltak`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slug, result, address, gnr, bnr, kommune }),
+    body: JSON.stringify({ slug, result, address, gnr, bnr, kommune, architect, engineer }),
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`PDF-generering feilet (${res.status})`);
