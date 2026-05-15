@@ -176,6 +176,27 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
               <Button variant="secondary" full disabled>
                 Søknad kan ikke lages — rett kritiske avvik først
               </Button>
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 grid place-items-center shrink-0 text-amber-600">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm text-amber-900">Får du ikke til søknaden selv?</div>
+                    <div className="text-xs text-amber-700 mt-0.5">En rådgiver fra MittBygg kan hjelpe deg videre — selv med krevende tilfeller.</div>
+                  </div>
+                </div>
+                <a
+                  href="mailto:hei@mittbygg.no?subject=Trenger hjelp med søknad"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm rounded-xl py-3 text-center transition-colors"
+                >
+                  Kontakt en rådgiver
+                </a>
+              </div>
               <Button variant="ghost" full onClick={onRestart}>
                 Start på nytt
               </Button>

@@ -1,6 +1,6 @@
 export type IconKey =
   | "kjeller" | "wall" | "garasje" | "tilbygg" | "fasade" | "tak"
-  | "sol" | "anneks" | "levegg" | "brygge" | "ai" | "geolog"
+  | "anneks" | "levegg" | "brygge" | "ai" | "geolog"
   | "bruksendring" | "tilleggsdel" | "boenhet";
 
 export interface TiltakTag {
@@ -67,14 +67,6 @@ export const TILTAK: Tiltak[] = [
     icon: "tak", iconClass: "blue",
     tags: [{ text: "Ofte unntatt", variant: "green" }],
     slug: "tak", available: true,
-  },
-  {
-    id: "solceller",
-    name: "Solceller",
-    desc: "Solcelleanlegg på tak eller vegg",
-    icon: "sol", iconClass: "warm",
-    tags: [{ text: "Unntatt søknad", variant: "green" }],
-    slug: "solceller", available: true,
   },
   {
     id: "anneks",
