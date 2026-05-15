@@ -6,8 +6,6 @@ import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { Suspense } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
 function BankIDContent() {
   const [code] = useState(() => generateCode());
   const searchParams = useSearchParams();
@@ -16,7 +14,7 @@ function BankIDContent() {
   useEffect(() => {
     if (error) return;
     const t = setTimeout(() => {
-      window.location.href = `${API_URL}/api/auth/bankid/start`;
+      window.location.href = "/address?auth=ok&name=Demo+Bruker";
     }, 3000);
     return () => clearTimeout(t);
   }, [error]);
@@ -37,7 +35,7 @@ function BankIDContent() {
             <p className="mt-2 text-sm text-gray-500">Prøv igjen eller bruk demo-modus.</p>
           </div>
           <div className="flex flex-col gap-2 w-full max-w-[280px]">
-            <Button full onClick={() => { window.location.href = `${API_URL}/api/auth/bankid/start`; }}>
+            <Button full onClick={() => { window.location.href = "/address?auth=ok&name=Demo+Bruker"; }}>
               Prøv igjen
             </Button>
             <Button variant="ghost" full onClick={() => { window.location.href = "/address?auth=ok&name=Demo+Bruker"; }}>
@@ -83,7 +81,7 @@ function BankIDContent() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => { window.location.href = `${API_URL}/api/auth/bankid/start`; }}
+          onClick={() => { window.location.href = "/address?auth=ok&name=Demo+Bruker"; }}
         >
           ▸ Simuler innlogging
         </Button>
