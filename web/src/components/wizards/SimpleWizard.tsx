@@ -14,6 +14,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
 import { SoknadSent } from "./SoknadFlow";
 import { BetalingModal } from "./BetalingModal";
+import { DrawingUpload } from "./DrawingUpload";
 import { downloadTiltakSoknad } from "@/lib/api/soknad";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
@@ -23,6 +24,7 @@ type Phase =
   | { kind: "loading" }
   | { kind: "result"; result: TiltakResult }
   | { kind: "betaling"; result: TiltakResult }
+  | { kind: "upload"; result: TiltakResult }
   | { kind: "preview"; result: TiltakResult }
   | { kind: "sending"; result: TiltakResult }
   | { kind: "sent"; result: TiltakResult };
@@ -139,6 +141,18 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
         totalKostnad={phase.result.totalKostnad}
         slug={slug}
         onBetal={async () => {
+          setPhase({ kind: "upload", result: phase.result });
+        }}
+        onBack={() => setPhase({ kind: "result", result: phase.result })}
+      />
+    );
+  }
+
+  if (phase.kind === "upload") {
+    return (
+      <DrawingUpload
+        onContinue={async (sessionId) => {
+          void sessionId; // will be used by AI architect agent in Stage 2
           setPhase({ kind: "sending", result: phase.result });
           await downloadTiltakSoknad(
             slug ?? "andre",
@@ -150,7 +164,6 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
           ).catch(() => {/* show sent screen even if download fails */});
           setPhase({ kind: "sent", result: phase.result });
         }}
-        onBack={() => setPhase({ kind: "result", result: phase.result })}
       />
     );
   }
