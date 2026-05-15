@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { ADDRESSES, type Address } from "@/lib/data/addresses";
+import { getUser, setUser, type User } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const KARTVERKET_URL = "https://ws.geonorge.no/adresser/v1/sok";
@@ -91,7 +92,19 @@ export default function AddressPage() {
   const [results, setResults] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState(false);
+  const [user, setUserState] = useState<User | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth") === "ok") {
+      const name = params.get("name") ?? "Bruker";
+      setUserState(setUser(name));
+      window.history.replaceState({}, "", "/address");
+    } else {
+      setUserState(getUser());
+    }
+  }, []);
 
   useEffect(() => {
     if (query.trim().length < 2) { setResults([]); setError(false); return; }
@@ -125,7 +138,7 @@ export default function AddressPage() {
         title=""
         right={
           <div className="w-9 h-9 rounded-full bg-green-500 text-white grid place-items-center font-bold text-sm">
-            D
+            {user?.initial ?? "?"}
           </div>
         }
       />

@@ -1,20 +1,53 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
+import { Suspense } from "react";
 
-export default function BankIDPage() {
-  const router = useRouter();
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+function BankIDContent() {
   const [code] = useState(() => generateCode());
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
 
-  // Auto-advance after 8 seconds (real-feeling demo)
   useEffect(() => {
-    const t = setTimeout(() => router.push("/address"), 8000);
+    if (error) return;
+    const t = setTimeout(() => {
+      window.location.href = `${API_URL}/api/auth/bankid/start`;
+    }, 3000);
     return () => clearTimeout(t);
-  }, [router]);
+  }, [error]);
+
+  if (error) {
+    return (
+      <>
+        <Topbar title="BankID" />
+        <div className="view items-center justify-center text-center gap-6">
+          <div className="w-20 h-20 rounded-full bg-red-50 grid place-items-center">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4M12 16h.01" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-[22px] font-bold tracking-tight">Innlogging feilet</h2>
+            <p className="mt-2 text-sm text-gray-500">Prøv igjen eller bruk demo-modus.</p>
+          </div>
+          <div className="flex flex-col gap-2 w-full max-w-[280px]">
+            <Button full onClick={() => { window.location.href = `${API_URL}/api/auth/bankid/start`; }}>
+              Prøv igjen
+            </Button>
+            <Button variant="ghost" full onClick={() => { window.location.href = "/address?auth=ok&name=Demo+Bruker"; }}>
+              Fortsett som demo
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -22,51 +55,48 @@ export default function BankIDPage() {
       <div className="view items-center justify-center text-center gap-6">
         <div
           className="rounded-[28px] grid place-items-center"
-          style={{
-            width: 88,
-            height: 88,
-            background: "linear-gradient(135deg, #2156a8, #143670)",
-          }}
+          style={{ width: 88, height: 88, background: "linear-gradient(135deg, #2156a8, #143670)" }}
         >
-          <svg
-            width="40" height="40" viewBox="0 0 24 24" fill="none"
-            stroke="white" strokeWidth="1.6" strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="6" width="18" height="14" rx="2" />
             <path d="M7 10h10M7 14h6M7 18h4" />
           </svg>
         </div>
 
         <div>
-          <h2 className="text-[22px] font-bold tracking-tight">
-            Bekreft pålogging
-          </h2>
+          <h2 className="text-[22px] font-bold tracking-tight">Bekreft pålogging</h2>
           <p className="mt-2 text-sm text-gray-700">
             Åpne BankID-appen på telefonen og bekreft.
           </p>
         </div>
 
         <div className="bg-white border border-gray-100 rounded-xl px-5 py-4 max-w-[280px] w-full">
-          <div
-            className="text-center text-3xl tracking-[4px] text-green-500"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
+          <div className="text-center text-3xl tracking-[4px] text-green-500 font-mono">
             {code}
           </div>
           <p className="text-xs text-gray-500 mt-2">Engangskode</p>
         </div>
 
         <div className="spinner" />
-        <p className="text-xs text-gray-500">Venter på bekreftelse…</p>
+        <p className="text-xs text-gray-500">Starter BankID…</p>
 
-        <Link href="/address" className="contents">
-          <Button variant="ghost" size="sm">
-            ▸ Simuler innlogging
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { window.location.href = `${API_URL}/api/auth/bankid/start`; }}
+        >
+          ▸ Simuler innlogging
+        </Button>
       </div>
     </>
+  );
+}
+
+export default function BankIDPage() {
+  return (
+    <Suspense>
+      <BankIDContent />
+    </Suspense>
   );
 }
 
