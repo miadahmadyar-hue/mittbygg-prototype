@@ -12,8 +12,9 @@ import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
-import { SoknadPreview, SoknadSent } from "./SoknadFlow";
+import { SoknadSent } from "./SoknadFlow";
 import { BetalingModal } from "./BetalingModal";
+import { downloadTiltakSoknad } from "@/lib/api/soknad";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
@@ -113,7 +114,8 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
         <Topbar back={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
           <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">Sender til Altinn / DiBK Fellestjenester Bygg…</h3>
+          <h3 className="text-base font-semibold">Genererer søknadspakke…</h3>
+          <p className="text-sm text-gray-500">Laster ned PDF…</p>
         </div>
       </>
     );
@@ -124,7 +126,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
       <ResultView
         r={phase.result as never}
         slug={slug}
-        onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
+        onGenerateSoknad={() => setPhase({ kind: "betaling", result: phase.result })}
         onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
       />
@@ -136,23 +138,27 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
         slug={slug}
-        onBetal={async () => setPhase({ kind: "preview", result: phase.result })}
+        onBetal={async () => {
+          setPhase({ kind: "sending", result: phase.result });
+          await downloadTiltakSoknad(
+            slug ?? "andre",
+            phase.result,
+            p.street,
+            Number(p.matrikkel.gnr),
+            Number(p.matrikkel.bnr),
+            p.matrikkel.kommune,
+          ).catch(() => {/* show sent screen even if download fails */});
+          setPhase({ kind: "sent", result: phase.result });
+        }}
         onBack={() => setPhase({ kind: "result", result: phase.result })}
       />
     );
   }
 
   if (phase.kind === "preview") {
-    return (
-      <SoknadPreview
-        ansvarsrett={phase.result.ansvarsrett}
-        onBack={() => setPhase({ kind: "result", result: phase.result })}
-        onSend={() => {
-          setPhase({ kind: "sending", result: phase.result });
-          setTimeout(() => setPhase({ kind: "sent", result: phase.result }), 1800);
-        }}
-      />
-    );
+    // Legacy — redirect straight to sent
+    setPhase({ kind: "sent", result: phase.result });
+    return null;
   }
 
   if (phase.kind === "sent") {

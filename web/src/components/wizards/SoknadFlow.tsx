@@ -97,26 +97,26 @@ export function SoknadSent({ ansvarsrett, onDone }: SentProps) {
           </svg>
         </div>
 
-        <h1 className="text-[32px] font-bold tracking-[-0.025em] leading-[1.1]">Søknad sendt!</h1>
+        <h1 className="text-[32px] font-bold tracking-[-0.025em] leading-[1.1]">Søknadspakke klar!</h1>
         <p className="text-[17px] text-gray-700 mt-3 leading-snug">
-          Søknaden er mottatt av kommunen via DiBK Fellestjenester Bygg.
+          PDF-pakken er lastet ned. Du kan nå sende den til kommunen.
         </p>
 
         <div className="bg-white border border-gray-100 rounded-xl mt-6 text-left">
-          <KV k="Saksnummer" v={ref} mono />
-          <KV k="Mottatt" v={now} />
-          <KV k="Forventet svar" v={ansvarsrett ? "12 uker" : "3 uker"} />
+          <KV k="Referanse" v={ref} mono />
+          <KV k="Generert" v={now} />
+          <KV k="Neste steg" v="Send til kommunen" />
           <KV
             k="Status"
-            vEl={<Pill variant="amber">Til behandling</Pill>}
+            vEl={<Pill variant="green">Klar til innsending</Pill>}
             last
           />
         </div>
 
         <div className="mt-4 text-left">
           <Alert variant="green">
-            Vi varsler deg på SMS når kommunen svarer eller naboer kommer med
-            merknader.
+            Pakken inneholder søknadsskjema, regelsjekk og neste-steg-guide.
+            Lever den digitalt på kommunens innbyggerportal eller send per post.
           </Alert>
         </div>
 
