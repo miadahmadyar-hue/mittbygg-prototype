@@ -24,7 +24,6 @@ type Phase =
   | { kind: "loading" }
   | { kind: "result"; result: TiltakResult }
   | { kind: "betaling"; result: TiltakResult }
-  | { kind: "upload"; result: TiltakResult }
   | { kind: "preview"; result: TiltakResult }
   | { kind: "sending"; result: TiltakResult }
   | { kind: "sent"; result: TiltakResult };
@@ -96,6 +95,7 @@ interface ResultPhasesProps {
 
 export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPhasesProps) {
   const router = useRouter();
+  const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
 
   if (phase.kind === "loading") {
     return (
@@ -135,35 +135,35 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
     );
   }
 
+  if (uploadPending) {
+    return (
+      <DrawingUpload
+        onContinue={async (sessionId) => {
+          void sessionId; // consumed by AI architect agent in Stage 2
+          const result = uploadPending;
+          setUploadPending(null);
+          setPhase({ kind: "sending", result });
+          await downloadTiltakSoknad(
+            slug ?? "andre",
+            result,
+            p.street,
+            Number(p.matrikkel.gnr),
+            Number(p.matrikkel.bnr),
+            p.matrikkel.kommune,
+          ).catch(() => {});
+          setPhase({ kind: "sent", result });
+        }}
+      />
+    );
+  }
+
   if (phase.kind === "betaling") {
     return (
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
         slug={slug}
-        onBetal={async () => {
-          setPhase({ kind: "upload", result: phase.result });
-        }}
+        onBetal={async () => setUploadPending(phase.result)}
         onBack={() => setPhase({ kind: "result", result: phase.result })}
-      />
-    );
-  }
-
-  if (phase.kind === "upload") {
-    return (
-      <DrawingUpload
-        onContinue={async (sessionId) => {
-          void sessionId; // will be used by AI architect agent in Stage 2
-          setPhase({ kind: "sending", result: phase.result });
-          await downloadTiltakSoknad(
-            slug ?? "andre",
-            phase.result,
-            p.street,
-            Number(p.matrikkel.gnr),
-            Number(p.matrikkel.bnr),
-            p.matrikkel.kommune,
-          ).catch(() => {/* show sent screen even if download fails */});
-          setPhase({ kind: "sent", result: phase.result });
-        }}
       />
     );
   }
