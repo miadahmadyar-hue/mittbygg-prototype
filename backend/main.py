@@ -10,6 +10,7 @@ from api.evaluate import router as evaluate_router
 from api.soknad import router as soknad_router
 from api.drawings import router as drawings_router
 from api.ai_architect import router as ai_architect_router
+from api.ai_engineer import router as ai_engineer_router
 
 load_dotenv()
 
@@ -35,6 +36,7 @@ app.include_router(evaluate_router, prefix="/api")
 app.include_router(soknad_router, prefix="/api")
 app.include_router(drawings_router, prefix="/api")
 app.include_router(ai_architect_router, prefix="/api")
+app.include_router(ai_engineer_router, prefix="/api")
 
 
 @app.get("/health")

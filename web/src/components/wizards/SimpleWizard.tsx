@@ -15,9 +15,10 @@ import { ResultView } from "./ResultView";
 import { SoknadSent } from "./SoknadFlow";
 import { BetalingModal } from "./BetalingModal";
 import { DrawingUpload } from "./DrawingUpload";
-import { ArchitectVurdering } from "./ArchitectVurdering";
+import { AiAnalyse } from "./AiAnalyse";
 import { downloadTiltakSoknad } from "@/lib/api/soknad";
 import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
+import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
@@ -97,7 +98,7 @@ interface ResultPhasesProps {
 
 type AiPhase =
   | { kind: "loading"; result: TiltakResult }
-  | { kind: "done"; result: TiltakResult; assessment: ArchitectAssessment };
+  | { kind: "done"; result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment };
 
 export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPhasesProps) {
   const router = useRouter();
@@ -156,10 +157,11 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   }
 
   if (aiPhase?.kind === "done") {
-    const { result, assessment } = aiPhase;
+    const { result, architect, engineer } = aiPhase;
     return (
-      <ArchitectVurdering
-        assessment={assessment}
+      <AiAnalyse
+        architect={architect}
+        engineer={engineer}
         onContinue={async () => {
           setAiPhase(null);
           setPhase({ kind: "sending", result });
@@ -184,17 +186,20 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
           const result = uploadPending;
           setUploadPending(null);
           setAiPhase({ kind: "loading", result });
-          const assessment = await callArchitectAgent({
-            session_id: sessionId,
+          const reqBase = {
             slug: slug ?? "andre",
             address: p.street,
             gnr: Number(p.matrikkel.gnr),
             bnr: Number(p.matrikkel.bnr),
             kommune: p.matrikkel.kommune,
             bygg: p.bygg as Record<string, unknown>,
-          }).catch(() => null);
-          if (assessment) {
-            setAiPhase({ kind: "done", result, assessment });
+          };
+          const [architect, engineer] = await Promise.all([
+            callArchitectAgent({ ...reqBase, session_id: sessionId }).catch(() => null),
+            callEngineerAgent(reqBase).catch(() => null),
+          ]);
+          if (architect && engineer) {
+            setAiPhase({ kind: "done", result, architect, engineer });
           } else {
             setAiPhase(null);
             setPhase({ kind: "sending", result });
