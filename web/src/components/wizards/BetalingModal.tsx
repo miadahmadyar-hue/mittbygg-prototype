@@ -133,6 +133,14 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
             Sikker betaling via Vipps. Du kan laste ned pakken umiddelbart etter betaling.
             Kjøpet refunderes ikke etter nedlasting.
           </p>
+
+          <button
+            type="button"
+            onClick={onBetal}
+            className="text-[11px] text-gray-300 hover:text-gray-400 underline underline-offset-2 text-center transition-colors"
+          >
+            Demo: hopp over betaling
+          </button>
         </div>
       </div>
     </>
