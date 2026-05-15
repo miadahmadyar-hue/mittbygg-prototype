@@ -126,7 +126,13 @@ export default function AddressPage() {
   }, [query]);
 
   const select = (id: string, address?: Address) => {
-    if (address) sessionStorage.setItem(`property_${id}`, JSON.stringify(address));
+    if (address) {
+      try {
+        localStorage.setItem(`property_${id}`, JSON.stringify(address));
+      } catch {
+        sessionStorage.setItem(`property_${id}`, JSON.stringify(address));
+      }
+    }
     router.push(`/property/${id}`);
   };
   const showResults    = query.trim().length >= 2;

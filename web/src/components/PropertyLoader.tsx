@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 async function fetchFromBackend(id: string): Promise<Address | null> {
   try {
     const res = await fetch(`${API_URL}/api/property/${id}`, {
-      cache: "no-store", signal: AbortSignal.timeout(3000),
+      cache: "no-store", signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     const d = await res.json();
@@ -34,7 +34,9 @@ export async function loadProperty(id: string): Promise<Address | null> {
   const local = findAddress(id);
   if (local) return local;
   try {
-    const cached = sessionStorage.getItem(`property_${id}`);
+    const cached =
+      localStorage.getItem(`property_${id}`) ??
+      sessionStorage.getItem(`property_${id}`);
     if (cached) return JSON.parse(cached);
   } catch { /* ignore */ }
   return fetchFromBackend(id);
