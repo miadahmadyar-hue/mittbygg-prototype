@@ -10,13 +10,17 @@ import { ToggleRow } from "@/components/ui/Toggle";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
 import { BetalingModal } from "./BetalingModal";
-import { SoknadPreview, SoknadSent } from "./SoknadFlow";
+import { SoknadSent } from "./SoknadFlow";
+import { DrawingUpload } from "./DrawingUpload";
+import { AiAnalyse } from "./AiAnalyse";
 import {
   KJELLER_BRUK, getKjellerRooms, type KjellerBrukId,
 } from "@/lib/data/kjellerBruk";
 import type { KjellerResult } from "@/lib/regulations/kjeller";
 import { evaluateKjellerApi } from "@/lib/api/evaluate";
 import { downloadKjellerSoknad } from "@/lib/api/soknad";
+import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
+import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -24,7 +28,6 @@ type Phase =
   | { kind: "loading" }
   | { kind: "result"; result: KjellerResult }
   | { kind: "betaling"; result: KjellerResult }
-  | { kind: "preview"; result: KjellerResult }
   | { kind: "sending"; result: KjellerResult }
   | { kind: "sent"; result: KjellerResult };
 
@@ -44,11 +47,16 @@ const INITIAL: WizardData = {
   balansert_vent: false,
 };
 
+type AiPhaseLocal =
+  | { kind: "loading"; result: KjellerResult }
+  | { kind: "done"; result: KjellerResult; architect: ArchitectAssessment; engineer: EngineerAssessment };
+
 export function KjellerWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const [data, setData] = useState<WizardData>(INITIAL);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [uploadPending, setUploadPending] = useState<KjellerResult | null>(null);
+  const [aiPhase, setAiPhase] = useState<AiPhaseLocal | null>(null);
 
   const evaluate = async () => {
     if (!data.room || !data.ny_bruk) return;
@@ -67,46 +75,77 @@ export function KjellerWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  const handleGoToBetaling = async () => {
-    if (phase.kind !== "result") return;
-    setPhase({ kind: "betaling", result: phase.result });
-  };
-
-  const doDownloadAfterPayment = async (result: KjellerResult) => {
-    setPdfLoading(true);
-    try {
-      await downloadKjellerSoknad(
-        result,
-        p.street,
-        Number(p.matrikkel.gnr),
-        Number(p.matrikkel.bnr),
-        p.city,
-      );
-    } finally {
-      setPdfLoading(false);
-    }
-  };
-
-  const sendSoknad = () => {
-    if (phase.kind !== "preview") return;
-    const result = phase.result;
-    setPhase({ kind: "sending", result });
-    setTimeout(() => setPhase({ kind: "sent", result }), 1800);
-  };
-
   if (phase.kind === "loading") {
     return <LoadingScreen text="Sjekker TEK17, SAK10 og PBL…" />;
   }
   if (phase.kind === "sending") {
-    return <LoadingScreen text="Sender til Altinn / DiBK Fellestjenester Bygg…" />;
+    return <LoadingScreen text="Genererer søknadspakke…" />;
   }
+
+  if (aiPhase?.kind === "loading") {
+    return <LoadingScreen text="AI-arkitekt analyserer…" subtext="Vurderer tegninger og regelverk" />;
+  }
+
+  if (aiPhase?.kind === "done") {
+    const { result, architect, engineer } = aiPhase;
+    return (
+      <AiAnalyse
+        architect={architect}
+        engineer={engineer}
+        onContinue={async () => {
+          setAiPhase(null);
+          setPhase({ kind: "sending", result });
+          await downloadKjellerSoknad(
+            result, p.street,
+            Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.city,
+          ).catch(() => {});
+          setPhase({ kind: "sent", result });
+        }}
+      />
+    );
+  }
+
+  if (uploadPending) {
+    return (
+      <DrawingUpload
+        onContinue={async (sessionId) => {
+          const result = uploadPending;
+          setUploadPending(null);
+          setAiPhase({ kind: "loading", result });
+          const reqBase = {
+            slug: "kjeller",
+            address: p.street,
+            gnr: Number(p.matrikkel.gnr),
+            bnr: Number(p.matrikkel.bnr),
+            kommune: p.matrikkel.kommune,
+            bygg: p.bygg as Record<string, unknown>,
+          };
+          const [architect, engineer] = await Promise.all([
+            callArchitectAgent({ ...reqBase, session_id: sessionId }).catch(() => null),
+            callEngineerAgent(reqBase).catch(() => null),
+          ]);
+          if (architect && engineer) {
+            setAiPhase({ kind: "done", result, architect, engineer });
+          } else {
+            setAiPhase(null);
+            setPhase({ kind: "sending", result });
+            await downloadKjellerSoknad(
+              result, p.street,
+              Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.city,
+            ).catch(() => {});
+            setPhase({ kind: "sent", result });
+          }
+        }}
+      />
+    );
+  }
+
   if (phase.kind === "result") {
     return (
       <ResultView
         r={phase.result}
-        onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
-        onDownloadPdf={handleGoToBetaling}
-        pdfLoading={pdfLoading}
+        onGenerateSoknad={async () => setPhase({ kind: "betaling", result: phase.result })}
+        onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
       />
     );
@@ -115,17 +154,9 @@ export function KjellerWizard({ p }: { p: Address }) {
     return (
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
-        onBetal={() => doDownloadAfterPayment(phase.result)}
+        slug="kjeller"
+        onBetal={() => setUploadPending(phase.result)}
         onBack={() => setPhase({ kind: "result", result: phase.result })}
-      />
-    );
-  }
-  if (phase.kind === "preview") {
-    return (
-      <SoknadPreview
-        ansvarsrett={phase.result.ansvarsrett}
-        onBack={() => setPhase({ kind: "result", result: phase.result })}
-        onSend={sendSoknad}
       />
     );
   }
@@ -339,14 +370,14 @@ export function KjellerWizard({ p }: { p: Address }) {
   );
 }
 
-function LoadingScreen({ text }: { text: string }) {
+function LoadingScreen({ text, subtext }: { text: string; subtext?: string }) {
   return (
     <>
       <Topbar back={false} />
       <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
         <div className="spinner spinner-lg" />
         <h3 className="text-base font-semibold">{text}</h3>
-        <p className="text-sm text-gray-500">Henter fra Kartverket og DiBK…</p>
+        <p className="text-sm text-gray-500">{subtext ?? "Henter fra Kartverket og DiBK…"}</p>
       </div>
     </>
   );
