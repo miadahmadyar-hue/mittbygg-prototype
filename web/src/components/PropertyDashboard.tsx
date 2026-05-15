@@ -47,17 +47,33 @@ export function PropertyDashboard({ p }: { p: Address }) {
           />
           <h2 className="text-[22px] font-bold tracking-tight relative">{p.street}</h2>
           <p className="text-white/75 mt-1 relative">{p.postal} {p.city}</p>
-          <div className="grid grid-cols-3 gap-4 mt-5 relative">
-            <Stat num={p.bygg.BRA ?? "—"} lbl="m² BRA" />
-            <Stat num={p.bygg.byggeAar} lbl="Byggeår" />
-            <Stat num={`${p.bygg.etasjer ?? "—"}${p.bygg.kjeller ? "+K" : ""}`} lbl="Etasjer" />
-          </div>
-          {p.bygg.bygg_source && p.bygg.bygg_source !== "default" && (
-            <div className="mt-3 relative flex items-center gap-1.5 text-[11px] text-green-200/80">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 13 4 4L19 7"/></svg>
-              Hentet fra Matrikkel
-            </div>
-          )}
+          {(() => {
+            const hasReal = p.bygg.bygg_source && p.bygg.bygg_source !== "default";
+            const isKartverket = p.id.startsWith("k_");
+            const braVal = p.bygg.BRA ?? (isKartverket && !hasReal ? "~130" : "—");
+            const etasjerVal = p.bygg.etasjer ?? (isKartverket && !hasReal ? "2" : "—");
+            const isEstimated = isKartverket && !hasReal && (p.bygg.BRA == null || p.bygg.etasjer == null);
+            return (
+              <>
+                <div className="grid grid-cols-3 gap-4 mt-5 relative">
+                  <Stat num={braVal} lbl="m² BRA" />
+                  <Stat num={p.bygg.byggeAar} lbl="Byggeår" />
+                  <Stat num={`${etasjerVal}${p.bygg.kjeller ? "+K" : ""}`} lbl="Etasjer" />
+                </div>
+                {hasReal ? (
+                  <div className="mt-3 relative flex items-center gap-1.5 text-[11px] text-green-200/80">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 13 4 4L19 7"/></svg>
+                    Hentet fra Matrikkel
+                  </div>
+                ) : isEstimated ? (
+                  <div className="mt-3 relative flex items-center gap-1.5 text-[11px] text-white/50">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+                    Typiske verdier — registreres fra Matrikkelen ved innsending
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
         </div>
 
         <Link href={`/property/${p.id}/tiltak`} className="contents">

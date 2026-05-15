@@ -8,8 +8,9 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-_MATRIKKEL_REST = "https://api.kartverket.no/matrikkel/v1"
-_EIENDOMSINFO   = "https://ws.geonorge.no/eiendomsinfo/v1"
+_MATRIKKEL_REST  = "https://api.kartverket.no/matrikkel/v1"
+_EIENDOMSINFO_V1 = "https://ws.geonorge.no/eiendomsinfo/v1"
+_EIENDOMSINFO_V2 = "https://api.kartverket.no/eiendomsinfo/v1"
 
 
 async def fetch_bygg(kommunenummer: str, gnr: int, bnr: int) -> dict:
@@ -19,11 +20,12 @@ async def fetch_bygg(kommunenummer: str, gnr: int, bnr: int) -> dict:
     """
     default = _default_bygg()
 
-    async with httpx.AsyncClient(timeout=5.0) as client:
+    async with httpx.AsyncClient(timeout=4.0) as client:
         # ── 1. Kartverket Matrikkel REST API ─────────────────────────────────
         try:
             url = f"{_MATRIKKEL_REST}/matrikkelenhet/{kommunenummer}/{gnr}/{bnr}/0/0"
             r = await client.get(url, headers={"Accept": "application/json"})
+            logger.debug("Matrikkel status %s for %s/%s/%s", r.status_code, kommunenummer, gnr, bnr)
             if r.status_code == 200:
                 parsed = _parse_matrikkel(r.json())
                 if parsed.get("byggeAar"):
@@ -33,18 +35,33 @@ async def fetch_bygg(kommunenummer: str, gnr: int, bnr: int) -> dict:
         except Exception as exc:
             logger.debug("Matrikkel REST failed for %s/%s/%s: %s", kommunenummer, gnr, bnr, exc)
 
-        # ── 2. Geonorge eiendomsinfo ─────────────────────────────────────────
+        # ── 2. Geonorge eiendomsinfo v1 ──────────────────────────────────────
         try:
-            url = f"{_EIENDOMSINFO}/eiendom/{kommunenummer}/{gnr}/{bnr}"
+            url = f"{_EIENDOMSINFO_V1}/eiendom/{kommunenummer}/{gnr}/{bnr}"
             r = await client.get(url, headers={"Accept": "application/json"})
+            logger.debug("Eiendomsinfo v1 status %s for %s/%s/%s", r.status_code, kommunenummer, gnr, bnr)
             if r.status_code == 200:
                 parsed = _parse_eiendomsinfo(r.json())
                 if parsed.get("byggeAar"):
                     parsed["source"] = "eiendomsinfo"
-                    logger.info("Eiendomsinfo hit: %s/%s/%s", kommunenummer, gnr, bnr)
+                    logger.info("Eiendomsinfo v1 hit: %s/%s/%s", kommunenummer, gnr, bnr)
                     return parsed
         except Exception as exc:
-            logger.debug("Eiendomsinfo failed for %s/%s/%s: %s", kommunenummer, gnr, bnr, exc)
+            logger.debug("Eiendomsinfo v1 failed for %s/%s/%s: %s", kommunenummer, gnr, bnr, exc)
+
+        # ── 3. Kartverket eiendomsinfo v1 (new gateway) ──────────────────────
+        try:
+            url = f"{_EIENDOMSINFO_V2}/eiendom/{kommunenummer}/{gnr}/{bnr}"
+            r = await client.get(url, headers={"Accept": "application/json"})
+            logger.debug("Eiendomsinfo v2 status %s for %s/%s/%s", r.status_code, kommunenummer, gnr, bnr)
+            if r.status_code == 200:
+                parsed = _parse_eiendomsinfo(r.json())
+                if parsed.get("byggeAar"):
+                    parsed["source"] = "eiendomsinfo"
+                    logger.info("Eiendomsinfo v2 hit: %s/%s/%s", kommunenummer, gnr, bnr)
+                    return parsed
+        except Exception as exc:
+            logger.debug("Eiendomsinfo v2 failed for %s/%s/%s: %s", kommunenummer, gnr, bnr, exc)
 
     return default
 
