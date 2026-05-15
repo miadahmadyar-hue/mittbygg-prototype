@@ -15,7 +15,9 @@ import { ResultView } from "./ResultView";
 import { SoknadSent } from "./SoknadFlow";
 import { BetalingModal } from "./BetalingModal";
 import { DrawingUpload } from "./DrawingUpload";
+import { ArchitectVurdering } from "./ArchitectVurdering";
 import { downloadTiltakSoknad } from "@/lib/api/soknad";
+import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
@@ -93,9 +95,14 @@ interface ResultPhasesProps {
   slug?: string;
 }
 
+type AiPhase =
+  | { kind: "loading"; result: TiltakResult }
+  | { kind: "done"; result: TiltakResult; assessment: ArchitectAssessment };
+
 export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPhasesProps) {
   const router = useRouter();
   const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
+  const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
 
   if (phase.kind === "loading") {
     return (
@@ -135,13 +142,26 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
     );
   }
 
-  if (uploadPending) {
+  if (aiPhase?.kind === "loading") {
     return (
-      <DrawingUpload
-        onContinue={async (sessionId) => {
-          void sessionId; // consumed by AI architect agent in Stage 2
-          const result = uploadPending;
-          setUploadPending(null);
+      <>
+        <Topbar back={false} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
+          <div className="spinner spinner-lg" />
+          <h3 className="text-base font-semibold">AI-arkitekt analyserer…</h3>
+          <p className="text-sm text-gray-500">Vurderer tegninger og regelverk</p>
+        </div>
+      </>
+    );
+  }
+
+  if (aiPhase?.kind === "done") {
+    const { result, assessment } = aiPhase;
+    return (
+      <ArchitectVurdering
+        assessment={assessment}
+        onContinue={async () => {
+          setAiPhase(null);
           setPhase({ kind: "sending", result });
           await downloadTiltakSoknad(
             slug ?? "andre",
@@ -152,6 +172,38 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
             p.matrikkel.kommune,
           ).catch(() => {});
           setPhase({ kind: "sent", result });
+        }}
+      />
+    );
+  }
+
+  if (uploadPending) {
+    return (
+      <DrawingUpload
+        onContinue={async (sessionId) => {
+          const result = uploadPending;
+          setUploadPending(null);
+          setAiPhase({ kind: "loading", result });
+          const assessment = await callArchitectAgent({
+            session_id: sessionId,
+            slug: slug ?? "andre",
+            address: p.street,
+            gnr: Number(p.matrikkel.gnr),
+            bnr: Number(p.matrikkel.bnr),
+            kommune: p.matrikkel.kommune,
+            bygg: p.bygg as Record<string, unknown>,
+          }).catch(() => null);
+          if (assessment) {
+            setAiPhase({ kind: "done", result, assessment });
+          } else {
+            setAiPhase(null);
+            setPhase({ kind: "sending", result });
+            await downloadTiltakSoknad(
+              slug ?? "andre", result, p.street,
+              Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.matrikkel.kommune,
+            ).catch(() => {});
+            setPhase({ kind: "sent", result });
+          }
         }}
       />
     );
