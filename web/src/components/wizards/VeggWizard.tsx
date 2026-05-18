@@ -7,10 +7,17 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
-import { SoknadPreview, SoknadSent } from "./SoknadFlow";
+import { SoknadSent } from "./SoknadFlow";
 import { BetalingModal } from "./BetalingModal";
+import { DrawingUpload } from "./DrawingUpload";
+import { AiAnalyse } from "./AiAnalyse";
 import type { VeggResult } from "@/lib/regulations/vegg";
 import { evaluateVeggApi } from "@/lib/api/evaluate";
+import { downloadTiltakSoknad } from "@/lib/api/soknad";
+import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
+import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
+import { FALLBACK_ARCHITECT, FALLBACK_ENGINEER } from "@/lib/ai/fallbacks";
+import type { TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -18,9 +25,12 @@ type Phase =
   | { kind: "loading" }
   | { kind: "result"; result: VeggResult }
   | { kind: "betaling"; result: VeggResult }
-  | { kind: "preview"; result: VeggResult }
   | { kind: "sending"; result: VeggResult }
   | { kind: "sent"; result: VeggResult };
+
+type AiPhaseLocal =
+  | { kind: "loading"; result: VeggResult }
+  | { kind: "done"; result: VeggResult; architect: ArchitectAssessment; engineer: EngineerAssessment };
 
 interface Data {
   spennvidde: number;
@@ -31,7 +41,8 @@ export function VeggWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const [data, setData] = useState<Data>({ spennvidde: 4500, last: 8 });
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [uploadPending, setUploadPending] = useState<VeggResult | null>(null);
+  const [aiPhase, setAiPhase] = useState<AiPhaseLocal | null>(null);
 
   const evaluate = async () => {
     setPhase({ kind: "loading" });
@@ -42,32 +53,78 @@ export function VeggWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  const handleGoToBetaling = async () => {
-    if (phase.kind !== "result") return;
-    setPhase({ kind: "betaling", result: phase.result });
-  };
-
-  const doDownloadAfterPayment = async () => {
-    setPdfLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setPdfLoading(false);
-    if (phase.kind === "betaling")
-      setPhase({ kind: "preview", result: phase.result });
-  };
-
   if (phase.kind === "loading") {
     return <LoadingScreen text="Beregner bjelke iht. NS-EN 1995…" />;
   }
   if (phase.kind === "sending") {
-    return <LoadingScreen text="Sender til Altinn / DiBK Fellestjenester Bygg…" />;
+    return <LoadingScreen text="Genererer søknadspakke…" />;
   }
+
+  if (aiPhase?.kind === "loading") {
+    return <LoadingScreen text="AI-arkitekt analyserer…" subtext="Vurderer tegninger og regelverk" />;
+  }
+
+  if (aiPhase?.kind === "done") {
+    const { result, architect, engineer } = aiPhase;
+    return (
+      <AiAnalyse
+        architect={architect}
+        engineer={engineer}
+        onContinue={async () => {
+          setAiPhase(null);
+          setPhase({ kind: "sending", result });
+          await downloadTiltakSoknad(
+            "vegg",
+            result as unknown as TiltakResult,
+            p.street,
+            Number(p.matrikkel.gnr),
+            Number(p.matrikkel.bnr),
+            p.matrikkel.kommune,
+            architect as unknown as Record<string, unknown>,
+            engineer as unknown as Record<string, unknown>,
+          ).catch(() => {});
+          setPhase({ kind: "sent", result });
+        }}
+      />
+    );
+  }
+
+  if (uploadPending) {
+    return (
+      <DrawingUpload
+        onContinue={async (sessionId) => {
+          const result = uploadPending;
+          setUploadPending(null);
+          setAiPhase({ kind: "loading", result });
+          const reqBase = {
+            slug: "vegg",
+            address: p.street,
+            gnr: Number(p.matrikkel.gnr),
+            bnr: Number(p.matrikkel.bnr),
+            kommune: p.matrikkel.kommune,
+            bygg: p.bygg as Record<string, unknown>,
+          };
+          const [architect, engineer] = await Promise.all([
+            callArchitectAgent({ ...reqBase, session_id: sessionId }).catch(() => null),
+            callEngineerAgent(reqBase).catch(() => null),
+          ]);
+          setAiPhase({
+            kind: "done",
+            result,
+            architect: architect ?? FALLBACK_ARCHITECT,
+            engineer:  engineer  ?? FALLBACK_ENGINEER,
+          });
+        }}
+      />
+    );
+  }
+
   if (phase.kind === "result") {
     return (
       <ResultView
         r={phase.result}
-        onGenerateSoknad={() => setPhase({ kind: "preview", result: phase.result })}
-        onDownloadPdf={handleGoToBetaling}
-        pdfLoading={pdfLoading}
+        onGenerateSoknad={async () => setPhase({ kind: "betaling", result: phase.result })}
+        onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
       />
     );
@@ -76,20 +133,9 @@ export function VeggWizard({ p }: { p: Address }) {
     return (
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
-        onBetal={doDownloadAfterPayment}
+        slug="vegg"
+        onBetal={() => setUploadPending(phase.result)}
         onBack={() => setPhase({ kind: "result", result: phase.result })}
-      />
-    );
-  }
-  if (phase.kind === "preview") {
-    return (
-      <SoknadPreview
-        ansvarsrett={phase.result.ansvarsrett}
-        onBack={() => setPhase({ kind: "result", result: phase.result })}
-        onSend={() => {
-          setPhase({ kind: "sending", result: phase.result });
-          setTimeout(() => setPhase({ kind: "sent", result: phase.result }), 1800);
-        }}
       />
     );
   }
@@ -217,14 +263,14 @@ function NumberField({
   );
 }
 
-function LoadingScreen({ text }: { text: string }) {
+function LoadingScreen({ text, subtext }: { text: string; subtext?: string }) {
   return (
     <>
       <Topbar back={false} />
       <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
         <div className="spinner spinner-lg" />
         <h3 className="text-base font-semibold">{text}</h3>
-        <p className="text-sm text-gray-500">Henter fra Kartverket og DiBK…</p>
+        <p className="text-sm text-gray-500">{subtext ?? "Henter fra Kartverket og DiBK…"}</p>
       </div>
     </>
   );

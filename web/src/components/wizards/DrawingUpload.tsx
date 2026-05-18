@@ -52,7 +52,7 @@ export function DrawingUpload({ onContinue }: Props) {
 
   return (
     <>
-      <Topbar title="Tegninger" />
+      <Topbar title="Tegninger" back={false} />
       <div className="view">
         <div>
           <h2 className="text-[22px] font-bold tracking-tight">Last opp tegninger</h2>

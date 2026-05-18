@@ -98,7 +98,7 @@ export function KjellerWizard({ p }: { p: Address }) {
           setPhase({ kind: "sending", result });
           await downloadKjellerSoknad(
             result, p.street,
-            Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.city,
+            Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.matrikkel.kommune,
           ).catch(() => {});
           setPhase({ kind: "sent", result });
         }}

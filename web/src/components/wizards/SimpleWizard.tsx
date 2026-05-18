@@ -6,7 +6,7 @@
  * Each wizard provides its own step content via children.
  */
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -105,6 +105,12 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   const router = useRouter();
   const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
+
+  useEffect(() => {
+    if (phase.kind === "preview") {
+      setPhase({ kind: "sent", result: phase.result });
+    }
+  }, [phase, setPhase]);
 
   if (phase.kind === "loading") {
     return (
@@ -221,12 +227,6 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
         onBack={() => setPhase({ kind: "result", result: phase.result })}
       />
     );
-  }
-
-  if (phase.kind === "preview") {
-    // Legacy — redirect straight to sent
-    setPhase({ kind: "sent", result: phase.result });
-    return null;
   }
 
   if (phase.kind === "sent") {
