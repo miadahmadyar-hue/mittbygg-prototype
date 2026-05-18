@@ -13,7 +13,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
   const [showArkiv, setShowArkiv] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
-  const sakerCount = p.bygg.tidligereSaker.length;
+  const sakerCount = (p.bygg.tidligereSaker ?? []).length;
   const tegninger = p.bygg.tegninger ?? [];
   const tegningerCount = tegninger.length;
   const arkivKilder = Array.from(new Set(tegninger.map((t) => t.kilde)));
@@ -108,7 +108,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
           </div>
         ) : (
           <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-            {p.bygg.tidligereSaker.map((s, i, arr) => (
+            {(p.bygg.tidligereSaker ?? []).map((s, i, arr) => (
               <div
                 key={i}
                 className={`px-5 py-3.5 flex justify-between items-center ${

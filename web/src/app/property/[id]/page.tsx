@@ -11,7 +11,7 @@ async function fetchFromBackend(id: string): Promise<Address | null> {
   try {
     const res = await fetch(`${API_URL}/api/property/${id}`, {
       cache: "no-store",
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     const d = await res.json();
@@ -43,9 +43,11 @@ export default function PropertyPage() {
       const local = findAddress(id);
       if (local) { setProperty(local); return; }
 
-      // 2. sessionStorage — set by address search on selection
+      // 2. localStorage/sessionStorage — set by address search on selection
       try {
-        const cached = sessionStorage.getItem(`property_${id}`);
+        const cached =
+          localStorage.getItem(`property_${id}`) ??
+          sessionStorage.getItem(`property_${id}`);
         if (cached) { setProperty(JSON.parse(cached)); return; }
       } catch { /* ignore */ }
 
