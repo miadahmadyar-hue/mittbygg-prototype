@@ -6,16 +6,24 @@ import os
 import json
 import base64
 import glob as glob_mod
+import logging
+import re
+from copy import deepcopy
 from pathlib import Path
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/mittbygg_drawings")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_ARCHITECT_MODEL = os.getenv(
+    "ANTHROPIC_ARCHITECT_MODEL",
+    os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+)
 
 SLUG_LABELS: dict[str, str] = {
     "kjeller":      "kjeller / underetasje",
@@ -59,14 +67,35 @@ class ArchitectRequest(BaseModel):
     gnr: int = 0
     bnr: int = 0
     kommune: str = ""
-    bygg: dict[str, Any] = {}
+    bygg: dict[str, Any] = Field(default_factory=dict)
+
+
+def _fallback_assessment(images: list[dict], reason: str) -> dict:
+    assessment = deepcopy(MOCK_ASSESSMENT)
+    if not images:
+        assessment["items"] = [
+            *MOCK_ASSESSMENT["items"][:3],
+            {"type": "missing", "text": "Ingen tegninger lastet opp - situasjonsplan anbefales"},
+        ]
+    assessment["meta"] = {"source": "fallback", "reason": reason}
+    return assessment
 
 
 def _load_images(session_id: str) -> list[dict]:
     """Return list of base64 image dicts for Claude vision."""
     if not session_id:
         return []
-    session_dir = Path(UPLOAD_DIR) / session_id
+
+    if not re.fullmatch(r"[0-9a-f-]{12}", session_id):
+        logger.warning("Rejected invalid drawing session id: %s", session_id)
+        return []
+
+    upload_root = Path(UPLOAD_DIR).resolve()
+    session_dir = (upload_root / session_id).resolve()
+    if upload_root not in session_dir.parents:
+        logger.warning("Rejected drawing session outside upload root: %s", session_id)
+        return []
+
     if not session_dir.exists():
         return []
 
@@ -122,12 +151,14 @@ Bruk norsk. Maks 3 items og 2 anbefalinger. Svar kun med JSON, ingen annen tekst
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     msg = client.messages.create(
-        model="claude-opus-4-7",
+        model=ANTHROPIC_ARCHITECT_MODEL,
         max_tokens=512,
         messages=[{"role": "user", "content": content}],
     )
     raw = msg.content[0].text.strip()
-    return json.loads(raw)
+    result = json.loads(raw)
+    result["meta"] = {"source": "claude", "model": ANTHROPIC_ARCHITECT_MODEL}
+    return result
 
 
 @router.post("/ai/architect")
@@ -135,16 +166,10 @@ def architect_analyse(req: ArchitectRequest) -> dict:
     images = _load_images(req.session_id or "")
 
     if not ANTHROPIC_API_KEY:
-        assessment = dict(MOCK_ASSESSMENT)
-        if not images:
-            # add a note about missing drawings
-            assessment["items"] = [
-                *MOCK_ASSESSMENT["items"][:3],
-                {"type": "missing", "text": "Ingen tegninger lastet opp — situasjonsplan anbefales"},
-            ]
-        return assessment
+        return _fallback_assessment(images, "missing_api_key")
 
     try:
         return _call_claude(req.slug, req.address, req.gnr, req.bnr, req.bygg, images)
     except Exception:
-        return MOCK_ASSESSMENT
+        logger.exception("Architect AI analysis failed for slug=%s session_id=%s", req.slug, req.session_id)
+        return _fallback_assessment(images, "ai_error")

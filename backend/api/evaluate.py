@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from models import (
     KjellerInput, KjellerResult, VeggInput, VeggResult, TiltakResult,
-    GarasjeInput, TilbyggInput, FasadeInput, TakInput, SolcellerInput,
+    GarasjeInput, TilbyggInput, FasadeInput, TakInput,
     AnneksInput, LevegInput, VinduInput, BryggeInput, AndreInput,
     GeolograpportInput, BruksendringInput, TilleggsdelInput, BoenhetInput,
 )
@@ -11,7 +11,6 @@ from regulations.garasje   import evaluate_garasje
 from regulations.tilbygg   import evaluate_tilbygg
 from regulations.fasade    import evaluate_fasade
 from regulations.tak       import evaluate_tak
-from regulations.solceller import evaluate_solceller
 from regulations.anneks    import evaluate_anneks
 from regulations.levegg    import evaluate_levegg
 from regulations.vindu     import evaluate_vindu
@@ -42,9 +41,6 @@ def post_evaluate_fasade(inp: FasadeInput)     -> TiltakResult:    return evalua
 
 @router.post("/evaluate/tak",       response_model=TiltakResult)
 def post_evaluate_tak(inp: TakInput)           -> TiltakResult:    return evaluate_tak(inp)
-
-@router.post("/evaluate/solceller", response_model=TiltakResult)
-def post_evaluate_solceller(inp: SolcellerInput) -> TiltakResult:  return evaluate_solceller(inp)
 
 @router.post("/evaluate/anneks",    response_model=TiltakResult)
 def post_evaluate_anneks(inp: AnneksInput)     -> TiltakResult:    return evaluate_anneks(inp)

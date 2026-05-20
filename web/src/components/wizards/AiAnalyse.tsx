@@ -12,10 +12,21 @@ interface Props {
 }
 
 export function AiAnalyse({ architect, engineer, onContinue }: Props) {
+  const degraded =
+    architect.meta?.source === "fallback" ||
+    engineer.meta?.source === "fallback";
+
   return (
     <>
       <Topbar title="AI-analyse" back={false} />
       <div className="view">
+        {degraded && (
+          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+            <p className="text-sm text-amber-800 leading-snug">
+              AI-tjenesten svarte ikke fullt ut, sÃ¥ vurderingen under bruker en regelbasert reserve.
+            </p>
+          </div>
+        )}
 
         {/* Architect section */}
         <div className="flex items-center gap-3">

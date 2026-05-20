@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Pill } from "@/components/ui/Pill";
 import { PlanSvg, SnittSvg, FasadeSvg, SitSvg } from "./Thumbnails";
-import { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 interface PreviewProps {
   ansvarsrett: boolean;
@@ -71,13 +71,15 @@ export function SoknadPreview({ ansvarsrett, onBack, onSend }: PreviewProps) {
 }
 
 interface SentProps {
-  ansvarsrett: boolean;
   onDone: () => void;
 }
 
-export function SoknadSent({ ansvarsrett, onDone }: SentProps) {
-  const ref = "DBK-" + Math.floor(100_000 + Math.random() * 900_000);
-  const now = new Date().toLocaleString("nb-NO");
+export function SoknadSent({ onDone }: SentProps) {
+  const [{ ref, now }] = useState(() => ({
+    ref: "DBK-" + Math.floor(100_000 + Math.random() * 900_000),
+    now: new Date().toLocaleString("nb-NO"),
+  }));
+
   return (
     <>
       <Topbar title="Sendt" back={false} />

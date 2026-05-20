@@ -159,7 +159,6 @@ export function KjellerWizard({ p }: { p: Address }) {
   if (phase.kind === "sent") {
     return (
       <SoknadSent
-        ansvarsrett={phase.result.ansvarsrett}
         onDone={() => router.push(`/property/${p.id}`)}
       />
     );

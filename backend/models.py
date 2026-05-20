@@ -160,12 +160,6 @@ class TakInput(BaseModel):
     etterisolere: bool
 
 
-class SolcellerInput(BaseModel):
-    type: Literal["integrert", "paamontering", "vegg"]
-    areal: float
-    verneverdig: bool
-
-
 class AnneksInput(BaseModel):
     type: Literal["anneks", "uthus", "hagebod"]
     areal: float

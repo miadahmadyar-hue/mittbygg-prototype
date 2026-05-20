@@ -83,7 +83,6 @@ export const evaluateGarasjeApi   = (i: unknown) => evalTiltak("garasje",   i);
 export const evaluateTilbyggApi   = (i: unknown) => evalTiltak("tilbygg",   i);
 export const evaluateFasadeApi    = (i: unknown) => evalTiltak("fasade",    i);
 export const evaluateTakApi       = (i: unknown) => evalTiltak("tak",       i);
-export const evaluateSolcellerApi = (i: unknown) => evalTiltak("solceller", i);
 export const evaluateAnneksApi    = (i: unknown) => evalTiltak("anneks",    i);
 export const evaluateLevegApi     = (i: unknown) => evalTiltak("levegg",    i);
 export const evaluateVinduApi     = (i: unknown) => evalTiltak("vindu",     i);

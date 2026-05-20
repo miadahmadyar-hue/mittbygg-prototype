@@ -4,14 +4,21 @@ Falls back to realistic mock calculations when ANTHROPIC_API_KEY is not set.
 """
 import os
 import json
+import logging
+from copy import deepcopy
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_ENGINEER_MODEL = os.getenv(
+    "ANTHROPIC_ENGINEER_MODEL",
+    os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+)
 
 SLUG_LABELS: dict[str, str] = {
     "kjeller":      "kjeller / underetasje",
@@ -103,8 +110,14 @@ class EngineerRequest(BaseModel):
     address: str = ""
     gnr: int = 0
     bnr: int = 0
-    bygg: dict[str, Any] = {}
+    bygg: dict[str, Any] = Field(default_factory=dict)
     architect_summary: str = ""
+
+
+def _fallback_engineer(slug: str, reason: str) -> dict:
+    assessment = deepcopy(MOCK_BY_SLUG.get(slug, DEFAULT_MOCK))
+    assessment["meta"] = {"source": "fallback", "reason": reason}
+    return assessment
 
 
 def _call_claude(req: EngineerRequest) -> dict:
@@ -139,18 +152,21 @@ Bruk norsk. Maks 4 beregninger, 2 notater. Svar kun med JSON."""
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     msg = client.messages.create(
-        model="claude-opus-4-7",
+        model=ANTHROPIC_ENGINEER_MODEL,
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    return json.loads(msg.content[0].text.strip())
+    result = json.loads(msg.content[0].text.strip())
+    result["meta"] = {"source": "claude", "model": ANTHROPIC_ENGINEER_MODEL}
+    return result
 
 
 @router.post("/ai/engineer")
 def engineer_analyse(req: EngineerRequest) -> dict:
     if not ANTHROPIC_API_KEY:
-        return MOCK_BY_SLUG.get(req.slug, DEFAULT_MOCK)
+        return _fallback_engineer(req.slug, "missing_api_key")
     try:
         return _call_claude(req)
     except Exception:
-        return MOCK_BY_SLUG.get(req.slug, DEFAULT_MOCK)
+        logger.exception("Engineer AI analysis failed for slug=%s", req.slug)
+        return _fallback_engineer(req.slug, "ai_error")

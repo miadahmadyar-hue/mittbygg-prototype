@@ -12,6 +12,11 @@ export interface ArchitectAssessment {
   summary: string;
   items: AssessmentItem[];
   anbefalinger: string[];
+  meta?: {
+    source?: "claude" | "fallback";
+    reason?: string;
+    model?: string;
+  };
 }
 
 interface ArchitectRequest {

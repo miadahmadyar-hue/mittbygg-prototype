@@ -48,7 +48,7 @@ interface Props {
 }
 
 // Hook used internally — exported so wizard components can share phase state
-export function useSimpleWizard(totalSteps: number) {
+export function useSimpleWizard() {
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const step = phase.kind === "wizard" ? phase.step : 0;
   const setStep = (s: number) => setPhase({ kind: "wizard", step: s });
@@ -56,8 +56,8 @@ export function useSimpleWizard(totalSteps: number) {
 }
 
 export function SimpleWizard({
-  p, title, totalSteps, loadingText,
-  currentStep, canProceed, onBack, onNext, onEvaluate, children,
+  title, totalSteps,
+  currentStep, canProceed, onBack, onNext, children,
 }: Props) {
   // This component is stateless re: phase — the parent wizard owns phase via useSimpleWizard.
   // We render the wizard shell here.
@@ -232,7 +232,6 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   if (phase.kind === "sent") {
     return (
       <SoknadSent
-        ansvarsrett={phase.result.ansvarsrett}
         onDone={() => router.push(`/property/${p.id}`)}
       />
     );

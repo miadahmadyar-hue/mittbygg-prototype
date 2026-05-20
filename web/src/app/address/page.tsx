@@ -92,29 +92,32 @@ export default function AddressPage() {
   const [results, setResults] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState(false);
-  const [user, setUserState] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(() => getUser());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("auth") === "ok") {
-      const name = params.get("name") ?? "Bruker";
+    if (params.get("auth") !== "ok") return;
+
+    const name = params.get("name") ?? "Bruker";
+    const timer = setTimeout(() => {
       setUserState(setUser(name));
       window.history.replaceState({}, "", "/address");
-    } else {
-      setUserState(getUser());
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (query.trim().length < 2) { setResults([]); setError(false); return; }
+    const trimmed = query.trim();
+    if (trimmed.length < 2) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       setError(false);
       try {
-        const res = await search(query.trim());
+        const res = await search(trimmed);
         setResults(res);
       } catch {
         setError(true);
@@ -124,6 +127,15 @@ export default function AddressPage() {
       }
     }, 350);
   }, [query]);
+
+  const updateQuery = (value: string) => {
+    setQuery(value);
+    if (value.trim().length >= 2) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setLoading(false);
+    setResults([]);
+    setError(false);
+  };
 
   const select = (id: string, address?: Address) => {
     if (address) {
@@ -173,14 +185,14 @@ export default function AddressPage() {
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => updateQuery(e.target.value)}
             placeholder="f.eks. Solbakken 12, Oslo"
             autoComplete="off"
             autoFocus
             className="flex-1 bg-transparent outline-none text-base"
           />
           {query.length > 0 && (
-            <button onClick={() => { setQuery(""); setResults([]); }} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => updateQuery("")} className="text-gray-400 hover:text-gray-600">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
             </button>
           )}

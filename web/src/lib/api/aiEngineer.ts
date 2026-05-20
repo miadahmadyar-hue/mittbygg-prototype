@@ -12,6 +12,11 @@ export interface EngineerAssessment {
   beregninger: Beregning[];
   konklusjon: string;
   notater: string[];
+  meta?: {
+    source?: "claude" | "fallback";
+    reason?: string;
+    model?: string;
+  };
 }
 
 interface EngineerRequest {
