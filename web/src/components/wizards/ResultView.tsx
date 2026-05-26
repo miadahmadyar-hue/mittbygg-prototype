@@ -231,6 +231,17 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
               <Button variant="ghost" full onClick={onRestart}>
                 Start på nytt
               </Button>
+              <a
+                href="mailto:hei@mittbygg.no?subject=Trenger hjelp med søknad"
+                className="flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Trenger du hjelp? Snakk med en rådgiver
+              </a>
             </>
           )}
         </div>
