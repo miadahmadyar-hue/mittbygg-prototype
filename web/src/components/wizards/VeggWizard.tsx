@@ -43,6 +43,9 @@ export function VeggWizard({ p }: { p: Address }) {
   const [data, setData] = useState<Data>({ spennvidde: 4500, last: 8 });
   const [uploadPending, setUploadPending] = useState<VeggResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhaseLocal | null>(null);
+  const [pendingAiResults, setPendingAiResults] = useState<{
+    result: VeggResult; architect: ArchitectAssessment; engineer: EngineerAssessment;
+  } | null>(null);
 
   const evaluate = async () => {
     setPhase({ kind: "loading" });
@@ -70,20 +73,9 @@ export function VeggWizard({ p }: { p: Address }) {
       <AiAnalyse
         architect={architect}
         engineer={engineer}
-        onContinue={async () => {
+        onContinue={() => {
+          setPendingAiResults({ result, architect, engineer });
           setAiPhase(null);
-          setPhase({ kind: "sending", result });
-          await downloadTiltakSoknad(
-            "vegg",
-            result as unknown as TiltakResult,
-            p.street,
-            Number(p.matrikkel.gnr),
-            Number(p.matrikkel.bnr),
-            p.matrikkel.kommune,
-            architect as unknown as Record<string, unknown>,
-            engineer as unknown as Record<string, unknown>,
-          ).catch(() => {});
-          setPhase({ kind: "sent", result });
         }}
       />
     );
@@ -123,8 +115,8 @@ export function VeggWizard({ p }: { p: Address }) {
     return (
       <ResultView
         r={phase.result}
-        onGenerateSoknad={async () => setPhase({ kind: "betaling", result: phase.result })}
-        onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
+        onGenerateSoknad={() => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
+        onDownloadPdf={async () => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
       />
     );
@@ -134,8 +126,29 @@ export function VeggWizard({ p }: { p: Address }) {
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
         slug="vegg"
-        onBetal={() => setUploadPending(phase.result)}
-        onBack={() => setPhase({ kind: "result", result: phase.result })}
+        onBetal={async () => {
+          const ai = pendingAiResults;
+          setPendingAiResults(null);
+          setPhase({ kind: "sending", result: phase.result });
+          await downloadTiltakSoknad(
+            "vegg",
+            phase.result as unknown as TiltakResult,
+            p.street,
+            Number(p.matrikkel.gnr),
+            Number(p.matrikkel.bnr),
+            p.matrikkel.kommune,
+            ai?.architect as unknown as Record<string, unknown>,
+            ai?.engineer as unknown as Record<string, unknown>,
+          ).catch(() => {});
+          setPhase({ kind: "sent", result: phase.result });
+        }}
+        onBack={() => {
+          if (pendingAiResults) {
+            setAiPhase({ kind: "done", ...pendingAiResults });
+          } else {
+            setPhase({ kind: "result", result: phase.result });
+          }
+        }}
       />
     );
   }

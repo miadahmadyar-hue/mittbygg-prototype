@@ -300,7 +300,7 @@ function Timeline({ ansvarsrett }: { ansvarsrett: boolean }) {
               s.state === "done"
                 ? "bg-green-500 text-white"
                 : s.state === "current"
-                  ? "bg-orange-500 text-white shadow-[0_0_0_4px_rgba(233,118,58,0.25)]"
+                  ? "bg-gray-800 text-white"
                   : "bg-green-50 text-green-500"
             }`}
           >
@@ -350,7 +350,7 @@ function PricingCard({ slug }: { slug?: string }) {
   return (
     <>
       <SectionHead>Søknadsprosess — hva koster det?</SectionHead>
-      <div className="bg-gradient-to-br from-[#f0f7f2] to-[#e8f5ec] border border-[#c5dccd] rounded-2xl p-5 flex flex-col gap-4">
+      <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col gap-4">
         <div className="flex items-end justify-between">
           <div>
             <div className="text-xs text-gray-500 mb-1">Markedspris (arkitekt/konsulent)</div>
@@ -360,13 +360,13 @@ function PricingCard({ slug }: { slug?: string }) {
             -{pct}%
           </div>
         </div>
-        <div className="border-t border-[#c5dccd] pt-4">
+        <div className="border-t border-gray-100 pt-4">
           <div className="text-xs text-gray-500 mb-1">Din pris via MittBygg</div>
-          <div className="text-3xl font-extrabold tracking-tight text-green-700">{formatKr(p.mittbygg)}</div>
-          <div className="text-sm text-green-600 font-semibold mt-1">Du sparer {formatKr(p.market - p.mittbygg)}</div>
+          <div className="text-3xl font-extrabold tracking-tight">{formatKr(p.mittbygg)}</div>
+          <div className="text-sm text-gray-500 font-semibold mt-1">Du sparer {formatKr(p.market - p.mittbygg)}</div>
         </div>
-        {p.note && <div className="text-xs text-gray-500 border-t border-[#c5dccd] pt-3">{p.note}</div>}
-        <div className="text-xs text-gray-400 border-t border-[#c5dccd] pt-3">
+        {p.note && <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">{p.note}</div>}
+        <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">
           Kommunalt gebyr kommer i tillegg — varierer per kommune og tiltaksstørrelse.
         </div>
       </div>

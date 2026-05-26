@@ -105,6 +105,9 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   const router = useRouter();
   const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
+  const [pendingAiResults, setPendingAiResults] = useState<{
+    result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment;
+  } | null>(null);
 
   useEffect(() => {
     if (phase.kind === "preview") {
@@ -143,8 +146,8 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
       <ResultView
         r={phase.result as never}
         slug={slug}
-        onGenerateSoknad={() => setPhase({ kind: "betaling", result: phase.result })}
-        onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
+        onGenerateSoknad={() => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
+        onDownloadPdf={async () => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
       />
     );
@@ -169,20 +172,10 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
       <AiAnalyse
         architect={architect}
         engineer={engineer}
-        onContinue={async () => {
+        onContinue={() => {
+          setPendingAiResults({ result, architect, engineer });
           setAiPhase(null);
-          setPhase({ kind: "sending", result });
-          await downloadTiltakSoknad(
-            slug ?? "andre",
-            result,
-            p.street,
-            Number(p.matrikkel.gnr),
-            Number(p.matrikkel.bnr),
-            p.matrikkel.kommune,
-            architect as unknown as Record<string, unknown>,
-            engineer as unknown as Record<string, unknown>,
-          ).catch(() => {});
-          setPhase({ kind: "sent", result });
+          // phase is already "betaling" — BetalingModal renders next
         }}
       />
     );
@@ -223,8 +216,29 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
         slug={slug}
-        onBetal={async () => setUploadPending(phase.result)}
-        onBack={() => setPhase({ kind: "result", result: phase.result })}
+        onBetal={async () => {
+          const ai = pendingAiResults;
+          setPendingAiResults(null);
+          setPhase({ kind: "sending", result: phase.result });
+          await downloadTiltakSoknad(
+            slug ?? "andre",
+            phase.result,
+            p.street,
+            Number(p.matrikkel.gnr),
+            Number(p.matrikkel.bnr),
+            p.matrikkel.kommune,
+            ai?.architect as unknown as Record<string, unknown>,
+            ai?.engineer as unknown as Record<string, unknown>,
+          ).catch(() => {});
+          setPhase({ kind: "sent", result: phase.result });
+        }}
+        onBack={() => {
+          if (pendingAiResults) {
+            setAiPhase({ kind: "done", ...pendingAiResults });
+          } else {
+            setPhase({ kind: "result", result: phase.result });
+          }
+        }}
       />
     );
   }

@@ -58,6 +58,9 @@ export function KjellerWizard({ p }: { p: Address }) {
   const [data, setData] = useState<WizardData>(INITIAL);
   const [uploadPending, setUploadPending] = useState<KjellerResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhaseLocal | null>(null);
+  const [pendingAiResults, setPendingAiResults] = useState<{
+    result: KjellerResult; architect: ArchitectAssessment; engineer: EngineerAssessment;
+  } | null>(null);
 
   const evaluate = async () => {
     if (!data.room || !data.ny_bruk) return;
@@ -93,14 +96,9 @@ export function KjellerWizard({ p }: { p: Address }) {
       <AiAnalyse
         architect={architect}
         engineer={engineer}
-        onContinue={async () => {
+        onContinue={() => {
+          setPendingAiResults({ result, architect, engineer });
           setAiPhase(null);
-          setPhase({ kind: "sending", result });
-          await downloadKjellerSoknad(
-            result, p.street,
-            Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.matrikkel.kommune,
-          ).catch(() => {});
-          setPhase({ kind: "sent", result });
         }}
       />
     );
@@ -140,8 +138,8 @@ export function KjellerWizard({ p }: { p: Address }) {
     return (
       <ResultView
         r={phase.result}
-        onGenerateSoknad={async () => setPhase({ kind: "betaling", result: phase.result })}
-        onDownloadPdf={async () => setPhase({ kind: "betaling", result: phase.result })}
+        onGenerateSoknad={() => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
+        onDownloadPdf={async () => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
         onRestart={() => router.push(`/property/${p.id}/tiltak`)}
       />
     );
@@ -151,8 +149,22 @@ export function KjellerWizard({ p }: { p: Address }) {
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
         slug="kjeller"
-        onBetal={() => setUploadPending(phase.result)}
-        onBack={() => setPhase({ kind: "result", result: phase.result })}
+        onBetal={async () => {
+          setPendingAiResults(null);
+          setPhase({ kind: "sending", result: phase.result });
+          await downloadKjellerSoknad(
+            phase.result, p.street,
+            Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.matrikkel.kommune,
+          ).catch(() => {});
+          setPhase({ kind: "sent", result: phase.result });
+        }}
+        onBack={() => {
+          if (pendingAiResults) {
+            setAiPhase({ kind: "done", ...pendingAiResults });
+          } else {
+            setPhase({ kind: "result", result: phase.result });
+          }
+        }}
       />
     );
   }

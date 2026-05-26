@@ -30,7 +30,7 @@ export function AiAnalyse({ architect, engineer, onContinue }: Props) {
 
         {/* Architect section */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl grid place-items-center shrink-0 bg-green-500 text-white">
+          <div className="w-10 h-10 rounded-xl grid place-items-center shrink-0 bg-gray-900 text-white">
             <ArchitectIcon />
           </div>
           <div>
@@ -56,10 +56,10 @@ export function AiAnalyse({ architect, engineer, onContinue }: Props) {
         </div>
 
         {architect.anbefalinger.length > 0 && (
-          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
             <ul className="space-y-1">
               {architect.anbefalinger.map((a, i) => (
-                <li key={i} className="flex gap-2 text-sm text-amber-800">
+                <li key={i} className="flex gap-2 text-sm text-gray-600">
                   <span className="shrink-0">→</span><span>{a}</span>
                 </li>
               ))}
@@ -72,7 +72,7 @@ export function AiAnalyse({ architect, engineer, onContinue }: Props) {
 
         {/* Engineer section */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl grid place-items-center shrink-0 bg-blue-500 text-white">
+          <div className="w-10 h-10 rounded-xl grid place-items-center shrink-0 bg-gray-900 text-white">
             <EngineerIcon />
           </div>
           <div>
@@ -92,10 +92,10 @@ export function AiAnalyse({ architect, engineer, onContinue }: Props) {
         </div>
 
         {engineer.notater.length > 0 && (
-          <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
             <ul className="space-y-1">
               {engineer.notater.map((n, i) => (
-                <li key={i} className="flex gap-2 text-sm text-blue-800">
+                <li key={i} className="flex gap-2 text-sm text-gray-600">
                   <span className="shrink-0 font-bold">·</span><span>{n}</span>
                 </li>
               ))}
@@ -109,7 +109,7 @@ export function AiAnalyse({ architect, engineer, onContinue }: Props) {
 
         <div className="mt-auto pt-2">
           <Button size="lg" full onClick={onContinue}>
-            Last ned søknadspakke
+            Kjøp søknadspakke
             <DownloadIcon />
           </Button>
         </div>

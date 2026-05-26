@@ -75,7 +75,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
       <Topbar title="Kjøp søknadspakke" />
       <div className="view">
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-green-600 to-green-500 px-5 py-4 flex items-start justify-between">
+          <div className="bg-gray-900 px-5 py-4 flex items-start justify-between">
             <div>
               <div className="text-white font-bold text-lg">Søknadspakke</div>
               <div className="text-green-100 text-sm mt-0.5">Alt du trenger for å sende søknaden selv</div>
@@ -110,7 +110,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
         {totalKostnad > 0 && (
           <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm flex justify-between">
             <span className="text-gray-500">Estimert tiltakskostnad</span>
-            <span className="font-bold text-orange-600">{formatKr(totalKostnad)}</span>
+            <span className="font-bold text-gray-800">{formatKr(totalKostnad)}</span>
           </div>
         )}
 
@@ -126,7 +126,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
           </button>
 
           <Button variant="ghost" full onClick={onBack}>
-            Tilbake til resultat
+            Tilbake
           </Button>
 
           <p className="text-[11px] text-gray-400 text-center leading-relaxed">
