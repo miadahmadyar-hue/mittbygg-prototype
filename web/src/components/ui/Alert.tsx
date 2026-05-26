@@ -3,17 +3,16 @@ import { ReactNode } from "react";
 type Variant = "info" | "amber" | "red" | "green";
 
 const STYLES: Record<Variant, string> = {
-  info:  "bg-[#eaf2fb] text-[#1d4f8c]",
-  amber: "bg-amber-50 text-amber-500",
-  red:   "bg-red-50 text-red-500",
-  green: "bg-green-50 text-green-700",
+  info:  "bg-gray-50 border border-gray-200 text-gray-600",
+  amber: "bg-amber-50 border border-amber-200 text-amber-900",
+  red:   "bg-red-50 border border-red-200 text-red-700",
+  green: "bg-green-50 border border-green-200 text-green-700",
 };
 
 const ICONS: Record<Variant, ReactNode> = {
   info: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 11v5M12 7h.01" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 11v5M12 7h.01" /><circle cx="12" cy="12" r="9" strokeOpacity=".4" />
     </svg>
   ),
   amber: (
