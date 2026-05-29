@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Address } from "@/lib/data/addresses";
 
-type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "preview"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
+type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 type TakType = "bytte_materiale" | "endre_form" | "bygge_loft";
 
 export function TakWizard({ p }: { p: Address }) {
@@ -55,7 +55,7 @@ export function TakWizard({ p }: { p: Address }) {
             <div><h2 className="text-[22px] font-bold tracking-tight">Bygningsdetaljer</h2></div>
             <div className="space-y-2">
               <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Verneverdig / antikvarisk bygning" desc="SEFRAK-registrert eller kommunalt vernet" />
-              <ToggleRow on={data.etterisolere} onChange={() => setData({ ...data, etterisolere: !data.etterisolere })} title="Etterisolere taket samtidig" desc="Legge til ekstra isolasjon â€” anbefales ved skifte" />
+              <ToggleRow on={data.etterisolere} onChange={() => setData({ ...data, etterisolere: !data.etterisolere })} title="Etterisolere taket samtidig" desc="Legge til ekstra isolasjon — anbefales ved skifte" />
             </div>
             <div className="bg-white border border-gray-100 rounded-xl mt-2">
               <KV k="Eiendom" v={p.street} />

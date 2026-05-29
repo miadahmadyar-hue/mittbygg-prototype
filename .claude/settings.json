@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(perl -i -pe 's/\\\\Q | { kind: \"preview\"; result: TiltakResult }\\\\E//g' LevegWizard.tsx AnneksWizard.tsx TilleggsdelWizard.tsx BryggeWizard.tsx AndreWizard.tsx BruksendringWizard.tsx VinduWizard.tsx BoenhetWizard.tsx TilbyggWizard.tsx GeolograpportWizard.tsx GarasjeWizard.tsx FasadeWizard.tsx)"
+    ]
+  }
+}

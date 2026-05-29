@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Address } from "@/lib/data/addresses";
 
-type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "preview"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
+type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 type VType = "skifte" | "nytt_hull" | "storre_apning";
 const LABEL: Record<VType, string> = { skifte: "Skifte eksisterende vindu", nytt_hull: "Nytt vindu i eksisterende vegg", storre_apning: "Forstørre vindusåpning" };
 const DESC: Record<VType, string> = { skifte: "Same størrelse, ny glass/karm", nytt_hull: "Hull i eksisterende vegg uten endring av størrelse", storre_apning: "Utvide eller slå ut eksisterende åpning" };

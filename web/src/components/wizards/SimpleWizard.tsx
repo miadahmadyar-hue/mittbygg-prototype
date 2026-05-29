@@ -1,12 +1,13 @@
 "use client";
 
 /**
- * Shared shell for the 10 simple tiltak wizards.
- * Handles: phases, loading, ResultView, SoknadPreview/Sent.
+ * Shared shell for the simple tiltak wizards.
+ * `ResultPhases` owns every post-result phase (result → drawing upload →
+ * AI analysis → payment → PDF → sent) so the 13 simple wizards don't repeat it.
  * Each wizard provides its own step content via children.
  */
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -28,7 +29,6 @@ type Phase =
   | { kind: "loading" }
   | { kind: "result"; result: TiltakResult }
   | { kind: "betaling"; result: TiltakResult }
-  | { kind: "preview"; result: TiltakResult }
   | { kind: "sending"; result: TiltakResult }
   | { kind: "sent"; result: TiltakResult };
 
@@ -108,12 +108,6 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   const [pendingAiResults, setPendingAiResults] = useState<{
     result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment;
   } | null>(null);
-
-  useEffect(() => {
-    if (phase.kind === "preview") {
-      setPhase({ kind: "sent", result: phase.result });
-    }
-  }, [phase, setPhase]);
 
   if (phase.kind === "loading") {
     return (

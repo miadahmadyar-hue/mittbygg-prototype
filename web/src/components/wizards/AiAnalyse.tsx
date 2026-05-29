@@ -23,7 +23,7 @@ export function AiAnalyse({ architect, engineer, onContinue }: Props) {
         {degraded && (
           <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
             <p className="text-sm text-amber-800 leading-snug">
-              AI-tjenesten svarte ikke fullt ut, sÃ¥ vurderingen under bruker en regelbasert reserve.
+              AI-tjenesten svarte ikke fullt ut, så vurderingen under bruker en regelbasert reserve.
             </p>
           </div>
         )}

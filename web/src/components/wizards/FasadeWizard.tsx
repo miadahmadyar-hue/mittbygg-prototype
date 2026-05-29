@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Address } from "@/lib/data/addresses";
 
-type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "preview"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
+type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 type FType = "skifte_vindu" | "nytt_hull" | "vindu_storre" | "dor" | "kledning" | "farge" | "terrasse";
 const LABEL: Record<FType, string> = { skifte_vindu: "Skifte vindu / dør", nytt_hull: "Nytt hull i vegg", vindu_storre: "Større vindusåpning", dor: "Flytte ytterdør", kledning: "Ny ytterkledning", farge: "Farge / overflate", terrasse: "Terrasse" };
 const DESC: Record<FType, string>  = { skifte_vindu: "Samme størrelse, ny glass eller karm", nytt_hull: "Hull i eksisterende vegg uten endring av størrelse", vindu_storre: "Utvide eller forstørre eksisterende åpning", dor: "Flytte eller skifte plasseringen av ytterdør", kledning: "Skifte kledning, panel eller puss", farge: "Male om fasaden eller endre overflate", terrasse: "Ny terrasse eller uteplass" };

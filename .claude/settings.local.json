@@ -5,7 +5,13 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(npx netlify-cli *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "PowerShell($r = Invoke-WebRequest \"https://ws.geonorge.no/adresser/v1/sok?sok=Storgata+14&fuzzy=true&utkoordsys=4258&treffPerSide=3&sokemodus=AND\" -UseBasicParsing; \\($r.Content | ConvertFrom-Json\\).adresser | ForEach-Object { \"$\\($_.kommunenummer\\) $\\($_.gardsnummer\\) $\\($_.bruksnummer\\) $\\($_.adressenavn\\)\" })",
+      "Bash(npx tsc *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(curl -s https://mittbygg-prototype.onrender.com/docs)",
+      "Bash(curl -s https://mittbygg-prototype.onrender.com/openapi.json)",
+      "Bash(npx next *)"
     ]
   }
 }

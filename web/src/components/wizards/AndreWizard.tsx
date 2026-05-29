@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Address } from "@/lib/data/addresses";
 
-type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "preview"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
+type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 
 export function AndreWizard({ p }: { p: Address }) {
   const router = useRouter();
@@ -42,7 +42,7 @@ export function AndreWizard({ p }: { p: Address }) {
               <textarea
                 className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={5}
-                placeholder="Beskriv tiltaket så detaljert som mulig â€” f.eks. støpe platting, sette opp carport, rive garasje…"
+                placeholder="Beskriv tiltaket så detaljert som mulig — f.eks. støpe platting, sette opp carport, rive garasje…"
                 value={data.beskrivelse}
                 onChange={(e) => setData({ ...data, beskrivelse: e.target.value })}
               />
