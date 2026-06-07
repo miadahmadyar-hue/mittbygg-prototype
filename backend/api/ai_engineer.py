@@ -3,9 +3,10 @@ AI Engineer agent — generates technical calculations and structural notes per 
 Falls back to realistic mock calculations when ANTHROPIC_API_KEY is not set.
 """
 import os
-import json
 import logging
 from copy import deepcopy
+
+from .json_extract import parse_model_json
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
@@ -156,7 +157,7 @@ Bruk norsk. Maks 4 beregninger, 2 notater. Svar kun med JSON."""
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    result = json.loads(msg.content[0].text.strip())
+    result = parse_model_json(msg.content[0].text)
     result["meta"] = {"source": "claude", "model": ANTHROPIC_ENGINEER_MODEL}
     return result
 

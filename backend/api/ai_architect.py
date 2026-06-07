@@ -3,11 +3,12 @@ AI Architect agent — analyses uploaded drawings + property data with Claude.
 Falls back to a rule-based assessment when ANTHROPIC_API_KEY is not set.
 """
 import os
-import json
 import base64
 import glob as glob_mod
 import logging
 import re
+
+from .json_extract import parse_model_json
 from copy import deepcopy
 from pathlib import Path
 
@@ -155,8 +156,7 @@ Bruk norsk. Maks 3 items og 2 anbefalinger. Svar kun med JSON, ingen annen tekst
         max_tokens=512,
         messages=[{"role": "user", "content": content}],
     )
-    raw = msg.content[0].text.strip()
-    result = json.loads(raw)
+    result = parse_model_json(msg.content[0].text)
     result["meta"] = {"source": "claude", "model": ANTHROPIC_ARCHITECT_MODEL}
     return result
 
