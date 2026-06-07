@@ -154,7 +154,7 @@ Bruk norsk. Maks 4 beregninger, 2 notater. Svar kun med JSON."""
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     msg = client.messages.create(
         model=ANTHROPIC_ENGINEER_MODEL,
-        max_tokens=512,
+        max_tokens=2048,
         messages=[{"role": "user", "content": prompt}],
     )
     result = parse_model_json(msg.content[0].text)

@@ -153,7 +153,7 @@ Bruk norsk. Maks 3 items og 2 anbefalinger. Svar kun med JSON, ingen annen tekst
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     msg = client.messages.create(
         model=ANTHROPIC_ARCHITECT_MODEL,
-        max_tokens=512,
+        max_tokens=2048,
         messages=[{"role": "user", "content": content}],
     )
     result = parse_model_json(msg.content[0].text)
