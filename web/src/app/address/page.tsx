@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { ADDRESSES, type Address } from "@/lib/data/addresses";
 import { getUser, setUser, type User } from "@/lib/auth";
+import { useT } from "@/lib/i18n/context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const KARTVERKET_URL = "https://ws.geonorge.no/adresser/v1/sok";
@@ -88,6 +89,7 @@ async function search(q: string): Promise<Address[]> {
 
 export default function AddressPage() {
   const router = useRouter();
+  const t = useT();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
@@ -163,10 +165,13 @@ export default function AddressPage() {
       <div className="view">
         <div>
           <h1 className="text-[32px] font-bold tracking-[-0.025em] leading-[1.1]">
-            Hvilken eiendom?
+            {t("Hvilken eiendom?", "Which property?")}
           </h1>
           <p className="mt-2 text-[17px] text-gray-700 leading-snug">
-            Søk etter adresse, postnummer eller gnr/bnr.
+            {t(
+              "Søk etter adresse, postnummer eller gnr/bnr.",
+              "Search by address, postal code or gnr/bnr.",
+            )}
           </p>
         </div>
 
@@ -186,7 +191,7 @@ export default function AddressPage() {
             type="text"
             value={query}
             onChange={(e) => updateQuery(e.target.value)}
-            placeholder="f.eks. Solbakken 12, Oslo"
+            placeholder={t("f.eks. Solbakken 12, Oslo", "e.g. Solbakken 12, Oslo")}
             autoComplete="off"
             autoFocus
             className="flex-1 bg-transparent outline-none text-base"
@@ -207,16 +212,16 @@ export default function AddressPage() {
         )}
 
         {showResults && !loading && results.length === 0 && !error && (
-          <p className="text-sm text-gray-500 text-center py-6">Ingen treff. Prøv en annen adresse.</p>
+          <p className="text-sm text-gray-500 text-center py-6">{t("Ingen treff. Prøv en annen adresse.", "No matches. Try another address.")}</p>
         )}
 
         {showResults && error && (
-          <p className="text-sm text-red-500 text-center py-6">Kunne ikke koble til søketjenesten. Sjekk internett og prøv igjen.</p>
+          <p className="text-sm text-red-500 text-center py-6">{t("Kunne ikke koble til søketjenesten. Sjekk internett og prøv igjen.", "Couldn't reach the search service. Check your connection and try again.")}</p>
         )}
 
         {showQuickList && (
           <div className="bg-gray-50 rounded-xl border border-gray-100 p-5 mt-2">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Forslag</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t("Forslag", "Suggestions")}</h4>
             {ADDRESSES.slice(0, 4).map((a) => (
               <button key={a.id} type="button" onClick={() => select(a.id, a)}
                 className="flex items-center gap-3 w-full py-2 border-b border-gray-100 last:border-b-0 text-left cursor-pointer">

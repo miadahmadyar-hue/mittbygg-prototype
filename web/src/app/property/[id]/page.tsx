@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, notFound } from "next/navigation";
 import { findAddress, type Address } from "@/lib/data/addresses";
 import { PropertyDashboard } from "@/components/PropertyDashboard";
+import { useT } from "@/lib/i18n/context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -34,6 +35,7 @@ async function fetchFromBackend(id: string): Promise<Address | null> {
 
 export default function PropertyPage() {
   const params = useParams();
+  const t = useT();
   const id = params.id as string;
   const [property, setProperty] = useState<Address | null | "loading">("loading");
 
@@ -62,7 +64,7 @@ export default function PropertyPage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4">
         <div className="spinner spinner-lg" />
-        <p className="text-sm text-gray-500">Henter eiendomsdata…</p>
+        <p className="text-sm text-gray-500">{t("Henter eiendomsdata…", "Fetching property data…")}</p>
       </div>
     );
   }

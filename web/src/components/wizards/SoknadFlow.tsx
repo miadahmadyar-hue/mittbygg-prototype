@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Pill } from "@/components/ui/Pill";
 import { PlanSvg, SnittSvg, FasadeSvg, SitSvg } from "./Thumbnails";
 import { useState, type ReactNode } from "react";
+import { useT } from "@/lib/i18n/context";
 
 interface PreviewProps {
   ansvarsrett: boolean;
@@ -75,6 +76,7 @@ interface SentProps {
 }
 
 export function SoknadSent({ onDone }: SentProps) {
+  const t = useT();
   const [{ ref, now }] = useState(() => ({
     ref: "DBK-" + Math.floor(100_000 + Math.random() * 900_000),
     now: new Date().toLocaleString("nb-NO"),
@@ -82,7 +84,7 @@ export function SoknadSent({ onDone }: SentProps) {
 
   return (
     <>
-      <Topbar title="Sendt" back={false} />
+      <Topbar title={t("Sendt", "Done")} back={false} />
       <div className="view text-center pt-8">
         <div
           className="rounded-[28px] grid place-items-center mx-auto mb-6"
@@ -99,31 +101,33 @@ export function SoknadSent({ onDone }: SentProps) {
           </svg>
         </div>
 
-        <h1 className="text-[32px] font-bold tracking-[-0.025em] leading-[1.1]">Søknadspakke klar!</h1>
+        <h1 className="text-[32px] font-bold tracking-[-0.025em] leading-[1.1]">{t("Søknadspakke klar!", "Application package ready!")}</h1>
         <p className="text-[17px] text-gray-700 mt-3 leading-snug">
-          PDF-pakken er lastet ned. Du kan nå sende den til kommunen.
+          {t("PDF-pakken er lastet ned. Du kan nå sende den til kommunen.", "The PDF package has been downloaded. You can now send it to the municipality.")}
         </p>
 
         <div className="bg-white border border-gray-100 rounded-xl mt-6 text-left">
-          <KV k="Referanse" v={ref} mono />
-          <KV k="Generert" v={now} />
-          <KV k="Neste steg" v="Send til kommunen" />
+          <KV k={t("Referanse", "Reference")} v={ref} mono />
+          <KV k={t("Generert", "Generated")} v={now} />
+          <KV k={t("Neste steg", "Next step")} v={t("Send til kommunen", "Send to the municipality")} />
           <KV
             k="Status"
-            vEl={<Pill variant="green">Klar til innsending</Pill>}
+            vEl={<Pill variant="green">{t("Klar til innsending", "Ready to submit")}</Pill>}
             last
           />
         </div>
 
         <div className="mt-4 text-left">
           <Alert variant="green">
-            Pakken inneholder søknadsskjema, regelsjekk og neste-steg-guide.
-            Lever den digitalt på kommunens innbyggerportal eller send per post.
+            {t(
+              "Pakken inneholder søknadsskjema, regelsjekk og neste-steg-guide. Lever den digitalt på kommunens innbyggerportal eller send per post.",
+              "The package contains the application form, rule check and next-steps guide. Submit it digitally on the municipality's citizen portal or send it by post.",
+            )}
           </Alert>
         </div>
 
         <div className="mt-6">
-          <Button full onClick={onDone}>Tilbake til min eiendom</Button>
+          <Button full onClick={onDone}>{t("Tilbake til min eiendom", "Back to my property")}</Button>
         </div>
       </div>
     </>

@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { LangToggle } from "@/components/ui/LangToggle";
+import { useT } from "@/lib/i18n/context";
 
 export default function Splash() {
+  const t = useT();
   return (
     <>
       <div
@@ -10,6 +15,10 @@ export default function Splash() {
           background: "linear-gradient(180deg, #fafaf8 0%, #ecf3ef 100%)",
         }}
       >
+        <div className="absolute top-4 right-4 z-10">
+          <LangToggle />
+        </div>
+
         <div
           aria-hidden
           className="absolute pointer-events-none"
@@ -59,29 +68,31 @@ export default function Splash() {
         </div>
 
         <h1 className="text-[38px] leading-[1.05] font-bold tracking-[-0.025em] text-gray-900">
-          Fra{" "}
+          {t("Fra", "From")}{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
               backgroundImage: "linear-gradient(120deg, #0a4f3c, #e9763a)",
             }}
           >
-            idé
+            {t("idé", "idea")}
           </span>{" "}
-          til{" "}
+          {t("til", "to")}{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
               backgroundImage: "linear-gradient(120deg, #0a4f3c, #e9763a)",
             }}
           >
-            ferdigattest
+            {t("ferdigattest", "approval")}
           </span>
           .
         </h1>
         <p className="text-[17px] mt-4 mx-auto max-w-[320px] text-gray-700 leading-snug">
-          MittBygg gir deg byggesøknader, tegninger og fagtjenester for hjemmet
-          ditt — på minutter, ikke uker.
+          {t(
+            "MittBygg gir deg byggesøknader, tegninger og fagtjenester for hjemmet ditt — på minutter, ikke uker.",
+            "MittBygg gives you building applications, drawings and professional services for your home — in minutes, not weeks.",
+          )}
         </p>
 
         <div className="mt-9 flex flex-col gap-2.5 max-w-[340px] mx-auto w-full relative z-10">
@@ -95,12 +106,12 @@ export default function Splash() {
                 <rect x="3" y="6" width="18" height="14" rx="2" />
                 <path d="M7 10h10M7 14h6M7 18h4" />
               </svg>
-              Logg inn med BankID
+              {t("Logg inn med BankID", "Sign in with BankID")}
             </Button>
           </Link>
           <Link href="/address" className="contents">
             <Button variant="ghost" full>
-              Prøv demo (uten BankID)
+              {t("Prøv demo (uten BankID)", "Try demo (without BankID)")}
             </Button>
           </Link>
         </div>
@@ -108,7 +119,10 @@ export default function Splash() {
 
       <div className="bg-white border-t border-gray-100 text-center py-5">
         <p className="text-xs text-gray-500">
-          Drives på sikker norsk infrastruktur · GDPR · Datalagring i EU
+          {t(
+            "Drives på sikker norsk infrastruktur · GDPR · Datalagring i EU",
+            "Runs on secure Norwegian infrastructure · GDPR · Data stored in the EU",
+          )}
         </p>
       </div>
     </>

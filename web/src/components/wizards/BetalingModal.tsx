@@ -5,15 +5,16 @@ import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { formatKr } from "@/lib/format";
 import { getPricing, discountPct } from "@/lib/data/pricing";
+import { useT } from "@/lib/i18n/context";
 
 type BetalingState = "idle" | "processing" | "success";
 
-const INKLUDERT = [
-  "Komplett PDF-søknadspakke",
-  "Ferdig utfylt DiBK-skjema (5153)",
-  "Tiltaksliste og paragrafhenvisninger",
-  "Neste-steg-guide med tidsplan",
-  "Nabovarselmal og følgebrev",
+const INKLUDERT: [string, string][] = [
+  ["Komplett PDF-søknadspakke", "Complete PDF application package"],
+  ["Ferdig utfylt DiBK-skjema (5153)", "Pre-filled DiBK form (5153)"],
+  ["Tiltaksliste og paragrafhenvisninger", "Task list and statute references"],
+  ["Neste-steg-guide med tidsplan", "Next-steps guide with schedule"],
+  ["Nabovarselmal og følgebrev", "Neighbor-notice template and cover letter"],
 ];
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
+  const t = useT();
   const [state, setState] = useState<BetalingState>("idle");
   const pricing = getPricing(slug ?? "");
   const pct = discountPct(pricing);
@@ -46,8 +48,8 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
             </svg>
           </div>
           <div>
-            <h2 className="text-[22px] font-bold tracking-tight">Betaling godkjent</h2>
-            <p className="text-sm text-gray-500 mt-1">PDF-pakken genereres nå…</p>
+            <h2 className="text-[22px] font-bold tracking-tight">{t("Betaling godkjent", "Payment approved")}</h2>
+            <p className="text-sm text-gray-500 mt-1">{t("PDF-pakken genereres nå…", "Generating the PDF package now…")}</p>
           </div>
           <div className="spinner spinner-lg" />
         </div>
@@ -62,8 +64,8 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
         <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center p-10">
           <div className="spinner spinner-lg" />
           <div>
-            <h3 className="text-base font-semibold">Venter på Vipps-bekreftelse…</h3>
-            <p className="text-sm text-gray-500 mt-1">Betalingen behandles i Vipps-appen din.</p>
+            <h3 className="text-base font-semibold">{t("Venter på Vipps-bekreftelse…", "Waiting for Vipps confirmation…")}</h3>
+            <p className="text-sm text-gray-500 mt-1">{t("Betalingen behandles i Vipps-appen din.", "The payment is being processed in your Vipps app.")}</p>
           </div>
         </div>
       </>
@@ -72,13 +74,13 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
 
   return (
     <>
-      <Topbar title="Kjøp søknadspakke" />
+      <Topbar title={t("Kjøp søknadspakke", "Buy application package")} />
       <div className="view">
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
           <div className="bg-gray-900 px-5 py-4 flex items-start justify-between">
             <div>
-              <div className="text-white font-bold text-lg">Søknadspakke</div>
-              <div className="text-green-100 text-sm mt-0.5">Alt du trenger for å sende søknaden selv</div>
+              <div className="text-white font-bold text-lg">{t("Søknadspakke", "Application package")}</div>
+              <div className="text-green-100 text-sm mt-0.5">{t("Alt du trenger for å sende søknaden selv", "Everything you need to submit the application yourself")}</div>
             </div>
             <div className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full shrink-0 ml-3">
               -{pct}%
@@ -90,9 +92,9 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
               <span className="text-[34px] font-extrabold tracking-tight leading-none text-green-700">
                 {formatKr(pricing.mittbygg)}
               </span>
-              <span className="text-sm text-gray-500 mb-1">eks. mva</span>
+              <span className="text-sm text-gray-500 mb-1">{t("eks. mva", "excl. VAT")}</span>
             </div>
-            <div className="text-sm text-gray-400 mt-1 line-through">{formatKr(pricing.market)} hos arkitekt/konsulent</div>
+            <div className="text-sm text-gray-400 mt-1 line-through">{formatKr(pricing.market)} {t("hos arkitekt/konsulent", "at an architect/consultant")}</div>
           </div>
 
           <ul className="px-5 py-4 space-y-2.5">
@@ -101,7 +103,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                   <path d="m5 13 4 4L19 7" />
                 </svg>
-                {item}
+                {t(item[0], item[1])}
               </li>
             ))}
           </ul>
@@ -109,7 +111,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
 
         {totalKostnad > 0 && (
           <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm flex justify-between">
-            <span className="text-gray-500">Estimert tiltakskostnad</span>
+            <span className="text-gray-500">{t("Estimert tiltakskostnad", "Estimated project cost")}</span>
             <span className="font-bold text-gray-800">{formatKr(totalKostnad)}</span>
           </div>
         )}
@@ -122,16 +124,18 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
             style={{ background: "#FF5B24" }}
           >
             <VippsLogo />
-            Betal med Vipps
+            {t("Betal med Vipps", "Pay with Vipps")}
           </button>
 
           <Button variant="ghost" full onClick={onBack}>
-            Tilbake
+            {t("Tilbake", "Back")}
           </Button>
 
           <p className="text-[11px] text-gray-400 text-center leading-relaxed">
-            Sikker betaling via Vipps. Du kan laste ned pakken umiddelbart etter betaling.
-            Kjøpet refunderes ikke etter nedlasting.
+            {t(
+              "Sikker betaling via Vipps. Du kan laste ned pakken umiddelbart etter betaling. Kjøpet refunderes ikke etter nedlasting.",
+              "Secure payment via Vipps. You can download the package immediately after payment. The purchase is non-refundable after download.",
+            )}
           </p>
 
           <button
@@ -139,7 +143,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
             onClick={onBetal}
             className="text-[11px] text-gray-300 hover:text-gray-400 underline underline-offset-2 text-center transition-colors"
           >
-            Demo: hopp over betaling
+            {t("Demo: hopp over betaling", "Demo: skip payment")}
           </button>
         </div>
       </div>

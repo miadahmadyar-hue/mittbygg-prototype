@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/context";
 import { Suspense } from "react";
 
 function BankIDContent() {
+  const t = useT();
   const [code] = useState(() => generateCode());
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
@@ -31,15 +33,15 @@ function BankIDContent() {
             </svg>
           </div>
           <div>
-            <h2 className="text-[22px] font-bold tracking-tight">Innlogging feilet</h2>
-            <p className="mt-2 text-sm text-gray-500">Prøv igjen eller bruk demo-modus.</p>
+            <h2 className="text-[22px] font-bold tracking-tight">{t("Innlogging feilet", "Sign-in failed")}</h2>
+            <p className="mt-2 text-sm text-gray-500">{t("Prøv igjen eller bruk demo-modus.", "Try again or use demo mode.")}</p>
           </div>
           <div className="flex flex-col gap-2 w-full max-w-[280px]">
             <Button full onClick={() => { window.location.href = "/address?auth=ok&name=Demo+Bruker"; }}>
-              Prøv igjen
+              {t("Prøv igjen", "Try again")}
             </Button>
             <Button variant="ghost" full onClick={() => { window.location.href = "/address?auth=ok&name=Demo+Bruker"; }}>
-              Fortsett som demo
+              {t("Fortsett som demo", "Continue as demo")}
             </Button>
           </div>
         </div>
@@ -62,9 +64,9 @@ function BankIDContent() {
         </div>
 
         <div>
-          <h2 className="text-[22px] font-bold tracking-tight">Bekreft pålogging</h2>
+          <h2 className="text-[22px] font-bold tracking-tight">{t("Bekreft pålogging", "Confirm sign-in")}</h2>
           <p className="mt-2 text-sm text-gray-700">
-            Åpne BankID-appen på telefonen og bekreft.
+            {t("Åpne BankID-appen på telefonen og bekreft.", "Open the BankID app on your phone and confirm.")}
           </p>
         </div>
 
@@ -72,18 +74,18 @@ function BankIDContent() {
           <div className="text-center text-3xl tracking-[4px] text-green-500 font-mono">
             {code}
           </div>
-          <p className="text-xs text-gray-500 mt-2">Engangskode</p>
+          <p className="text-xs text-gray-500 mt-2">{t("Engangskode", "One-time code")}</p>
         </div>
 
         <div className="spinner" />
-        <p className="text-xs text-gray-500">Starter BankID…</p>
+        <p className="text-xs text-gray-500">{t("Starter BankID…", "Starting BankID…")}</p>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={() => { window.location.href = "/address?auth=ok&name=Demo+Bruker"; }}
         >
-          ▸ Simuler innlogging
+          ▸ {t("Simuler innlogging", "Simulate sign-in")}
         </Button>
       </div>
     </>

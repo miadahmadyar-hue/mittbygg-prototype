@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(perl -i -pe 's/\\\\Q | { kind: \"preview\"; result: TiltakResult }\\\\E//g' LevegWizard.tsx AnneksWizard.tsx TilleggsdelWizard.tsx BryggeWizard.tsx AndreWizard.tsx BruksendringWizard.tsx VinduWizard.tsx BoenhetWizard.tsx TilbyggWizard.tsx GeolograpportWizard.tsx GarasjeWizard.tsx FasadeWizard.tsx)"
+      "Bash(perl -i -pe 's/\\\\Q | { kind: \"preview\"; result: TiltakResult }\\\\E//g' LevegWizard.tsx AnneksWizard.tsx TilleggsdelWizard.tsx BryggeWizard.tsx AndreWizard.tsx BruksendringWizard.tsx VinduWizard.tsx BoenhetWizard.tsx TilbyggWizard.tsx GeolograpportWizard.tsx GarasjeWizard.tsx FasadeWizard.tsx)",
+      "Bash(python -m py_compile api/ai_engineer.py api/ai_architect.py api/json_extract.py)",
+      "Bash(python -c \"from api.json_extract import parse_model_json as p; print\\(p\\('\\\\`\\\\`\\\\`json\\\\n{\\\\\"a\\\\\": 1}\\\\n\\\\`\\\\`\\\\`'\\)\\); print\\(p\\('Here you go:\\\\n{\\\\\"b\\\\\": 2}'\\)\\); print\\(p\\('{\\\\\"c\\\\\": 3}'\\)\\)\")",
+      "Bash(npx eslint *)"
     ]
   }
 }

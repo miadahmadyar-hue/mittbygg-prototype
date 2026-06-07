@@ -6,6 +6,7 @@ import type { VeggResult } from "@/lib/regulations/vegg";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { getPricing, formatKr, discountPct } from "@/lib/data/pricing";
+import { useT } from "@/lib/i18n/context";
 
 
 type AnyResult = KjellerResult | VeggResult;
@@ -59,17 +60,18 @@ interface Props {
 }
 
 export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoading, onRestart }: Props) {
+  const t = useT();
   const sCard = STATUS_CARDS[r.status];
 
   return (
     <>
       <Topbar
-        title="Resultat"
+        title={t("Resultat", "Result")}
         right={
           <button
             type="button"
             className="w-9 h-9 rounded-full bg-gray-100 grid place-items-center"
-            aria-label="Last ned"
+            aria-label={t("Last ned", "Download")}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
@@ -97,7 +99,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                 <path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z" />
                 <path d="m9 12 2 2 4-4" />
               </svg>
-              Lempninger anvendt (PBL § 31-2)
+              {t("Lempninger anvendt (PBL § 31-2)", "Exemptions applied (PBL § 31-2)")}
             </h4>
             <ul className="space-y-2">
               {r.lempninger.map((l, i) => (
@@ -109,7 +111,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
           </div>
         )}
 
-        <SectionHead>Regelsjekk</SectionHead>
+        <SectionHead>{t("Regelsjekk", "Rule check")}</SectionHead>
         <ul className="space-y-2">
           {r.findings.map((f, i) => (
             <li
@@ -126,21 +128,23 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
           ))}
         </ul>
 
-        <SectionHead>Søknadsplikt</SectionHead>
+        <SectionHead>{t("Søknadsplikt", "Permit requirement")}</SectionHead>
         <div className="bg-white border border-gray-100 rounded-xl">
-          <KV k="Hjemmel" v={r.soknadstype} mono />
+          <KV k={t("Hjemmel", "Legal basis")} v={r.soknadstype} mono />
           <KV
-            k="Ansvarsrett"
-            v={r.ansvarsrett ? "JA — krever ANS-foretak" : "NEI — du står ansvarlig selv"}
+            k={t("Ansvarsrett", "Pro liability")}
+            v={r.ansvarsrett
+              ? t("JA — krever ANS-foretak", "YES — needs a liable firm")
+              : t("NEI — du står ansvarlig selv", "NO — you are responsible yourself")}
           />
-          <KV k="Tiltaksklasse" v={`TK${r.tiltaksklasse}`} last />
+          <KV k={t("Tiltaksklasse", "Work class")} v={`TK${r.tiltaksklasse}`} last />
         </div>
 
         <PricingCard slug={slug} />
 
         {"bjelke" in r && r.bjelke && (
           <>
-            <SectionHead>Bjelke-anbefaling</SectionHead>
+            <SectionHead>{t("Bjelke-anbefaling", "Beam recommendation")}</SectionHead>
             <div className="bg-white border border-gray-100 rounded-xl p-4">
               <div className="flex items-center gap-4">
                 <div
@@ -159,7 +163,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                   </div>
                   <div className="text-sm text-gray-500">{r.bjelke.type}</div>
                   <div className="text-xs text-gray-500 mt-2">
-                    Spennvidde {r.bjelke.spennvidde} mm · Last {r.bjelke.last} kN/m
+                    {t("Spennvidde", "Span")} {r.bjelke.spennvidde} mm · {t("Last", "Load")} {r.bjelke.last} kN/m
                   </div>
                 </div>
               </div>
@@ -167,14 +171,14 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
           </>
         )}
 
-        <SectionHead>Tidslinje</SectionHead>
+        <SectionHead>{t("Tidslinje", "Timeline")}</SectionHead>
         <Timeline ansvarsrett={r.ansvarsrett} />
 
         <div className="mt-2 flex flex-col gap-2">
           {r.status === "red" ? (
             <>
               <Button variant="secondary" full disabled>
-                Søknad kan ikke lages — rett kritiske avvik først
+                {t("Søknad kan ikke lages — rett kritiske avvik først", "Application can't be created — fix critical issues first")}
               </Button>
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-start gap-3">
@@ -186,19 +190,19 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                     </svg>
                   </div>
                   <div>
-                    <div className="font-semibold text-sm text-amber-900">Får du ikke til søknaden selv?</div>
-                    <div className="text-xs text-amber-700 mt-0.5">En rådgiver fra MittBygg kan hjelpe deg videre — selv med krevende tilfeller.</div>
+                    <div className="font-semibold text-sm text-amber-900">{t("Får du ikke til søknaden selv?", "Can't manage the application yourself?")}</div>
+                    <div className="text-xs text-amber-700 mt-0.5">{t("En rådgiver fra MittBygg kan hjelpe deg videre — selv med krevende tilfeller.", "A MittBygg advisor can help you — even with difficult cases.")}</div>
                   </div>
                 </div>
                 <a
                   href="mailto:hei@mittbygg.no?subject=Trenger hjelp med søknad"
                   className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm rounded-xl py-3 text-center transition-colors"
                 >
-                  Kontakt en rådgiver
+                  {t("Kontakt en rådgiver", "Contact an advisor")}
                 </a>
               </div>
               <Button variant="ghost" full onClick={onRestart}>
-                Start på nytt
+                {t("Start på nytt", "Start over")}
               </Button>
             </>
           ) : (
@@ -217,7 +221,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
                     </svg>
                   )}
-                  {pdfLoading ? "Genererer PDF…" : "Last ned søknadspakke (PDF)"}
+                  {pdfLoading ? t("Genererer PDF…", "Generating PDF…") : t("Last ned søknadspakke (PDF)", "Download application package (PDF)")}
                 </Button>
               ) : (
                 <Button size="lg" full onClick={onGenerateSoknad}>
@@ -225,11 +229,11 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <path d="M14 2v6h6" />
                   </svg>
-                  Generer søknadspakke
+                  {t("Generer søknadspakke", "Generate application package")}
                 </Button>
               )}
               <Button variant="ghost" full onClick={onRestart}>
-                Start på nytt
+                {t("Start på nytt", "Start over")}
               </Button>
               <a
                 href="mailto:hei@mittbygg.no?subject=Trenger hjelp med søknad"
@@ -240,7 +244,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                Trenger du hjelp? Snakk med en rådgiver
+                {t("Trenger du hjelp? Snakk med en rådgiver", "Need help? Talk to an advisor")}
               </a>
             </>
           )}
@@ -281,17 +285,18 @@ function FindingIcon({ type }: { type: "ok" | "warn" | "fail" }) {
 
 
 function Timeline({ ansvarsrett }: { ansvarsrett: boolean }) {
+  const tr = useT();
   const steps = [
-    { t: "Regelsjekk fullført", d: "Akkurat nå", state: "done" as const },
-    { t: "Generer søknadspakke", d: "~3 minutter", state: "current" as const },
-    { t: "Nabovarsel + frist", d: "14 dager", state: "todo" as const },
+    { t: tr("Regelsjekk fullført", "Rule check complete"), d: tr("Akkurat nå", "Just now"), state: "done" as const },
+    { t: tr("Generer søknadspakke", "Generate application package"), d: tr("~3 minutter", "~3 minutes"), state: "current" as const },
+    { t: tr("Nabovarsel + frist", "Neighbor notice + deadline"), d: tr("14 dager", "14 days"), state: "todo" as const },
     {
-      t: "Kommunal saksbehandling",
-      d: ansvarsrett ? "12 uker" : "3–12 uker",
+      t: tr("Kommunal saksbehandling", "Municipal processing"),
+      d: ansvarsrett ? tr("12 uker", "12 weeks") : tr("3–12 uker", "3–12 weeks"),
       state: "todo" as const,
     },
-    { t: "Igangsetting + utførelse", d: "Etter rammetillatelse", state: "todo" as const },
-    { t: "Ferdigattest", d: "3 uker etter ferdigmelding", state: "todo" as const },
+    { t: tr("Igangsetting + utførelse", "Start + construction"), d: tr("Etter rammetillatelse", "After framework permit"), state: "todo" as const },
+    { t: tr("Ferdigattest", "Completion certificate"), d: tr("3 uker etter ferdigmelding", "3 weeks after completion notice"), state: "todo" as const },
   ];
 
   return (
@@ -356,15 +361,16 @@ function KV({ k, v, last, mono }: { k: string; v: string; last?: boolean; mono?:
 }
 
 function PricingCard({ slug }: { slug?: string }) {
+  const t = useT();
   const p = getPricing(slug ?? "");
   const pct = discountPct(p);
   return (
     <>
-      <SectionHead>Søknadsprosess — hva koster det?</SectionHead>
+      <SectionHead>{t("Søknadsprosess — hva koster det?", "The application process — what does it cost?")}</SectionHead>
       <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col gap-4">
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-xs text-gray-500 mb-1">Markedspris (arkitekt/konsulent)</div>
+            <div className="text-xs text-gray-500 mb-1">{t("Markedspris (arkitekt/konsulent)", "Market price (architect/consultant)")}</div>
             <div className="text-lg font-semibold text-gray-400 line-through">{formatKr(p.market)}</div>
           </div>
           <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -372,13 +378,13 @@ function PricingCard({ slug }: { slug?: string }) {
           </div>
         </div>
         <div className="border-t border-gray-100 pt-4">
-          <div className="text-xs text-gray-500 mb-1">Din pris via MittBygg</div>
+          <div className="text-xs text-gray-500 mb-1">{t("Din pris via MittBygg", "Your price via MittBygg")}</div>
           <div className="text-3xl font-extrabold tracking-tight">{formatKr(p.mittbygg)}</div>
-          <div className="text-sm text-gray-500 font-semibold mt-1">Du sparer {formatKr(p.market - p.mittbygg)}</div>
+          <div className="text-sm text-gray-500 font-semibold mt-1">{t("Du sparer", "You save")} {formatKr(p.market - p.mittbygg)}</div>
         </div>
         {p.note && <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">{p.note}</div>}
         <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-          Kommunalt gebyr kommer i tillegg — varierer per kommune og tiltaksstørrelse.
+          {t("Kommunalt gebyr kommer i tillegg — varierer per kommune og tiltaksstørrelse.", "A municipal fee applies on top — varies by municipality and project size.")}
         </div>
       </div>
     </>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { LangProvider } from "@/lib/i18n/context";
 
 export const metadata: Metadata = {
   title: "MittBygg — Fra idé til ferdigattest",
@@ -20,7 +21,9 @@ export default function RootLayout({
   return (
     <html lang="no">
       <body>
-        <div className="shell">{children}</div>
+        <LangProvider>
+          <div className="shell">{children}</div>
+        </LangProvider>
       </body>
     </html>
   );

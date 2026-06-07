@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { findAddress, type Address } from "@/lib/data/addresses";
+import { useT } from "@/lib/i18n/context";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -44,6 +45,7 @@ export async function loadProperty(id: string): Promise<Address | null> {
 
 export function PropertyLoader({ children }: { children: (p: Address) => React.ReactNode }) {
   const params = useParams();
+  const t = useT();
   const id = params.id as string;
   const [property, setProperty] = useState<Address | null | "loading">("loading");
 
@@ -55,7 +57,7 @@ export function PropertyLoader({ children }: { children: (p: Address) => React.R
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4">
         <div className="spinner spinner-lg" />
-        <p className="text-sm text-gray-500">Henter eiendomsdata…</p>
+        <p className="text-sm text-gray-500">{t("Henter eiendomsdata…", "Fetching property data…")}</p>
       </div>
     );
   }
@@ -63,8 +65,8 @@ export function PropertyLoader({ children }: { children: (p: Address) => React.R
   if (!property) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-        <p className="text-lg font-semibold">Eiendom ikke funnet</p>
-        <p className="text-sm text-gray-500">Gå tilbake og søk på nytt.</p>
+        <p className="text-lg font-semibold">{t("Eiendom ikke funnet", "Property not found")}</p>
+        <p className="text-sm text-gray-500">{t("Gå tilbake og søk på nytt.", "Go back and search again.")}</p>
       </div>
     );
   }

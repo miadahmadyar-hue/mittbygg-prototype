@@ -21,6 +21,7 @@ import { downloadTiltakSoknad } from "@/lib/api/soknad";
 import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
 import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
 import { FALLBACK_ARCHITECT, FALLBACK_ENGINEER } from "@/lib/ai/fallbacks";
+import { useT } from "@/lib/i18n/context";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
@@ -61,6 +62,7 @@ export function SimpleWizard({
 }: Props) {
   // This component is stateless re: phase — the parent wizard owns phase via useSimpleWizard.
   // We render the wizard shell here.
+  const t = useT();
   return (
     <>
       <Topbar
@@ -73,14 +75,14 @@ export function SimpleWizard({
         <div className="mt-auto pt-4 flex flex-col gap-2">
           {currentStep < totalSteps - 1 ? (
             <Button full disabled={!canProceed} onClick={onNext}>
-              Neste <ArrowRight />
+              {t("Neste", "Next")} <ArrowRight />
             </Button>
           ) : (
             <Button size="lg" full disabled={!canProceed} onClick={onNext}>
-              <BoltIcon /> Beregn nå
+              <BoltIcon /> {t("Beregn nå", "Calculate now")}
             </Button>
           )}
-          <Button variant="ghost" full onClick={onBack}>Tilbake</Button>
+          <Button variant="ghost" full onClick={onBack}>{t("Tilbake", "Back")}</Button>
         </div>
       </div>
     </>
@@ -103,6 +105,7 @@ type AiPhase =
 
 export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPhasesProps) {
   const router = useRouter();
+  const t = useT();
   const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
   const [pendingAiResults, setPendingAiResults] = useState<{
@@ -115,8 +118,8 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
         <Topbar back={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
           <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">{loadingText ?? "Sjekker regelverk…"}</h3>
-          <p className="text-sm text-gray-500">Henter fra Kartverket og DiBK…</p>
+          <h3 className="text-base font-semibold">{loadingText ?? t("Sjekker regelverk…", "Checking regulations…")}</h3>
+          <p className="text-sm text-gray-500">{t("Henter fra Kartverket og DiBK…", "Fetching from Kartverket and DiBK…")}</p>
         </div>
       </>
     );
@@ -128,8 +131,8 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
         <Topbar back={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
           <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">Genererer søknadspakke…</h3>
-          <p className="text-sm text-gray-500">Laster ned PDF…</p>
+          <h3 className="text-base font-semibold">{t("Genererer søknadspakke…", "Generating application package…")}</h3>
+          <p className="text-sm text-gray-500">{t("Laster ned PDF…", "Downloading PDF…")}</p>
         </div>
       </>
     );
@@ -153,8 +156,8 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
         <Topbar back={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
           <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">AI-arkitekt analyserer…</h3>
-          <p className="text-sm text-gray-500">Vurderer tegninger og regelverk</p>
+          <h3 className="text-base font-semibold">{t("AI-arkitekt analyserer…", "AI architect analyzing…")}</h3>
+          <p className="text-sm text-gray-500">{t("Vurderer tegninger og regelverk", "Assessing drawings and regulations")}</p>
         </div>
       </>
     );

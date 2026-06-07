@@ -4,14 +4,21 @@ import { useState, useRef, useCallback, DragEvent } from "react";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { uploadDrawings } from "@/lib/api/drawings";
+import { useT } from "@/lib/i18n/context";
 
-const DRAWING_HINTS = ["Situasjonsplan", "Plantegning", "Fasadetegning", "Snitt"];
+const DRAWING_HINTS: [string, string][] = [
+  ["Situasjonsplan", "Site plan"],
+  ["Plantegning", "Floor plan"],
+  ["Fasadetegning", "Facade drawing"],
+  ["Snitt", "Section"],
+];
 
 interface Props {
   onContinue: (sessionId: string | null) => void;
 }
 
 export function DrawingUpload({ onContinue }: Props) {
+  const t = useT();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -52,22 +59,22 @@ export function DrawingUpload({ onContinue }: Props) {
 
   return (
     <>
-      <Topbar title="Tegninger" back={false} />
+      <Topbar title={t("Tegninger", "Drawings")} back={false} />
       <div className="view">
         <div>
-          <h2 className="text-[22px] font-bold tracking-tight">Last opp tegninger</h2>
+          <h2 className="text-[22px] font-bold tracking-tight">{t("Last opp tegninger", "Upload drawings")}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Valgfritt, men øker sjansen for rask saksbehandling.
+            {t("Valgfritt, men øker sjansen for rask saksbehandling.", "Optional, but improves the odds of fast processing.")}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {DRAWING_HINTS.map((label) => (
+          {DRAWING_HINTS.map(([no, en]) => (
             <span
-              key={label}
+              key={no}
               className="text-xs bg-gray-100 text-gray-600 rounded-full px-3 py-1.5 font-medium"
             >
-              {label}
+              {t(no, en)}
             </span>
           ))}
         </div>
@@ -88,8 +95,8 @@ export function DrawingUpload({ onContinue }: Props) {
               <UploadIcon />
             </div>
             <div>
-              <p className="font-semibold text-sm">Dra hit eller trykk for å velge</p>
-              <p className="text-xs text-gray-400 mt-1">PDF, PNG, JPG — maks 10 MB per fil</p>
+              <p className="font-semibold text-sm">{t("Dra hit eller trykk for å velge", "Drag here or tap to choose")}</p>
+              <p className="text-xs text-gray-400 mt-1">{t("PDF, PNG, JPG — maks 10 MB per fil", "PDF, PNG, JPG — max 10 MB per file")}</p>
             </div>
           </div>
           <input
@@ -118,11 +125,11 @@ export function DrawingUpload({ onContinue }: Props) {
         <div className="mt-auto pt-4 flex flex-col gap-2">
           <Button size="lg" full disabled={uploading} onClick={handleContinue}>
             {uploading ? (
-              "Laster opp…"
+              t("Laster opp…", "Uploading…")
             ) : files.length > 0 ? (
-              <>Legg til i søknadspakke <ArrowRight /></>
+              <>{t("Legg til i søknadspakke", "Add to application package")} <ArrowRight /></>
             ) : (
-              <>Fortsett uten tegninger <ArrowRight /></>
+              <>{t("Fortsett uten tegninger", "Continue without drawings")} <ArrowRight /></>
             )}
           </Button>
         </div>

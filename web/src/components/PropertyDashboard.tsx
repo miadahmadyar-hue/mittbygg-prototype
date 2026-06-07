@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
 import { Alert } from "@/components/ui/Alert";
 import { Sheet } from "@/components/ui/Sheet";
+import { useT } from "@/lib/i18n/context";
 import type { Address, Tegning } from "@/lib/data/addresses";
 
 export function PropertyDashboard({ p }: { p: Address }) {
+  const t = useT();
   const [showArkiv, setShowArkiv] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
@@ -21,9 +23,9 @@ export function PropertyDashboard({ p }: { p: Address }) {
   return (
     <>
       <Topbar
-        title="Min eiendom"
+        title={t("Min eiendom", "My property")}
         right={
-          <button className="w-9 h-9 rounded-full bg-gray-100 grid place-items-center" aria-label="Varsler">
+          <button className="w-9 h-9 rounded-full bg-gray-100 grid place-items-center" aria-label={t("Varsler", "Notifications")}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
               <path d="M10 21a2 2 0 0 0 4 0" />
@@ -56,19 +58,19 @@ export function PropertyDashboard({ p }: { p: Address }) {
             return (
               <>
                 <div className="grid grid-cols-3 gap-4 mt-5 relative">
-                  <Stat num={braVal} lbl="m² BRA" />
-                  <Stat num={p.bygg.byggeAar} lbl="Byggeår" />
-                  <Stat num={`${etasjerVal}${p.bygg.kjeller ? "+K" : ""}`} lbl="Etasjer" />
+                  <Stat num={braVal} lbl={t("m² BRA", "m² area")} />
+                  <Stat num={p.bygg.byggeAar} lbl={t("Byggeår", "Built")} />
+                  <Stat num={`${etasjerVal}${p.bygg.kjeller ? "+K" : ""}`} lbl={t("Etasjer", "Floors")} />
                 </div>
                 {hasReal ? (
                   <div className="mt-3 relative flex items-center gap-1.5 text-[11px] text-green-200/80">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 13 4 4L19 7"/></svg>
-                    Hentet fra Matrikkel
+                    {t("Hentet fra Matrikkel", "From the cadastre (Matrikkel)")}
                   </div>
                 ) : isEstimated ? (
                   <div className="mt-3 relative flex items-center gap-1.5 text-[11px] text-white/50">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
-                    Typiske verdier — registreres fra Matrikkelen ved innsending
+                    {t("Typiske verdier — registreres fra Matrikkelen ved innsending", "Typical values — recorded from the cadastre on submission")}
                   </div>
                 ) : null}
               </>
@@ -78,7 +80,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
 
         <Link href={`/property/${p.id}/tiltak`} className="contents">
           <Button size="lg" full>
-            Hva vil du gjøre?
+            {t("Hva vil du gjøre?", "What would you like to do?")}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
@@ -86,25 +88,25 @@ export function PropertyDashboard({ p }: { p: Address }) {
         </Link>
 
         {/* Eiendomsinfo */}
-        <SectionHead title="Eiendomsinfo" right={
-          <button onClick={() => setShowInfo(true)} className="text-sm text-green-500 font-semibold">Se alt</button>
+        <SectionHead title={t("Eiendomsinfo", "Property info")} right={
+          <button onClick={() => setShowInfo(true)} className="text-sm text-green-500 font-semibold">{t("Se alt", "See all")}</button>
         } />
         <div className="bg-white border border-gray-100 rounded-xl">
           <KV k="Gnr/Bnr" v={`${p.matrikkel.gnr}/${p.matrikkel.bnr}`} />
-          <KV k="Kommune" v={p.matrikkel.kommune} />
-          <KV k="Tomt" v={p.bygg.tomt ? `${p.bygg.tomt} m²` : "Ukjent"} />
-          <KV k="Byggegrenser" v={`${p.bygg.byggegrenser.nord} m fra alle sider`} />
-          <KV k="Reguleringsplan" v={p.bygg.regplan} last align="right" />
+          <KV k={t("Kommune", "Municipality")} v={p.matrikkel.kommune} />
+          <KV k={t("Tomt", "Plot")} v={p.bygg.tomt ? `${p.bygg.tomt} m²` : t("Ukjent", "Unknown")} />
+          <KV k={t("Byggegrenser", "Building limits")} v={`${p.bygg.byggegrenser.nord} ${t("m fra alle sider", "m from all sides")}`} />
+          <KV k={t("Reguleringsplan", "Zoning plan")} v={p.bygg.regplan} last align="right" />
         </div>
 
         {/* Tidligere saker */}
         <SectionHead
-          title="Tidligere saker"
-          right={sakerCount > 0 ? <Pill>{sakerCount} stk</Pill> : null}
+          title={t("Tidligere saker", "Past cases")}
+          right={sakerCount > 0 ? <Pill>{sakerCount} {t("stk", "total")}</Pill> : null}
         />
         {sakerCount === 0 ? (
           <div className="bg-white border border-gray-100 rounded-xl text-center py-6">
-            <p className="text-sm text-gray-500">Ingen byggesaker registrert i DiBK-arkivet.</p>
+            <p className="text-sm text-gray-500">{t("Ingen byggesaker registrert i DiBK-arkivet.", "No building cases registered in the DiBK archive.")}</p>
           </div>
         ) : (
           <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
@@ -127,18 +129,21 @@ export function PropertyDashboard({ p }: { p: Address }) {
 
         {/* Tegninger på arkiv */}
         <SectionHead
-          title="Tegninger på arkiv"
+          title={t("Tegninger på arkiv", "Archived drawings")}
           right={tegningerCount > 0 ? (
             <button onClick={() => setShowArkiv(true)} className="text-sm text-green-500 font-semibold">
-              Se alle ({tegningerCount})
+              {t("Se alle", "See all")} ({tegningerCount})
             </button>
           ) : null}
         />
         {tegningerCount === 0 ? (
           <div className="bg-white border border-gray-100 rounded-xl text-center py-6 px-5">
-            <p className="text-sm text-gray-500">Ingen digitale tegninger funnet i kommunens arkiv.</p>
+            <p className="text-sm text-gray-500">{t("Ingen digitale tegninger funnet i kommunens arkiv.", "No digital drawings found in the municipal archive.")}</p>
             <p className="text-xs text-gray-500 mt-2">
-              Du kan laste opp egne tegninger eller bestille originalene fra {p.matrikkel.kommune} kommune.
+              {t(
+                `Du kan laste opp egne tegninger eller bestille originalene fra ${p.matrikkel.kommune} kommune.`,
+                `You can upload your own drawings or order the originals from ${p.matrikkel.kommune} municipality.`,
+              )}
             </p>
           </div>
         ) : (
@@ -153,22 +158,25 @@ export function PropertyDashboard({ p }: { p: Address }) {
                     onClick={() => setShowArkiv(true)}
                     className="text-sm text-green-500 font-semibold"
                   >
-                    + {tegningerCount - 3} flere tegninger
+                    + {tegningerCount - 3} {t("flere tegninger", "more drawings")}
                   </button>
                 </div>
               )}
             </div>
             <Alert>
-              Hentet fra {arkivKilder.join(" og ")}. Lastes ned automatisk når du starter et tiltak.
+              {t(
+                `Hentet fra ${arkivKilder.join(" og ")}. Lastes ned automatisk når du starter et tiltak.`,
+                `Retrieved from ${arkivKilder.join(" and ")}. Downloaded automatically when you start a project.`,
+              )}
             </Alert>
           </>
         )}
 
-        <SectionHead title="Aktive prosjekter" />
+        <SectionHead title={t("Aktive prosjekter", "Active projects")} />
         <div className="bg-white border border-gray-100 rounded-xl text-center py-6">
-          <p className="text-sm text-gray-500">Ingen pågående prosjekter.</p>
+          <p className="text-sm text-gray-500">{t("Ingen pågående prosjekter.", "No ongoing projects.")}</p>
           <Link href={`/property/${p.id}/tiltak`} className="contents">
-            <Button variant="ghost" size="sm" className="mt-3">+ Nytt tiltak</Button>
+            <Button variant="ghost" size="sm" className="mt-3">{t("+ Nytt tiltak", "+ New project")}</Button>
           </Link>
         </div>
       </div>
@@ -176,32 +184,32 @@ export function PropertyDashboard({ p }: { p: Address }) {
       <Sheet open={showInfo} onClose={() => setShowInfo(false)}>
         <h2 className="text-[22px] font-bold">{p.street}</h2>
         <p className="text-sm text-gray-500 mt-2">
-          Komplett eiendomsdata fra Matrikkelen og kommunens kart.
+          {t("Komplett eiendomsdata fra Matrikkelen og kommunens kart.", "Complete property data from the cadastre and municipal maps.")}
         </p>
         <div className="mt-4 space-y-0">
-          <KV k="Adresse" v={`${p.street}, ${p.postal} ${p.city}`} />
+          <KV k={t("Adresse", "Address")} v={`${p.street}, ${p.postal} ${p.city}`} />
           <KV k="Gnr/Bnr" v={`${p.matrikkel.gnr}/${p.matrikkel.bnr}`} />
-          <KV k="Kommune" v={p.matrikkel.kommune} />
-          <KV k="Tomt" v={p.bygg.tomt ? `${p.bygg.tomt} m²` : "Ukjent"} />
-          <KV k="BRA" v={p.bygg.BRA != null ? `${p.bygg.BRA} m²` : "Ukjent"} />
-          <KV k="Byggeår" v={String(p.bygg.byggeAar)} />
-          <KV k="Etasjer" v={`${p.bygg.etasjer ?? "—"}${p.bygg.kjeller ? " + kjeller" : ""}${p.bygg.garasje ? " + garasje" : ""}`} />
-          <KV k="Reguleringsplan" v={p.bygg.regplan} align="right" />
+          <KV k={t("Kommune", "Municipality")} v={p.matrikkel.kommune} />
+          <KV k={t("Tomt", "Plot")} v={p.bygg.tomt ? `${p.bygg.tomt} m²` : t("Ukjent", "Unknown")} />
+          <KV k="BRA" v={p.bygg.BRA != null ? `${p.bygg.BRA} m²` : t("Ukjent", "Unknown")} />
+          <KV k={t("Byggeår", "Built year")} v={String(p.bygg.byggeAar)} />
+          <KV k={t("Etasjer", "Floors")} v={`${p.bygg.etasjer ?? "—"}${p.bygg.kjeller ? t(" + kjeller", " + basement") : ""}${p.bygg.garasje ? t(" + garasje", " + garage") : ""}`} />
+          <KV k={t("Reguleringsplan", "Zoning plan")} v={p.bygg.regplan} align="right" />
           <KV
-            k="Byggegrenser"
+            k={t("Byggegrenser", "Building limits")}
             v={`N/S/Ø/V: ${p.bygg.byggegrenser.nord}/${p.bygg.byggegrenser.sor}/${p.bygg.byggegrenser.ost}/${p.bygg.byggegrenser.vest} m`}
             last
           />
         </div>
         <div className="mt-6">
-          <Button full onClick={() => setShowInfo(false)}>Lukk</Button>
+          <Button full onClick={() => setShowInfo(false)}>{t("Lukk", "Close")}</Button>
         </div>
       </Sheet>
 
       <Sheet open={showArkiv} onClose={() => setShowArkiv(false)}>
         <ArkivSheet tegninger={tegninger} kilder={arkivKilder} />
         <div className="mt-4">
-          <Button full onClick={() => setShowArkiv(false)}>Ferdig</Button>
+          <Button full onClick={() => setShowArkiv(false)}>{t("Ferdig", "Done")}</Button>
         </div>
       </Sheet>
     </>
@@ -209,6 +217,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
 }
 
 function ArkivSheet({ tegninger, kilder }: { tegninger: Tegning[]; kilder: string[] }) {
+  const t = useT();
   // Group by saksnr for hierarchy
   const grouped = new Map<string, { saksnr: string; year: number; items: Tegning[] }>();
   for (const t of tegninger) {
@@ -220,14 +229,16 @@ function ArkivSheet({ tegninger, kilder }: { tegninger: Tegning[]; kilder: strin
 
   return (
     <>
-      <h2 className="text-[22px] font-bold">Tegninger på arkiv</h2>
-      <p className="text-sm text-gray-500 mt-2">Alt som ligger digitalt hos kommunen.</p>
+      <h2 className="text-[22px] font-bold">{t("Tegninger på arkiv", "Archived drawings")}</h2>
+      <p className="text-sm text-gray-500 mt-2">{t("Alt som ligger digitalt hos kommunen.", "Everything stored digitally at the municipality.")}</p>
       <div className="mt-3">
         <Alert>
-          <strong>Kilde:</strong> {kilder.join(" · ")}<br />
+          <strong>{t("Kilde:", "Source:")}</strong> {kilder.join(" · ")}<br />
           <span className="text-xs">
-            I produksjon hentes tegningene live via kommunens saksinnsyn-API.
-            Eldre saker må ofte bestilles manuelt fra kommunens arkiv.
+            {t(
+              "I produksjon hentes tegningene live via kommunens saksinnsyn-API. Eldre saker må ofte bestilles manuelt fra kommunens arkiv.",
+              "In production, drawings are fetched live via the municipality's case-access API. Older cases often must be ordered manually from the municipal archive.",
+            )}
           </span>
         </Alert>
       </div>
@@ -235,7 +246,7 @@ function ArkivSheet({ tegninger, kilder }: { tegninger: Tegning[]; kilder: strin
         {groups.map((g) => (
           <div key={g.saksnr} className="mb-4">
             <div className="flex justify-between items-baseline mb-1.5">
-              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sak {g.saksnr}</h4>
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{t("Sak", "Case")} {g.saksnr}</h4>
               <span className="text-xs text-gray-500">{g.year}</span>
             </div>
             <div className="bg-white border border-gray-100 rounded-xl">
