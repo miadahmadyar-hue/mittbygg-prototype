@@ -1,78 +1,63 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/Alert";
-import { ResultPhases, NumberField, KV } from "./SimpleWizard";
+import { RadioCard } from "@/components/ui/RadioCard";
+import { ResultPhases, NumberField } from "./SimpleWizard";
 import { evaluateLevegApi, type TiltakResult } from "@/lib/api/evaluate";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { Address } from "@/lib/data/addresses";
 
-type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
+type Phase = { kind: "wizard"; step: 0 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 
 export function LevegWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ hoyde: 1.8, lengde: 6, avstand: 1 });
+  const [data, setData] = useState({ hoyde: 0, lengde: 0, avstand: 0, plan: "usikker" as "ja" | "nei" | "usikker" });
 
   const evaluate = async () => {
     setPhase({ kind: "loading" });
-    const result = await evaluateLevegApi({ hoyde: data.hoyde, lengde: data.lengde, avstand: data.avstand });
+    const result = await evaluateLevegApi({ ...data, plan_ok: data.plan === "usikker" ? null : data.plan === "ja" });
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="levegg" loadingText="Sjekker SAK10 og PBL…" />;
-
-  const step = phase.step;
-  const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="levegg" loadingText="Kontrollerer høyde, lengde og avstand…" />;
+  const maxLength = data.avstand < 1 ? 5 : 10;
 
   return (
     <>
-      <Topbar title="Levegg / gjerde" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
-      <ProgressBar step={step} total={2} />
+      <Topbar title="Levegg" />
       <div className="view">
-        {step === 0 && (
-          <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Mål og plassering</h2></div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Høyde (m)</label>
-              <NumberField value={data.hoyde} onChange={(v) => setData({ ...data, hoyde: v })} step={0.1} unit="m" />
-              <p className="text-xs text-gray-500 mt-1">Under 1,8 m er normalt unntatt søknad</p>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Lengde (m)</label>
-              <NumberField value={data.lengde} onChange={(v) => setData({ ...data, lengde: v })} step={0.5} unit="m" />
-              <p className="text-xs text-gray-500 mt-1">Maks 10 m sammenhengende for unntak</p>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Avstand til nabogrense (m)</label>
-              <NumberField value={data.avstand} onChange={(v) => setData({ ...data, avstand: v })} step={0.5} unit="m" />
-            </div>
-            <Alert>Levegg ≤ 1,8 m høy og ≤ 10 m lang er unntatt søknad (SAK10 § 4-1 e).</Alert>
-            <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
-              <Button variant="ghost" full onClick={back}>Tilbake</Button>
-            </div>
-          </>
-        )}
-        {step === 1 && (
-          <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Bekreft og beregn</h2></div>
-            <div className="bg-white border border-gray-100 rounded-xl">
-              <KV k="Eiendom" v={p.street} />
-              <KV k="Høyde" v={`${data.hoyde} m`} />
-              <KV k="Lengde" v={`${data.lengde} m`} />
-              <KV k="Avstand til nabo" v={`${data.avstand} m`} last />
-            </div>
-            <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
-              <Button variant="ghost" full onClick={back}>Tilbake</Button>
-            </div>
-          </>
-        )}
+        <div>
+          <h2 className="text-[22px] font-bold tracking-tight">Mål og plassering</h2>
+          <p className="text-sm text-gray-500 mt-2">Tre mål er nok for den første vurderingen.</p>
+        </div>
+        <Field label="Høyde" value={data.hoyde} unit="m" step={0.1} onChange={(hoyde) => setData({ ...data, hoyde })} />
+        <Field label="Sammenhengende lengde" value={data.lengde} unit="m" step={0.1} onChange={(lengde) => setData({ ...data, lengde })} />
+        <Field label="Avstand til nabogrense" value={data.avstand} unit="m" step={0.1} onChange={(avstand) => setData({ ...data, avstand })} />
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Er planbestemmelser og frisikt kontrollert?</h3>
+          <div className="grid grid-cols-3 gap-2">
+            <RadioCard selected={data.plan === "ja"} onClick={() => setData({ ...data, plan: "ja" })} title="Ja" />
+            <RadioCard selected={data.plan === "nei"} onClick={() => setData({ ...data, plan: "nei" })} title="Nei" />
+            <RadioCard selected={data.plan === "usikker"} onClick={() => setData({ ...data, plan: "usikker" })} title="Usikker" />
+          </div>
+        </div>
+        <Alert>
+          Ved minst 1,0 m avstand er maksimal unntatt lengde 10 m. Nærmere enn 1,0 m er grensen 5 m. Høyden kan være inntil 1,8 m.
+          {data.avstand > 0 && <strong> For din plassering er lengdegrensen {maxLength} m.</strong>}
+        </Alert>
+        <div className="mt-auto pt-4 flex flex-col gap-2">
+          <Button size="lg" full disabled={data.hoyde <= 0 || data.lengde <= 0 || data.avstand < 0} onClick={evaluate}>Sjekk leveggen</Button>
+          <Button variant="ghost" full onClick={() => router.push(`/property/${p.id}/tiltak`)}>Tilbake</Button>
+        </div>
       </div>
     </>
   );
+}
+
+function Field({ label, value, unit, step, onChange }: { label: string; value: number; unit: string; step: number; onChange: (value: number) => void }) {
+  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField value={value} unit={unit} step={step} onChange={onChange} /></div>;
 }

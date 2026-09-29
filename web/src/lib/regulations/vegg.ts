@@ -1,22 +1,12 @@
-/**
- * Fjern-vegg rule engine + bjelkedimensjonering.
- * TS port of evaluateVegg() from prototype.
- * Mirrors norsk_arkitekt_ai/core/structural.py.foreslaa_bjelkedimensjon().
- */
-
 import type { Finding, Tiltak, Lempning } from "./kjeller";
 
 export interface VeggInput {
-  spennvidde: number; // mm
-  last: number;       // kN/m
-}
-
-export interface Bjelke {
-  b: number;            // bredde mm
-  h: number;            // høyde mm
-  type: string;
-  spennvidde: number;
-  last: number;
+  type: "fjerne_vegg" | "ny_apning" | "utvide_apning" | "flytte_vegg" | "endre_soyle";
+  baerende: "ja" | "nei" | "usikker";
+  apning_bredde: number | null;
+  etasje: "kjeller" | "forste" | "ovre";
+  etasjer_over: number;
+  konstruksjon: "tre" | "mur_betong" | "stal" | "usikker";
 }
 
 export interface VeggResult {
@@ -30,71 +20,76 @@ export interface VeggResult {
   ansvarsrett: boolean;
   tiltaksklasse: 1 | 2;
   totalKostnad: number;
-  bjelke: Bjelke;
+  bjelke?: undefined;
   input: VeggInput;
 }
 
+const LABELS: Record<VeggInput["type"], string> = {
+  fjerne_vegg: "Fjerne hele veggen",
+  ny_apning: "Lage en ny åpning",
+  utvide_apning: "Utvide en eksisterende åpning",
+  flytte_vegg: "Flytte veggen",
+  endre_soyle: "Endre eller fjerne søyle",
+};
+
 export function evaluateVegg(input: VeggInput): VeggResult {
-  const findings: Finding[] = [];
-  const tiltak: Tiltak[] = [];
-  const lempninger: Lempning[] = [];
+  const isNonBearing = input.baerende === "nei";
+  const findings: Finding[] = isNonBearing
+    ? [
+        {
+          type: "ok",
+          t: "Ingen bærende funksjon oppgitt",
+          d: "Arbeid på en ikke-bærende vegg kan normalt utføres uten søknad dersom brann- eller lydskille ikke berøres.",
+          ref: "SAK10 § 4-1",
+        },
+        {
+          type: "warn",
+          t: "Brann- og lydskille må bekreftes",
+          d: "Vegger mellom boenheter og brannceller krever særskilt vurdering.",
+          ref: "TEK17 kap. 11 og 13",
+        },
+      ]
+    : [
+        {
+          type: input.baerende === "ja" ? "fail" : "warn",
+          t: input.baerende === "ja" ? "Inngrep i bærende konstruksjon krever søknad" : "Bærende funksjon er ikke avklart",
+          d: "En konstruksjonsingeniør må kontrollere godkjente tegninger, lastvei og konstruksjonen på stedet før arbeid starter.",
+          ref: "PBL § 20-3",
+        },
+        {
+          type: "warn",
+          t: "Ingen bjelkedimensjon beregnes her",
+          d: "Dimensjoner krever tegninger, materialkontroll og stedlige laster.",
+          ref: "TEK17 § 10-2",
+        },
+      ];
 
-  // Forenklet bjelkedimensjon (Limtre GL30c)
-  const L = input.spennvidde / 1000;            // m
-  const qd = input.last * 1.5;                  // design last kN/m
-  const M = (qd * L * L) / 8;                   // kNm
-  const fm = 30;                                // MPa (GL30c)
-  const b = L < 4 ? 90 : L < 6 ? 115 : 140;
-  const h_min = Math.sqrt((6 * M * 1e6) / (b * fm));
-  const std = [180, 225, 270, 315, 360, 405, 450, 495, 540, 630, 720];
-  const h = std.find((v) => v >= h_min) ?? 720;
-
-  findings.push({
-    type: "fail",
-    t: "Krever ansvarsrett (PBL § 20-3)",
-    d: "Endring av bærekonstruksjon utløser alltid søknad med ansvarsrett. Ansvarlig prosjekterende konstruksjon (PRO-RIB) må signere endelig dimensjon.",
-    ref: "PBL § 20-3",
-  });
-  findings.push({
-    type: "warn",
-    t: "Brannmotstand på bjelken må sjekkes",
-    d: "Bjelken må ha R 30 (BKL1) eller R 60 (BKL2). Limtre kan kreve ekstra tiltak.",
-    ref: "TEK17 § 11-12",
-  });
   findings.push({
     type: "ok",
-    t: `Foreslått bjelke: ${b}×${h} mm Limtre GL30c`,
-    d: `Spennvidde ${input.spennvidde} mm, last ${input.last} kN/m. Kapasitetsmoment ${((b * h * h * fm) / 6 / 1e6).toFixed(1)} kNm > krav ${M.toFixed(1)} kNm.`,
-    ref: "NS-EN 1995",
+    t: `Omfang registrert: ${LABELS[input.type]}`,
+    d: `Åpningsbredde ${input.apning_bredde ? `ca. ${input.apning_bredde} m` : "ikke oppgitt"}, ${input.etasjer_over} etasje(r) over.`,
+    ref: "Kundeopplysninger",
   });
 
-  tiltak.push(
-    { name: `Limtre-bjelke ${b}×${h} mm`,
-      desc: "Limtre GL30c, ferdig overflatebehandlet. Leveres med dragar-sko (varmgalv. stål).",
-      kostnad: Math.round(L * 4500) },
-    { name: "Riving + bortkjøring av eksisterende vegg",
-      desc: "Container, støvavskjerming, midlertidig avstiving under riveperioden.",
-      kostnad: 25_000 },
-    { name: "Konstruksjonsberegning (RIB)",
-      desc: "Eurokode-beregning iht. NS-EN 1995, gjennomboyning < L/300, brannmotstand R 30 minimum.",
-      kostnad: 15_000 },
-    { name: "Innkledning av bjelke (estetikk + brann)",
-      desc: "Gips-innkledning eller eksponert. Brannmaling om eksponert.",
-      kostnad: 12_000 },
-  );
-
-  const totalKostnad = tiltak.reduce((s, t) => s + t.kostnad, 0);
+  const tiltak: Tiltak[] = isNonBearing ? [] : [{
+    name: "Konstruksjonsfaglig forundersøkelse",
+    desc: "Gjennomgang av tegninger, befaring og avklaring av lastvei før prosjektering.",
+    kostnad: 15_000,
+  }];
 
   return {
-    status: "amber",
-    statusText: "Klar — krever arkitekt-KS",
-    statusDesc: "Tiltaket er gjennomførbart, men må gå gjennom konstruksjonsfag (PRO-RIB) før søknad sendes.",
-    findings, tiltak, lempninger,
-    soknadstype: "PBL § 20-3 (med ansvarsrett)",
-    ansvarsrett: true,
+    status: isNonBearing ? "green" : "amber",
+    statusText: isNonBearing ? "Trolig unntatt søknad" : "Krever konstruksjonsfaglig vurdering",
+    statusDesc: isNonBearing
+      ? "Bekreft at veggen ikke er del av bæring, brann- eller lydskille."
+      : "Ikke start riving før løsningen er dokumentert av konstruksjonsingeniør.",
+    findings,
+    tiltak,
+    lempninger: [],
+    soknadstype: isNonBearing ? "Trolig unntatt - må bekreftes" : "PBL § 20-3 (med ansvarsrett)",
+    ansvarsrett: !isNonBearing,
     tiltaksklasse: 1,
-    totalKostnad,
-    bjelke: { b, h, type: "Limtre GL30c", spennvidde: input.spennvidde, last: input.last },
+    totalKostnad: tiltak.reduce((sum, item) => sum + item.kostnad, 0),
     input,
   };
 }

@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { Alert } from "@/components/ui/Alert";
-import { ResultPhases, NumberField, KV } from "./SimpleWizard";
+import { ResultPhases, NumberField } from "./SimpleWizard";
 import { evaluateBryggeApi, type TiltakResult } from "@/lib/api/evaluate";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -13,63 +13,91 @@ import type { Address } from "@/lib/data/addresses";
 
 type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 type BType = "fast" | "flytende" | "stupebrett";
+type Work = "ny" | "utvide" | "erstatte" | "vedlikehold";
+type PlanStatus = "tillatt" | "ikke_tillatt" | "usikker";
 
 export function BryggeWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ type: null as BType | null, lengde: 6, bredde: 2 });
+  const [data, setData] = useState({
+    type: null as BType | null,
+    arbeid: null as Work | null,
+    lengde: 0,
+    bredde: 0,
+    eier_strandgrunn: null as boolean | null,
+    plan_status: "usikker" as PlanStatus,
+  });
 
   const evaluate = async () => {
-    if (!data.type) return;
+    if (!data.type || !data.arbeid || !data.lengde || !data.bredde) return;
     setPhase({ kind: "loading" });
-    const result = await evaluateBryggeApi({ type: data.type, lengde: data.lengde, bredde: data.bredde });
+    const result = await evaluateBryggeApi(data);
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="brygge" loadingText="Sjekker plan- og bygningsloven og havne- og farvannsloven…" />;
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="brygge" loadingText="Vurderer tiltaket mot plan- og kystreglene…" />;
 
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Brygge / sjøbod" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar title="Brygge og tiltak i strandsonen" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
-        {step === 0 && (
+        {step === 0 ? (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Type og dimensjoner</h2></div>
+            <div>
+              <h2 className="text-[22px] font-bold tracking-tight">Hva skal du gjøre?</h2>
+              <p className="text-sm text-gray-500 mt-2">Vedlikehold og nye tiltak vurderes forskjellig.</p>
+            </div>
             <div className="space-y-2">
-              <RadioCard selected={data.type === "fast"}       onClick={() => setData({ ...data, type: "fast" })}       title="Fast brygge"      desc="Boltet til bunn eller peler i sjøen" />
-              <RadioCard selected={data.type === "flytende"}   onClick={() => setData({ ...data, type: "flytende" })}   title="Flytebrygge"      desc="Bøyefestet eller ankret flytebrygge" />
-              <RadioCard selected={data.type === "stupebrett"} onClick={() => setData({ ...data, type: "stupebrett" })} title="Stupebrett / platting" desc="Liten platting i strandkanten" />
+              <RadioCard selected={data.arbeid === "ny"} onClick={() => setData({ ...data, arbeid: "ny" })} title="Bygge nytt" />
+              <RadioCard selected={data.arbeid === "utvide"} onClick={() => setData({ ...data, arbeid: "utvide" })} title="Utvide eksisterende" />
+              <RadioCard selected={data.arbeid === "erstatte"} onClick={() => setData({ ...data, arbeid: "erstatte" })} title="Erstatte eller flytte" />
+              <RadioCard selected={data.arbeid === "vedlikehold"} onClick={() => setData({ ...data, arbeid: "vedlikehold" })} title="Vedlikeholde uten å endre" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Lengde (m)</label>
-              <NumberField value={data.lengde} onChange={(v) => setData({ ...data, lengde: v })} step={0.5} unit="m" />
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Type konstruksjon</h3>
+              <div className="space-y-2">
+                <RadioCard selected={data.type === "fast"} onClick={() => setData({ ...data, type: "fast" })} title="Fast brygge" desc="Peler, bolter eller annen fast forbindelse" />
+                <RadioCard selected={data.type === "flytende"} onClick={() => setData({ ...data, type: "flytende" })} title="Flytebrygge" desc="Flytende konstruksjon med landgang" />
+                <RadioCard selected={data.type === "stupebrett"} onClick={() => setData({ ...data, type: "stupebrett" })} title="Badeplattform eller stupebrett" />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Bredde (m)</label>
-              <NumberField value={data.bredde} onChange={(v) => setData({ ...data, bredde: v })} step={0.5} unit="m" />
-            </div>
-            <Alert>Alle brygger krever søknad etter plan- og bygningsloven og havne- og farvannsloven.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
+              <Button full disabled={!data.type || !data.arbeid} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
-        )}
-        {step === 1 && (
+        ) : (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Bekreft og beregn</h2></div>
-            <div className="bg-white border border-gray-100 rounded-xl">
-              <KV k="Eiendom" v={p.street} />
-              <KV k="Type" v={data.type === "fast" ? "Fast brygge" : data.type === "flytende" ? "Flytebrygge" : "Stupebrett / platting"} />
-              <KV k="Lengde" v={`${data.lengde} m`} />
-              <KV k="Bredde" v={`${data.bredde} m`} last />
+            <div>
+              <h2 className="text-[22px] font-bold tracking-tight">Plassering og planstatus</h2>
+              <p className="text-sm text-gray-500 mt-2">Lokale planer og rett til grunnen er avgjørende i strandsonen.</p>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Lengde</label><NumberField value={data.lengde} onChange={(lengde) => setData({ ...data, lengde })} step={0.5} unit="m" /></div>
+              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Bredde</label><NumberField value={data.bredde} onChange={(bredde) => setData({ ...data, bredde })} step={0.5} unit="m" /></div>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Tillater gjeldende plan tiltaket?</h3>
+              <div className="space-y-2">
+                <RadioCard selected={data.plan_status === "tillatt"} onClick={() => setData({ ...data, plan_status: "tillatt" })} title="Ja, jeg har kontrollert planen" />
+                <RadioCard selected={data.plan_status === "ikke_tillatt"} onClick={() => setData({ ...data, plan_status: "ikke_tillatt" })} title="Nei, dispensasjon kan være nødvendig" />
+                <RadioCard selected={data.plan_status === "usikker"} onClick={() => setData({ ...data, plan_status: "usikker" })} title="Jeg er usikker" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Har du rett til strandgrunnen?</h3>
+              <div className="space-y-2">
+                <RadioCard selected={data.eier_strandgrunn === true} onClick={() => setData({ ...data, eier_strandgrunn: true })} title="Ja" desc="Eierskap eller skriftlig rett er dokumentert" />
+                <RadioCard selected={data.eier_strandgrunn === false} onClick={() => setData({ ...data, eier_strandgrunn: false })} title="Nei eller usikker" />
+              </div>
+            </div>
+            <Alert variant="amber">Ikke bestill konstruksjonen før kommunen har avklart planstatus og eventuelle tillatelser.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
+              <Button size="lg" full disabled={!data.lengde || !data.bredde || data.eier_strandgrunn === null} onClick={evaluate}>Se hva du må avklare</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

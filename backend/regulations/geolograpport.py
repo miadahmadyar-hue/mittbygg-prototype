@@ -1,59 +1,41 @@
-from models import GeolograpportInput, TiltakResult, TiltakFinding, TiltakTiltak
+from models import GeolograpportInput, TiltakResult, TiltakFinding
 
 
 def evaluate_geolograpport(inp: GeolograpportInput) -> TiltakResult:
     findings: list[TiltakFinding] = []
-    tiltak: list[TiltakTiltak] = []
 
     findings.append(TiltakFinding(
-        type="ok",
-        t="Grunnundersøkelse anbefales ved nybygg og tilbygg",
-        d="TEK17 § 9-2 krever at grunnforhold dokumenteres før byggestart for alle søknadspliktige tiltak.",
+        type="warn",
+        t="Behovet må vurderes for det konkrete tiltaket",
+        d="Dokumentasjonen skal være tilpasset risiko, grunnforhold og fundamentering. En geoteknisk rapport er ikke automatisk nødvendig i alle saker.",
         ref="TEK17 § 9-2",
     ))
 
     if inp.type in ("nybygg", "brygge"):
         findings.append(TiltakFinding(
             type="warn",
-            t="Setningsskader — vanlig risiko i Oslo-regionen",
-            d="Leirgrunn under Oslo kan gi setningsskader ved feil fundamentering. Grunnundersøkelse sikrer riktig fundamenttype.",
+            t="Kontroller grunnforhold og områdestabilitet",
+            d="Kartdata, terreng og kjent grunnforhold avgjør om geoteknisk fagperson eller grunnundersøkelse bør kobles inn.",
             ref="NS-EN 1997 (Eurokode 7)",
         ))
 
     findings.append(TiltakFinding(
-        type="ok",
-        t="Geolog tilgjengelig via Søknadsklar-markedsplassen",
-        d="Vi kobler deg med sertifisert geotekniker innen 2 virkedager. Rapport normalt klar på 5–10 dager.",
-        ref="NGF Melding nr. 2",
-    ))
-    findings.append(TiltakFinding(
-        type="ok",
-        t="Rapport kreves av kommunen ved søknad",
-        d="Mange kommuner krever geoteknisk rapport som vedlegg til byggesøknaden. Søknadsklar inkluderer rapporten automatisk i søknadspakken.",
+        type="warn",
+        t="Avklar dokumentasjonsnivå før bestilling",
+        d="Be kommunen eller ansvarlig prosjekterende beskrive hvilket grunnlag som trengs, slik at du ikke bestiller en større undersøkelse enn saken krever.",
         ref="SAK10 § 5-4",
     ))
 
-    tiltak.append(TiltakTiltak(
-        name="Geoteknisk rapport (grunnundersøkelse)",
-        desc="Prøvetaking (dreietrykksondering + prøvegrop), laboratorieanalyse, geoteknisk rapport med fundamentanbefalinger.",
-        kostnad=28000,
-    ))
-    tiltak.append(TiltakTiltak(
-        name="Tillegg: radonmåling i grunn",
-        desc="Kombineres gjerne med geoundersøkelse. Resultater inngår i søknadspakken.",
-        kostnad=4500,
-    ))
-
     return TiltakResult(
-        status="green",
-        statusText="Bestill grunnundersøkelse",
-        statusDesc="Geotekniker kontakter deg innen 2 virkedager.",
+        status="amber",
+        statusText="Behov og omfang må avklares",
+        statusDesc="Avklar risiko og dokumentasjonskrav før du bestiller fagrapport.",
         findings=findings,
-        tiltak=tiltak,
+        tiltak=[],
         lempninger=[],
-        soknadstype="Fagtjeneste — ikke søknadspliktig i seg selv",
+        soknadstype="Må avklares - faglig dokumentasjon",
         ansvarsrett=False,
         tiltaksklasse=1,
-        totalKostnad=sum(t.kostnad for t in tiltak),
+        totalKostnad=0,
         input=inp.model_dump(),
     )

@@ -4,7 +4,6 @@ Falls back to realistic mock calculations when ANTHROPIC_API_KEY is not set.
 """
 import os
 import logging
-from copy import deepcopy
 
 from .json_extract import parse_model_json
 
@@ -116,9 +115,13 @@ class EngineerRequest(BaseModel):
 
 
 def _fallback_engineer(slug: str, reason: str) -> dict:
-    assessment = deepcopy(MOCK_BY_SLUG.get(slug, DEFAULT_MOCK))
-    assessment["meta"] = {"source": "fallback", "reason": reason}
-    return assessment
+    return {
+        "tittel": "Teknisk vurdering ikke tilgjengelig",
+        "beregninger": [],
+        "konklusjon": "Det er ikke utført tekniske beregninger eller kontroll av konstruksjon, brann eller energi.",
+        "notater": ["Fagperson må kontrollere grunnlaget før prosjektering eller byggestart"],
+        "meta": {"source": "fallback", "reason": reason},
+    }
 
 
 def _call_claude(req: EngineerRequest) -> dict:

@@ -43,20 +43,18 @@ SLUG_LABELS: dict[str, str] = {
 }
 
 MOCK_ASSESSMENT = {
-    "feasible": True,
+    "feasible": False,
     "summary": (
-        "Tiltaket ser gjennomførbart ut basert på tilgjengelig eiendomsdata. "
-        "En fullstendig vurdering forutsetter godkjente tegninger."
+        "Faglig vurdering er ikke tilgjengelig. "
+        "Ingen konklusjon om gjennomførbarhet er laget."
     ),
     "items": [
-        {"type": "ok",      "text": "Tiltaket er innenfor normalt omfang for denne eiendommen"},
-        {"type": "ok",      "text": "Ingen åpenbare konflikt med reguleringsplan"},
-        {"type": "warn",    "text": "Nabovarsel må sendes minst 2 uker før byggestart"},
-        {"type": "missing", "text": "Situasjonsplan i målestokk 1:500 anbefales"},
+        {"type": "missing", "text": "Godkjente tegninger er ikke faglig kontrollert"},
+        {"type": "missing", "text": "Reguleringsplan og eiendomsvilkår er ikke verifisert"},
     ],
     "anbefalinger": [
-        "Last opp situasjonsplan og plantegning for en komplett søknad",
-        "Kontroller avstand til nabogrense i henhold til PBL § 29-4",
+        "Last opp relevante tegninger og få vurderingen utført på nytt",
+        "Ikke bruk reservevisningen som prosjekteringsgrunnlag",
     ],
 }
 
@@ -75,8 +73,8 @@ def _fallback_assessment(images: list[dict], reason: str) -> dict:
     assessment = deepcopy(MOCK_ASSESSMENT)
     if not images:
         assessment["items"] = [
-            *MOCK_ASSESSMENT["items"][:3],
             {"type": "missing", "text": "Ingen tegninger lastet opp - situasjonsplan anbefales"},
+            *MOCK_ASSESSMENT["items"],
         ]
     assessment["meta"] = {"source": "fallback", "reason": reason}
     return assessment

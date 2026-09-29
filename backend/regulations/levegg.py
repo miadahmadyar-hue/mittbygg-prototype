@@ -1,87 +1,58 @@
-from models import LevegInput, TiltakResult, Finding, Tiltak, Lempning
+from models import LevegInput, TiltakResult, Finding, Tiltak
 
 
 def evaluate_levegg(inp: LevegInput) -> TiltakResult:
-    findings: list[Finding] = []
-    tiltak:   list[Tiltak]  = []
+    near_boundary = inp.avstand < 1.0
+    max_length = 5.0 if near_boundary else 10.0
+    dimension_exempt = inp.hoyde <= 1.8 and inp.lengde <= max_length
+    exempt = dimension_exempt and inp.plan_ok is True
 
-    # Høyde
-    if inp.hoyde <= 1.8:
-        findings.append(Finding(
-            type="ok", t=f"Høyde {inp.hoyde:.1f} m — unntatt (≤ 1,8 m)",
-            d="Levegger og skjermer ≤ 1,8 m er unntatt søknad etter SAK10 § 4-1 e.",
+    findings = [
+        Finding(
+            type="ok" if inp.hoyde <= 1.8 else "warn",
+            t=f"Høyde {inp.hoyde:.1f} m",
+            d="Unntaksgrensen er 1,8 m.", ref="SAK10 § 4-1 e",
+        ),
+        Finding(
+            type="ok" if inp.lengde <= max_length else "warn",
+            t=f"Lengde {inp.lengde:.1f} m - grense {max_length:.0f} m",
+            d="Nærmere enn 1,0 m fra nabogrensen er maksimal lengde 5,0 m. Ellers er den 10,0 m.",
             ref="SAK10 § 4-1 e",
-        ))
-    elif inp.hoyde <= 2.5:
+        ),
+    ]
+
+    if inp.plan_ok is None:
         findings.append(Finding(
-            type="warn", t=f"Høyde {inp.hoyde:.1f} m — trolig søknadspliktig",
-            d="Levegger 1,8–2,5 m kan kreve søknad. Sjekk med kommunen.",
-            ref="SAK10 § 4-1 e",
+            type="warn", t="Kommunal plan er ikke kontrollert",
+            d="Leveggen må være i samsvar med byggegrenser, frisikt og eventuelle lokale bestemmelser.",
+            ref="PBL § 1-6",
         ))
+    elif inp.plan_ok is False:
+        findings.append(Finding(
+            type="fail", t="Leveggen er ikke i samsvar med planen",
+            d="Avklar endret plassering eller dispensasjon med kommunen.",
+            ref="PBL kap. 19",
+        ))
+
+    if exempt:
+        status, text, desc = "green", "Unntatt søknad", "Høyde, lengde og avstand ligger innenfor unntaksregelen."
+        soknadstype = "Unntatt (SAK10 § 4-1 e)"
+    elif not dimension_exempt:
+        status, text, desc = "amber", "Søknad eller avklaring nødvendig", "Minst ett av målene er utenfor unntaksregelen."
+        soknadstype = "PBL § 20-4 - avklar med kommunen"
     else:
-        findings.append(Finding(
-            type="fail", t=f"Høyde {inp.hoyde:.1f} m — søknad påkrevd",
-            d="Levegger > 2,5 m er søknadspliktig (PBL § 20-1 a). Ansvarlig søker kreves.",
-            ref="PBL § 20-1 a",
-        ))
+        status = "red" if inp.plan_ok is False else "amber"
+        text, desc = "Planstatus må avklares", "Målene er innenfor unntaksregelen, men kommunal plan og frisikt er ikke bekreftet."
+        soknadstype = "Må avklares mot kommunal plan"
 
-    # Lengde
-    if inp.lengde <= 10.0:
-        findings.append(Finding(
-            type="ok", t=f"Lengde {inp.lengde:.1f} m — innenfor grense (≤ 10 m)",
-            d="Levegger ≤ 10 m er unntatt søknad (SAK10 § 4-1 e).",
-            ref="SAK10 § 4-1 e",
-        ))
-    else:
-        findings.append(Finding(
-            type="fail", t=f"Lengde {inp.lengde:.1f} m — over grense",
-            d="Levegger over 10 m sammenhengende lengde er søknadspliktig.",
-            ref="SAK10 § 4-1 e",
-        ))
-
-    # Avstand til nabo
-    if inp.avstand < 1.0:
-        findings.append(Finding(
-            type="warn", t=f"Avstand {inp.avstand:.1f} m — anbefal nabovarsel",
-            d="Levegg tett på nabogrense anbefales nabovarslet, selv om tiltaket er unntatt søknad.",
-            ref="PBL § 29-4",
-        ))
-    else:
-        findings.append(Finding(
-            type="ok", t=f"Avstand {inp.avstand:.1f} m fra nabogrense OK",
-            d="God avstand til nabogrense. Nabovarsel ikke påkrevd.",
-            ref="PBL § 29-4",
-        ))
-
-    tiltak.append(Tiltak(
-        name=f"Levegg {inp.hoyde:.1f} m × {inp.lengde:.1f} m",
-        desc="Betongfot, stenderverksrammer, trebehandlet kledning og overflatebehandling.",
+    tiltak = [Tiltak(
+        name=f"Levegg {inp.hoyde:.1f} m x {inp.lengde:.1f} m",
+        desc="Kostnadsindikasjon for fundamentering og trekonstruksjon.",
         kostnad=int(inp.hoyde * inp.lengde * 1_800),
-    ))
-
-    fails = sum(1 for f in findings if f.type == "fail")
-    warns = sum(1 for f in findings if f.type == "warn")
-    total = sum(t.kostnad for t in tiltak)
-
-    if fails > 0:
-        status, txt, desc = "red", "Søknad påkrevd", f"{fails} krav er ikke oppfylt."
-    elif warns > 0:
-        status, txt, desc = "amber", "Trolig unntatt — sjekk høyde", "Høyde 1,8–2,5 m: kontakt kommunen for avklaring."
-    else:
-        status, txt, desc = "green", "Unntatt søknad", "Leveggen er fritatt for byggesøknad etter SAK10 § 4-1 e."
-
-    soknadstype = (
-        "Unntatt (SAK10 § 4-1 e)" if inp.hoyde <= 1.8 and inp.lengde <= 10 else
-        "PBL § 20-4 c" if inp.hoyde <= 2.5 else
-        "PBL § 20-1 a (søknadspliktig)"
-    )
-
+    )]
     return TiltakResult(
-        status=status, statusText=txt, statusDesc=desc,
-        findings=findings, tiltak=tiltak, lempninger=[],
-        soknadstype=soknadstype,
-        ansvarsrett=False,
-        tiltaksklasse=1,
-        totalKostnad=total,
-        input=inp.model_dump(),
+        status=status, statusText=text, statusDesc=desc, findings=findings,
+        tiltak=tiltak, lempninger=[], soknadstype=soknadstype,
+        ansvarsrett=False, tiltaksklasse=1,
+        totalKostnad=sum(t.kostnad for t in tiltak), input=inp.model_dump(),
     )

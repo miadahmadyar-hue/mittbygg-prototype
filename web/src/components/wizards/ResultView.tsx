@@ -1,15 +1,14 @@
 "use client";
 
 import { ReactNode } from "react";
-import type { KjellerResult } from "@/lib/regulations/kjeller";
-import type { VeggResult } from "@/lib/regulations/vegg";
+import type { TiltakResult } from "@/lib/api/evaluate";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
-import { getPricing, formatKr, discountPct } from "@/lib/data/pricing";
+import { getPricing, formatKr } from "@/lib/data/pricing";
 import { useT } from "@/lib/i18n/context";
 
 
-type AnyResult = KjellerResult | VeggResult;
+type AnyResult = TiltakResult;
 
 const STATUS_CARDS: Record<
   AnyResult["status"],
@@ -59,26 +58,19 @@ interface Props {
   onRestart: () => void;
 }
 
-export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoading, onRestart }: Props) {
+export function ResultView({ r, slug, onGenerateSoknad, onRestart }: Props) {
   const t = useT();
   const sCard = STATUS_CARDS[r.status];
+  const applicationType = r.soknadstype.toLowerCase();
+  const needsClarification = applicationType.includes("må avklares") || applicationType.includes("vurderes manuelt") || applicationType.includes("trolig");
+  const isExempt = !needsClarification && (applicationType.startsWith("unntatt") || applicationType.startsWith("ikke oppdeling"));
+  const needsProfessional = r.ansvarsrett;
+  const canBuildPackage = !isExempt && !needsProfessional && !needsClarification && r.status !== "red";
+  const outcome = isExempt ? "exempt" : needsProfessional ? "professional" : needsClarification || r.status === "red" ? "clarify" : "application";
 
   return (
     <>
-      <Topbar
-        title={t("Resultat", "Result")}
-        right={
-          <button
-            type="button"
-            className="w-9 h-9 rounded-full bg-gray-100 grid place-items-center"
-            aria-label={t("Last ned", "Download")}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-            </svg>
-          </button>
-        }
-      />
+      <Topbar title={t("Resultat", "Result")} />
       <div className="view">
         <div
           className={`flex items-center gap-3 p-5 rounded-2xl border ${sCard.bg} ${sCard.border}`}
@@ -99,7 +91,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                 <path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z" />
                 <path d="m9 12 2 2 4-4" />
               </svg>
-              {t("Lempninger anvendt (PBL § 31-2)", "Exemptions applied (PBL § 31-2)")}
+              {t("Mulige unntak for eksisterende bygg", "Possible exceptions for existing buildings")}
             </h4>
             <ul className="space-y-2">
               {r.lempninger.map((l, i) => (
@@ -134,52 +126,30 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
           <KV
             k={t("Ansvarsrett", "Pro liability")}
             v={r.ansvarsrett
-              ? t("JA — krever ANS-foretak", "YES — needs a liable firm")
-              : t("NEI — du står ansvarlig selv", "NO — you are responsible yourself")}
+              ? t("Ja - ansvarlig foretak må vurderes", "Yes - a responsible firm must be considered")
+              : t("Ikke identifisert som krav", "Not identified as required")}
           />
           <KV k={t("Tiltaksklasse", "Work class")} v={`TK${r.tiltaksklasse}`} last />
         </div>
 
-        <PricingCard slug={slug} />
+        {canBuildPackage && <PricingCard slug={slug} />}
 
-        {"bjelke" in r && r.bjelke && (
-          <>
-            <SectionHead>{t("Bjelke-anbefaling", "Beam recommendation")}</SectionHead>
-            <div className="bg-white border border-gray-100 rounded-xl p-4">
-              <div className="flex items-center gap-4">
-                <div
-                  className="rounded-xl grid place-items-center font-bold text-[11px] text-center p-1"
-                  style={{
-                    width: 70, height: 70,
-                    background: "linear-gradient(135deg, #d6b88a, #b89968)",
-                    color: "#5a4520",
-                  }}
-                >
-                  {r.bjelke.b}×<br />{r.bjelke.h}
-                </div>
-                <div>
-                  <div className="font-bold text-base">
-                    {r.bjelke.b} × {r.bjelke.h} mm
-                  </div>
-                  <div className="text-sm text-gray-500">{r.bjelke.type}</div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    {t("Spennvidde", "Span")} {r.bjelke.spennvidde} mm · {t("Last", "Load")} {r.bjelke.last} kN/m
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        <SectionHead>{t("Tidslinje", "Timeline")}</SectionHead>
-        <Timeline ansvarsrett={r.ansvarsrett} />
+        <SectionHead>{t("Anbefalt vei videre", "Recommended next steps")}</SectionHead>
+        <Timeline outcome={outcome} />
 
         <div className="mt-2 flex flex-col gap-2">
-          {r.status === "red" ? (
+          {isExempt ? (
             <>
-              <Button variant="secondary" full disabled>
-                {t("Søknad kan ikke lages — rett kritiske avvik først", "Application can't be created — fix critical issues first")}
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-900">
+                <strong>{t("Neste steg:", "Next step:")}</strong>{" "}
+                {t("Ta vare på vurderingen, kontroller kommunal plan og meld tiltaket til kommunen etter ferdigstillelse når det kreves.", "Keep the assessment, verify the municipal plan and notify the municipality after completion when required.")}
+              </div>
+              <Button size="lg" full onClick={onRestart}>
+                {t("Ferdig — tilbake til tiltak", "Done — back to projects")}
               </Button>
+            </>
+          ) : needsProfessional || needsClarification || r.status === "red" ? (
+            <>
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-100 grid place-items-center shrink-0 text-amber-600">
@@ -190,48 +160,30 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                     </svg>
                   </div>
                   <div>
-                    <div className="font-semibold text-sm text-amber-900">{t("Får du ikke til søknaden selv?", "Can't manage the application yourself?")}</div>
-                    <div className="text-xs text-amber-700 mt-0.5">{t("En rådgiver fra Søknadsklar kan hjelpe deg videre — selv med krevende tilfeller.", "A Søknadsklar advisor can help you — even with difficult cases.")}</div>
+                    <div className="font-semibold text-sm text-amber-900">{t("Faglig avklaring er neste steg", "Professional clarification is the next step")}</div>
+                    <div className="text-xs text-amber-700 mt-0.5">{t("Vi lager ikke en søknadspakke før manglende forhold er dokumentert eller ansvarlig foretak er valgt.", "We do not create an application package until the missing facts are documented or a responsible firm is engaged.")}</div>
                   </div>
                 </div>
                 <a
                   href="mailto:hei@soknadsklar.no?subject=Trenger hjelp med søknad"
                   className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm rounded-xl py-3 text-center transition-colors"
                 >
-                  {t("Kontakt en rådgiver", "Contact an advisor")}
+                  {t("Be om faglig vurdering", "Request professional assessment")}
                 </a>
               </div>
               <Button variant="ghost" full onClick={onRestart}>
                 {t("Start på nytt", "Start over")}
               </Button>
             </>
-          ) : (
+          ) : canBuildPackage ? (
             <>
-              {onDownloadPdf ? (
-                <Button
-                  size="lg"
-                  full
-                  disabled={pdfLoading}
-                  onClick={onDownloadPdf}
-                >
-                  {pdfLoading ? (
-                    <span className="spinner spinner-sm" />
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                    </svg>
-                  )}
-                  {pdfLoading ? t("Genererer PDF…", "Generating PDF…") : t("Last ned søknadspakke (PDF)", "Download application package (PDF)")}
-                </Button>
-              ) : (
-                <Button size="lg" full onClick={onGenerateSoknad}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6" />
-                  </svg>
-                  {t("Generer søknadspakke", "Generate application package")}
-                </Button>
-              )}
+              <Button size="lg" full onClick={onGenerateSoknad}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                {t("Fortsett med søknadsgrunnlaget", "Continue with the application documents")}
+              </Button>
               <Button variant="ghost" full onClick={onRestart}>
                 {t("Start på nytt", "Start over")}
               </Button>
@@ -247,7 +199,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                 {t("Trenger du hjelp? Snakk med en rådgiver", "Need help? Talk to an advisor")}
               </a>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </>
@@ -284,20 +236,36 @@ function FindingIcon({ type }: { type: "ok" | "warn" | "fail" }) {
 }
 
 
-function Timeline({ ansvarsrett }: { ansvarsrett: boolean }) {
+function Timeline({ outcome }: { outcome: "exempt" | "professional" | "clarify" | "application" }) {
   const tr = useT();
-  const steps = [
-    { t: tr("Regelsjekk fullført", "Rule check complete"), d: tr("Akkurat nå", "Just now"), state: "done" as const },
-    { t: tr("Generer søknadspakke", "Generate application package"), d: tr("~3 minutter", "~3 minutes"), state: "current" as const },
-    { t: tr("Nabovarsel + frist", "Neighbor notice + deadline"), d: tr("14 dager", "14 days"), state: "todo" as const },
-    {
-      t: tr("Kommunal saksbehandling", "Municipal processing"),
-      d: ansvarsrett ? tr("12 uker", "12 weeks") : tr("3–12 uker", "3–12 weeks"),
-      state: "todo" as const,
-    },
-    { t: tr("Igangsetting + utførelse", "Start + construction"), d: tr("Etter rammetillatelse", "After framework permit"), state: "todo" as const },
-    { t: tr("Ferdigattest", "Completion certificate"), d: tr("3 uker etter ferdigmelding", "3 weeks after completion notice"), state: "todo" as const },
-  ];
+  const paths = {
+    exempt: [
+      [tr("Regelsjekk fullført", "Rule check complete"), tr("Basert på svarene dine", "Based on your answers")],
+      [tr("Kontroller plan og plassering", "Verify plan and placement"), tr("Dokumenter at alle vilkår er oppfylt", "Document that every condition is met")],
+      [tr("Utfør og dokumenter tiltaket", "Build and document the work"), tr("Meld fra til kommunen etterpå når det kreves", "Notify the municipality afterward when required")],
+    ],
+    professional: [
+      [tr("Regelsjekk fullført", "Rule check complete"), tr("Saken trenger faglig prosjektering", "The case needs professional design")],
+      [tr("Engasjer riktig fagperson", "Engage the right professional"), tr("Avklar ansvar, tegninger og teknisk løsning", "Clarify responsibility, drawings and technical design")],
+      [tr("Avklar søknadsstrategi", "Clarify the application strategy"), tr("Ansvarlig søker vurderer dokumenter og videre prosess", "The responsible applicant assesses documents and process")],
+    ],
+    clarify: [
+      [tr("Foreløpig regelsjekk fullført", "Preliminary rule check complete"), tr("Ett eller flere forhold mangler", "One or more facts are missing")],
+      [tr("Hent dokumentasjon", "Collect documentation"), tr("Plan, godkjente tegninger, mål eller faglig vurdering", "Plan, approved drawings, measurements or professional review")],
+      [tr("Be om konkret avklaring", "Request a case-specific clarification"), tr("Kontakt kommunen eller relevant fagperson før bestilling", "Contact the municipality or a relevant professional before ordering")],
+    ],
+    application: [
+      [tr("Regelsjekk fullført", "Rule check complete"), tr("Søknadsbehov er identifisert", "The application need is identified")],
+      [tr("Fullfør søknadsgrunnlaget", "Complete the application documents"), tr("Tegninger, planstatus og teknisk dokumentasjon", "Drawings, plan status and technical documentation")],
+      [tr("Varsle naboer når det kreves", "Notify neighbors when required"), tr("Kontroller unntak og merknader i den konkrete saken", "Check exemptions and comments for this case")],
+      [tr("Send til kommunen", "Submit to the municipality"), tr("Vent på tillatelse før søknadspliktig arbeid starter", "Wait for permission before application work starts")],
+    ],
+  } as const;
+  const steps = paths[outcome].map(([title, description], index) => ({
+    t: title,
+    d: description,
+    state: index === 0 ? "done" as const : index === 1 ? "current" as const : "todo" as const,
+  }));
 
   return (
     <div className="bg-white border border-gray-100 rounded-xl p-5">
@@ -363,28 +331,18 @@ function KV({ k, v, last, mono }: { k: string; v: string; last?: boolean; mono?:
 function PricingCard({ slug }: { slug?: string }) {
   const t = useT();
   const p = getPricing(slug ?? "");
-  const pct = discountPct(p);
   return (
     <>
       <SectionHead>{t("Søknadsprosess — hva koster det?", "The application process — what does it cost?")}</SectionHead>
       <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col gap-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="text-xs text-gray-500 mb-1">{t("Markedspris (arkitekt/konsulent)", "Market price (architect/consultant)")}</div>
-            <div className="text-lg font-semibold text-gray-400 line-through">{formatKr(p.market)}</div>
-          </div>
-          <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-            -{pct}%
-          </div>
-        </div>
-        <div className="border-t border-gray-100 pt-4">
-          <div className="text-xs text-gray-500 mb-1">{t("Din pris via Søknadsklar", "Your price via Søknadsklar")}</div>
+        <div>
+          <div className="text-xs font-semibold uppercase text-gray-500 mb-1">{t("Demo", "Demo")}</div>
+          <div className="text-xs text-gray-500 mb-1">{t("Eksempelpris for søknadspakke", "Example price for an application package")}</div>
           <div className="text-3xl font-extrabold tracking-tight">{formatKr(p.mittbygg)}</div>
-          <div className="text-sm text-gray-500 font-semibold mt-1">{t("Du sparer", "You save")} {formatKr(p.market - p.mittbygg)}</div>
         </div>
         {p.note && <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">{p.note}</div>}
         <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-          {t("Kommunalt gebyr kommer i tillegg — varierer per kommune og tiltaksstørrelse.", "A municipal fee applies on top — varies by municipality and project size.")}
+          {t("Dette er en demonstrasjon. Ingen betaling gjennomføres. Kommunalt gebyr og eventuell fagbistand kommer i tillegg.", "This is a demonstration. No payment is processed. Municipal fees and professional services are additional.")}
         </div>
       </div>
     </>

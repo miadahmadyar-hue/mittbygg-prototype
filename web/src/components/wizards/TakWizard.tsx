@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { ToggleRow } from "@/components/ui/Toggle";
-import { ResultPhases, KV } from "./SimpleWizard";
+import { Alert } from "@/components/ui/Alert";
+import { ResultPhases } from "./SimpleWizard";
 import { evaluateTakApi, type TiltakResult } from "@/lib/api/evaluate";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -17,53 +18,52 @@ type TakType = "bytte_materiale" | "endre_form" | "bygge_loft";
 export function TakWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ type: null as TakType | null, verneverdig: false, etterisolere: false });
+  const [data, setData] = useState({ type: null as TakType | null, samme_utseende: false, verneverdig: false, etterisolere: false });
 
   const evaluate = async () => {
     if (!data.type) return;
     setPhase({ kind: "loading" });
-    const result = await evaluateTakApi({ type: data.type, verneverdig: data.verneverdig, etterisolere: data.etterisolere });
+    const result = await evaluateTakApi({ ...data, type: data.type });
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="tak" loadingText="Sjekker TEK17 og reguleringsplan…" />;
-
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="tak" loadingText="Klassifiserer takarbeidet etter faktisk omfang…" />;
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Skifte tak" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar title="Tak og loft" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
-        {step === 0 && (
+        {step === 0 ? (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Hva skal gjøres?</h2></div>
+            <div>
+              <h2 className="text-[22px] font-bold tracking-tight">Hva skal gjøres?</h2>
+              <p className="text-sm text-gray-500 mt-2">Vedlikehold, fasadeendring, konstruksjonsarbeid og bruksendring er separate løp.</p>
+            </div>
             <div className="space-y-2">
-              <RadioCard selected={data.type === "bytte_materiale"} onClick={() => setData({ ...data, type: "bytte_materiale" })} title="Bytte tekkemateriale" desc="Skifte til ny takstein, shingel eller annet materiale" />
-              <RadioCard selected={data.type === "endre_form"} onClick={() => setData({ ...data, type: "endre_form" })} title="Endre takform" desc="Endre vinkel, gesims eller mønehøyde" />
-              <RadioCard selected={data.type === "bygge_loft"} onClick={() => setData({ ...data, type: "bygge_loft" })} title="Bygge ut loft" desc="Innrede loft til oppholdsrom eller soverom" />
+              <RadioCard selected={data.type === "bytte_materiale"} onClick={() => setData({ ...data, type: "bytte_materiale" })} title="Skifte taktekking" desc="Takstein, papp, shingel eller plater" />
+              <RadioCard selected={data.type === "endre_form"} onClick={() => setData({ ...data, type: "endre_form" })} title="Endre takform eller høyde" desc="Takvinkel, møne, ark eller heving" />
+              <RadioCard selected={data.type === "bygge_loft"} onClick={() => setData({ ...data, type: "bygge_loft" })} title="Innrede loft til oppholdsrom" desc="Bruksendring, høyde, lys, rømning og trapp" />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
-        )}
-        {step === 1 && (
+        ) : (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Bygningsdetaljer</h2></div>
-            <div className="space-y-2">
-              <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Verneverdig / antikvarisk bygning" desc="SEFRAK-registrert eller kommunalt vernet" />
-              <ToggleRow on={data.etterisolere} onChange={() => setData({ ...data, etterisolere: !data.etterisolere })} title="Etterisolere taket samtidig" desc="Legge til ekstra isolasjon — anbefales ved skifte" />
-            </div>
-            <div className="bg-white border border-gray-100 rounded-xl mt-2">
-              <KV k="Eiendom" v={p.street} />
-              <KV k="Byggeår" v={String(p.bygg.byggeAar)} />
-              <KV k="Etterisolere" v={data.etterisolere ? "Ja" : "Nei"} last />
-            </div>
+            <div><h2 className="text-[22px] font-bold tracking-tight">Om endringen</h2></div>
+            {data.type === "bytte_materiale" && (
+              <ToggleRow on={data.samme_utseende} onChange={() => setData({ ...data, samme_utseende: !data.samme_utseende })} title="Samme materiale og visuelt uttrykk" desc="Lik utskifting regnes normalt som vedlikehold" />
+            )}
+            <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Bygningen er vernet eller bevaringsverdig" desc="Velg bare ja hvis dette er bekreftet" />
+            {data.type !== "bygge_loft" && <ToggleRow on={data.etterisolere} onChange={() => setData({ ...data, etterisolere: !data.etterisolere })} title="Etterisolere taket samtidig" />}
+            {data.type === "endre_form" && <Alert variant="amber">Endret takform berører normalt bærekonstruksjon og kan endre tillatt høyde.</Alert>}
+            {data.type === "bygge_loft" && <Alert>Loftsutbygging skal videre til bruksendringsløpet med målt takhøyde, dagslys, rømning, trapp og godkjent eksisterende bruk.</Alert>}
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
+              <Button size="lg" full onClick={evaluate}>Få riktig neste steg</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

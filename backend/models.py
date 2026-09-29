@@ -32,6 +32,14 @@ class KjellerInput(BaseModel):
     balansert_vent: bool = False
     bra: Optional[int] = None      # gross floor area — used for room derivation
     etasjer: Optional[int] = None  # floor count — used for room derivation
+    rom_areal: Optional[float] = None
+    takhoyde: Optional[float] = None  # mm, measured by the customer
+    vindu_bredde: Optional[float] = None  # m
+    vindu_hoyde: Optional[float] = None   # m
+    vindu_brystning: Optional[float] = None  # m above floor
+    godkjent_bruk_bekreftet: bool = False
+    drenering_status: Literal["ja", "nei", "usikker"] = "usikker"
+    ventilasjon_status: Literal["ja", "nei", "usikker"] = "usikker"
 
 
 class KjellerResult(BaseModel):
@@ -52,8 +60,12 @@ class KjellerResult(BaseModel):
 # ── Vegg ─────────────────────────────────────────────────────────────────────
 
 class VeggInput(BaseModel):
-    spennvidde: float  # mm
-    last: float        # kN/m
+    type: Literal["fjerne_vegg", "ny_apning", "utvide_apning", "flytte_vegg", "endre_soyle"]
+    baerende: Literal["ja", "nei", "usikker"]
+    apning_bredde: Optional[float] = None  # approximate metres
+    etasje: Literal["kjeller", "forste", "ovre"]
+    etasjer_over: int = 0
+    konstruksjon: Literal["tre", "mur_betong", "stal", "usikker"] = "usikker"
 
 
 class Bjelke(BaseModel):
@@ -75,7 +87,7 @@ class VeggResult(BaseModel):
     ansvarsrett: bool
     tiltaksklasse: Literal[1, 2]
     totalKostnad: int
-    bjelke: Bjelke
+    bjelke: Optional[Bjelke] = None
     input: VeggInput
 
 
@@ -141,35 +153,63 @@ class GarasjeInput(BaseModel):
     type: Literal["garasje", "carport", "bod"]
     areal: float
     avstand: float
+    avstand_bygg: float = 1.0
+    overnatting: bool = False
+    kjeller: bool = False
+    etasjer: int = 1
+    monehoyde: float = 4.0
+    gesimshoyde: float = 3.0
+    over_ledninger: bool = False
+    plan_ok: Optional[bool] = None
 
 
 class TilbyggInput(BaseModel):
     type: Literal["tilbygg_1etasje", "ny_etasje", "innglasset_terrasse"]
     areal: float
     avstand: float
+    bruk: Literal["bod", "terrasse", "veranda", "oppholdsrom", "bad", "annet"] = "oppholdsrom"
+    plan_ok: Optional[bool] = None
+    bya_ok: Optional[bool] = None
+    pipe: bool = False
 
 
 class FasadeInput(BaseModel):
-    type: Literal["kledning", "farge", "vindu_storre", "terrasse", "dor"]
+    type: Literal["skifte_vindu", "nytt_hull", "kledning", "farge", "vindu_storre", "terrasse", "dor"]
     verneverdig: bool
+    samme_utseende: bool = False
+    karakterendring: Literal["nei", "ja", "usikker"] = "usikker"
+    terrasse_hoyde: Optional[float] = None
+    terrasse_dybde: Optional[float] = None
+    terrasse_avstand: Optional[float] = None
+    terrasse_overbygd: bool = False
 
 
 class TakInput(BaseModel):
     type: Literal["bytte_materiale", "endre_form", "bygge_loft"]
     verneverdig: bool
     etterisolere: bool
+    samme_utseende: bool = False
 
 
 class AnneksInput(BaseModel):
     type: Literal["anneks", "uthus", "hagebod"]
     areal: float
     avstand: float
+    overnatting: bool = False
+    avstand_bygg: float = 1.0
+    kjeller: bool = False
+    etasjer: int = 1
+    monehoyde: float = 4.0
+    gesimshoyde: float = 3.0
+    over_ledninger: bool = False
+    plan_ok: Optional[bool] = None
 
 
 class LevegInput(BaseModel):
     hoyde: float
     lengde: float
     avstand: float
+    plan_ok: Optional[bool] = None
 
 
 class VinduInput(BaseModel):
@@ -181,6 +221,9 @@ class BryggeInput(BaseModel):
     type: Literal["fast", "flytende", "stupebrett"]
     lengde: float
     bredde: float
+    arbeid: Literal["ny", "utvide", "erstatte", "vedlikehold"] = "ny"
+    eier_strandgrunn: Optional[bool] = None
+    plan_status: Literal["tillatt", "ikke_tillatt", "usikker"] = "usikker"
 
 
 class AndreInput(BaseModel):
@@ -197,6 +240,9 @@ class BruksendringInput(BaseModel):
     til: Literal["bolig", "hybel", "kontor", "naring"]
     areal: float
     verneverdig: bool
+    godkjent_bruk_bekreftet: bool = False
+    plan_status: Literal["tillatt", "ikke_tillatt", "usikker"] = "usikker"
+    inngrep_baerende: bool = False
 
 
 class TilleggsdelInput(BaseModel):
@@ -209,3 +255,6 @@ class BoenhetInput(BaseModel):
     type: Literal["hybel", "sokkelleilighet", "tomannsbolig"]
     antall: int
     areal: float
+    hovedfunksjoner: bool = False
+    egen_inngang: bool = False
+    fysisk_adskilt: bool = False

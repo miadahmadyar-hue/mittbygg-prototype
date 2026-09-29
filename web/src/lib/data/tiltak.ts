@@ -19,6 +19,8 @@ export interface Tiltak {
   tags: TiltakTag[];
   slug: string | null;
   available: boolean;
+  category: "inside" | "expand" | "exterior" | "site" | "help";
+  hidden?: boolean;
 }
 
 export const TILTAK: Tiltak[] = [
@@ -30,7 +32,7 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Basement to bedroom, flat, office or living room",
     icon: "kjeller", iconClass: "",
     tags: [{ text: "Søknadspliktig", variant: "amber" }, { text: "Vanlig", variant: "" }],
-    slug: "kjeller", available: true,
+    slug: "kjeller", available: true, category: "inside",
   },
   {
     id: "fjern-vegg",
@@ -40,7 +42,7 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Remove or move a load-bearing wall, beam or column",
     icon: "wall", iconClass: "warm",
     tags: [{ text: "Krever ANS-rett", variant: "red" }],
-    slug: "vegg", available: true,
+    slug: "vegg", available: true, category: "inside",
   },
   {
     id: "tilbygg",
@@ -50,7 +52,7 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Expand the house with an extra room or floor",
     icon: "tilbygg", iconClass: "warm",
     tags: [{ text: "Søknadspliktig", variant: "amber" }],
-    slug: "tilbygg", available: true,
+    slug: "tilbygg", available: true, category: "expand",
   },
   {
     id: "garasje",
@@ -59,8 +61,8 @@ export const TILTAK: Tiltak[] = [
     desc: "Frittliggende garasje, carport eller bod",
     desc_en: "Detached garage, carport or shed",
     icon: "garasje", iconClass: "blue",
-    tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: "garasje", available: true,
+    tags: [{ text: "Regelsjekk", variant: "blue" }],
+    slug: "garasje", available: true, category: "expand",
   },
   {
     id: "fasade",
@@ -70,27 +72,27 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Window, door, cladding, wall opening or deck",
     icon: "fasade", iconClass: "",
     tags: [{ text: "Avhenger", variant: "" }],
-    slug: "fasade", available: true,
+    slug: "fasade", available: true, category: "exterior",
   },
   {
     id: "tak",
-    name: "Skifte tak",
-    name_en: "Replace roof",
-    desc: "Nytt tekkemateriale eller takform",
-    desc_en: "New roofing material or roof shape",
+    name: "Tak og loft",
+    name_en: "Roof and attic",
+    desc: "Taktekking, endret takform eller innredning av loft",
+    desc_en: "Roofing, roof shape changes or attic conversion",
     icon: "tak", iconClass: "blue",
-    tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: "tak", available: true,
+    tags: [{ text: "Regelsjekk", variant: "blue" }],
+    slug: "tak", available: true, category: "exterior",
   },
   {
     id: "anneks",
     name: "Anneks / uthus",
     name_en: "Annex / outbuilding",
-    desc: "Frittliggende anneks ≤ 50 m²",
-    desc_en: "Detached annex ≤ 50 m²",
+    desc: "Frittliggende uthus, hagestue eller bygg for overnatting",
+    desc_en: "Detached outbuilding, garden room or overnight annex",
     icon: "anneks", iconClass: "",
-    tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: "anneks", available: true,
+    tags: [{ text: "Regelsjekk", variant: "blue" }],
+    slug: "anneks", available: true, category: "expand",
   },
   {
     id: "levegg",
@@ -99,8 +101,8 @@ export const TILTAK: Tiltak[] = [
     desc: "Skjerm mot innsyn eller vind",
     desc_en: "Screen against view or wind",
     icon: "levegg", iconClass: "blue",
-    tags: [{ text: "Ofte unntatt", variant: "green" }],
-    slug: "levegg", available: true,
+    tags: [{ text: "Regelsjekk", variant: "blue" }],
+    slug: "levegg", available: true, category: "exterior",
   },
   {
     id: "brygge",
@@ -110,17 +112,17 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Private dock on a waterfront plot",
     icon: "brygge", iconClass: "blue",
     tags: [{ text: "Søknadspliktig", variant: "amber" }],
-    slug: "brygge", available: true,
+    slug: "brygge", available: true, category: "site",
   },
   {
     id: "bruksendring",
     name: "Bruksendring",
     name_en: "Change of use",
-    desc: "Endre bruk av rom eller bygning til ny kategori",
-    desc_en: "Change the use of a room or building to a new category",
+    desc: "Gjøre bod, garasje, næring eller andre arealer om til ny bruk",
+    desc_en: "Convert storage, garage, commercial or other areas to a new use",
     icon: "bruksendring", iconClass: "warm",
     tags: [{ text: "Søknadspliktig", variant: "amber" }],
-    slug: "bruksendring", available: true,
+    slug: "bruksendring", available: true, category: "inside",
   },
   {
     id: "tilleggsdel",
@@ -130,7 +132,7 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Turn a storage room, laundry or garage into living space",
     icon: "tilleggsdel", iconClass: "",
     tags: [{ text: "Søknadspliktig", variant: "amber" }],
-    slug: "tilleggsdel", available: true,
+    slug: "tilleggsdel", available: true, category: "inside", hidden: true,
   },
   {
     id: "boenhet",
@@ -140,7 +142,7 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Create a bedsit, basement flat or duplex",
     icon: "boenhet", iconClass: "warm",
     tags: [{ text: "Krever ANS-rett", variant: "red" }],
-    slug: "boenhet", available: true,
+    slug: "boenhet", available: true, category: "inside",
   },
   {
     id: "geolograpport",
@@ -150,17 +152,17 @@ export const TILTAK: Tiltak[] = [
     desc_en: "Ground survey and geotechnical report",
     icon: "geolog", iconClass: "blue",
     tags: [{ text: "Fagtjeneste", variant: "blue" }],
-    slug: "geolograpport", available: true,
+    slug: "geolograpport", available: true, category: "help", hidden: true,
   },
   {
     id: "andre",
     name: "Noe annet",
     name_en: "Something else",
-    desc: "Beskriv tiltaket – AI hjelper deg videre",
-    desc_en: "Describe the project – AI takes it from there",
+    desc: "Beskriv tiltaket og få hjelp til riktig neste steg",
+    desc_en: "Describe the project and get help choosing the next step",
     icon: "ai", iconClass: "warm",
-    tags: [{ text: "AI-assistent", variant: "" }],
-    slug: "andre", available: true,
+    tags: [{ text: "Manuell avklaring", variant: "" }],
+    slug: "andre", available: true, category: "help",
   },
 ];
 
@@ -173,4 +175,6 @@ export const TAG_EN: Record<string, string> = {
   "Avhenger": "Depends",
   "Fagtjeneste": "Pro service",
   "AI-assistent": "AI assistant",
+  "Regelsjekk": "Rule check",
+  "Manuell avklaring": "Manual review",
 };

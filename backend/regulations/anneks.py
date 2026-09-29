@@ -1,76 +1,62 @@
-from models import AnneksInput, TiltakResult, Finding, Tiltak, Lempning
+from models import AnneksInput, TiltakResult, Finding, Tiltak
 
-LABEL   = {"anneks": "Anneks / gjestehytte", "uthus": "Uthus / verksted", "hagebod": "Hagebod"}
-KOSTNAD = {"anneks": 22_000, "uthus": 12_000, "hagebod": 8_000}
+
+LABEL = {"anneks": "Anneks / gjestehytte", "uthus": "Uthus / verksted", "hagebod": "Hagebod"}
+KOSTNAD = {"anneks": 22000, "uthus": 12000, "hagebod": 8000}
 
 
 def evaluate_anneks(inp: AnneksInput) -> TiltakResult:
+    overnight = inp.overnatting or inp.type == "anneks"
     findings: list[Finding] = []
-    tiltak:   list[Tiltak]  = []
 
-    if inp.areal <= 50:
+    if overnight:
         findings.append(Finding(
-            type="ok", t=f"Areal {inp.areal:.0f} m² — unntatt søknad",
-            d="Frittliggende byggverk ≤ 50 m² er unntatt etter SAK10 § 4-1 b.",
-            ref="SAK10 § 4-1 b",
+            type="fail", t="Overnatting omfattes ikke av 50 m²-unntaket",
+            d="Unntaket for frittliggende bygning gjelder bare bygg som ikke skal brukes til beboelse eller overnatting.",
+            ref="SAK10 § 4-1 a",
         ))
+        status, text = "red", "Søknad med ansvarlig foretak"
+        desc = "Et anneks for overnatting må vurderes som bolig-/fritidsformål og mot gjeldende plan."
+        soknadstype, ansvarsrett = "PBL § 20-3 (overnatting)", True
     else:
+        conditions = [
+            inp.areal <= 50, inp.avstand >= 1.0, inp.avstand_bygg >= 1.0,
+            not inp.kjeller, inp.etasjer == 1, inp.monehoyde <= 4.0,
+            inp.gesimshoyde <= 3.0, not inp.over_ledninger, inp.plan_ok is True,
+        ]
+        if all(conditions):
+            status, text = "green", "Unntatt søknad"
+            desc = "Vilkårene for frittliggende uthus er registrert som oppfylt. Meld bygget til kommunen etter ferdigstillelse."
+            soknadstype, ansvarsrett = "Unntatt (SAK10 § 4-1 a)", False
+        elif inp.plan_ok is not True:
+            status = "red" if inp.plan_ok is False else "amber"
+            text = "Dispensasjon må avklares" if inp.plan_ok is False else "Plan og BYA må avklares"
+            desc = "Byggegrense, planformål og utnyttelsesgrad må kontrolleres før søknadsløpet kan bestemmes."
+            soknadstype, ansvarsrett = "Må avklares mot kommunal plan", False
+        elif inp.areal <= 70:
+            status, text = "amber", "Søknad kan sendes av tiltakshaver"
+            desc = "Prosjektet er ikke dokumentert som unntatt, men kan normalt søkes av eieren selv når det ikke brukes til beboelse."
+            soknadstype, ansvarsrett = "PBL § 20-4 / SAK10 § 3-1 b", False
+        else:
+            status, text = "red", "Krever ansvarlig foretak"
+            desc = "Frittliggende bygg over 70 m² krever ansvarlig søker."
+            soknadstype, ansvarsrett = "PBL § 20-3", True
+
         findings.append(Finding(
-            type="fail", t=f"Areal {inp.areal:.0f} m² — søknad påkrevd",
-            d="Over 50 m² krever byggesøknad. Ansvarlig søker og ansvarsrett er påkrevd.",
-            ref="PBL § 20-3",
+            type="ok" if all(conditions) else "warn",
+            t="Kontroll av vilkårene for frittliggende bygg",
+            d="Areal, høyde, etasjer, kjeller, avstander, ledninger, plan og utnyttelsesgrad må alle være avklart.",
+            ref="SAK10 §§ 3-1 og 4-1",
         ))
 
-    if inp.avstand >= 1.0:
-        findings.append(Finding(
-            type="ok", t=f"Avstand {inp.avstand:.1f} m fra nabogrense OK",
-            d="Krav: minst 1 m fra nabogrense for frittstående byggverk.",
-            ref="SAK10 § 4-1 b",
-        ))
-    else:
-        findings.append(Finding(
-            type="fail", t=f"Avstand {inp.avstand:.1f} m — for nær nabogrense",
-            d="Krav: minst 1,0 m fra nabogrense. Krever nabosamtykke eller dispensasjon.",
-            ref="PBL § 29-4",
-        ))
-
-    if inp.type == "anneks" and inp.areal > 15:
-        findings.append(Finding(
-            type="warn", t="Anneks med overnatting > 15 m² — sjekk kommuneplan",
-            d="Overnattingsdelen bør sjekkes mot kommuneplanens arealdel for tillatt utbygging på eiendommen (BYA).",
-            ref="PBL § 12-7",
-        ))
-
-    findings.append(Finding(
-        type="ok", t="Nabovarsel ikke påkrevd (unntatt tiltak)",
-        d="Unntatt søknad trenger ikke nabovarsel etter PBL § 21-3.",
-        ref="SAK10 § 4-1",
-    ))
-
-    enhetspris = KOSTNAD[inp.type]
-    tiltak.append(Tiltak(
+    tiltak = [Tiltak(
         name=f"{LABEL[inp.type]} ({inp.areal:.0f} m²)",
-        desc="Grunnmur/plate, stenderverksvegg, isolert tak. Enhetspris inkl. grunnarbeider.",
-        kostnad=int(inp.areal * enhetspris),
-    ))
-
-    fails = sum(1 for f in findings if f.type == "fail")
-    warns = sum(1 for f in findings if f.type == "warn")
-    total = sum(t.kostnad for t in tiltak)
-
-    if fails == 0 and warns == 0:
-        status, txt, desc = "green", "Unntatt søknad", "Byggverket er fritatt for byggesøknad etter SAK10 § 4-1."
-    elif fails == 0:
-        status, txt, desc = "amber", "Unntatt — med merknad", "Sjekk kommuneplanen for BYA-grense."
-    else:
-        status, txt, desc = "red", "Søknad påkrevd", f"{fails} krav er ikke oppfylt."
-
+        desc="Tidlig kostnadsindikasjon, ikke pristilbud.",
+        kostnad=int(inp.areal * KOSTNAD[inp.type]),
+    )]
     return TiltakResult(
-        status=status, statusText=txt, statusDesc=desc,
-        findings=findings, tiltak=tiltak, lempninger=[],
-        soknadstype="Unntatt (SAK10 § 4-1 b)" if fails == 0 else "PBL § 20-3",
-        ansvarsrett=(fails > 0 and inp.areal > 50),
-        tiltaksklasse=1,
-        totalKostnad=total,
-        input=inp.model_dump(),
+        status=status, statusText=text, statusDesc=desc, findings=findings,
+        tiltak=tiltak, lempninger=[], soknadstype=soknadstype,
+        ansvarsrett=ansvarsrett, tiltaksklasse=1,
+        totalKostnad=sum(t.kostnad for t in tiltak), input=inp.model_dump(),
     )

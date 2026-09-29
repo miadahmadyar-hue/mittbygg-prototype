@@ -88,13 +88,38 @@ def get_kjeller_rooms(
 
 def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
     krav = KJELLER_BRUK[inp.ny_bruk]
-    rooms = get_kjeller_rooms(inp.propId, bra=inp.bra, etasjer=inp.etasjer, bygge_aar=inp.byggeAar)
-    room = next((r for r in rooms if r["id"] == inp.room), rooms[0])
+    has_measured_room = bool(inp.rom_areal and inp.takhoyde)
+    if has_measured_room:
+        room = {
+            "id": inp.room,
+            "name": inp.room.replace("_", " ").title(),
+            "area": inp.rom_areal,
+            "height": inp.takhoyde,
+            "vinduer": "Målt" if inp.vindu_bredde and inp.vindu_hoyde else "Ukjent",
+        }
+    else:
+        rooms = get_kjeller_rooms(inp.propId, bra=inp.bra, etasjer=inp.etasjer, bygge_aar=inp.byggeAar)
+        room = next((r for r in rooms if r["id"] == inp.room), rooms[0])
     eldre = inp.byggeAar < 2010
 
     findings: list[Finding] = []
     tiltak: list[Tiltak] = []
     lempninger: list[Lempning] = []
+
+    if not has_measured_room:
+        findings.append(Finding(
+            type="warn",
+            t="Rommet er ikke målt",
+            d="Areal, takhøyde og vinduer må måles eller dokumenteres fra godkjente tegninger før resultatet kan brukes i en søknad.",
+            ref="Dokumentasjonskrav",
+        ))
+    if not inp.godkjent_bruk_bekreftet:
+        findings.append(Finding(
+            type="warn",
+            t="Godkjent bruk er ikke bekreftet",
+            d="Siste godkjente plantegning må vise hva rommet lovlig brukes som i dag.",
+            ref="PBL § 20-1 d",
+        ))
 
     # 1. TAKHØYDE — TEK17 §12-7 + lempning §31-2
     min_h = krav["takhoyde_lempet"] if eldre else krav["takhoyde_min"]
@@ -111,56 +136,55 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
             kostnad=150_000,
         ))
     else:
-        findings.append(Finding(
-            type="ok",
-            t="Takhøyde OK",
-            d=f"{room['height']} mm tilfredsstiller {'lempet' if eldre else 'vanlig'} krav ({min_h} mm).",
-            ref="TEK17 § 12-7",
-        ))
         if eldre and room["height"] < krav["takhoyde_min"]:
+            findings.append(Finding(
+                type="warn",
+                t="Takhøyden krever konkret vurdering",
+                d=f"Oppgitt høyde er {room['height']} mm. For eksisterende bolig kan kommunen vurdere unntak, men løsningen er ikke automatisk godkjent.",
+                ref="TEK17 § 12-7 og PBL § 31-4",
+            ))
             lempninger.append(Lempning(
-                regel="Takhøyde",
-                tekst=f"{room['height']} mm aksepteres iht. PBL § 31-2 og DiBK HO-3/2016 "
-                      f"(lempet krav 2200 mm for bygg fra {inp.byggeAar}).",
-            ))
-
-    # 2. RØMNINGSVINDU — TEK17 §11-13
-    if krav["krav_romning"]:
-        if "Lite" in room["vinduer"]:
-            findings.append(Finding(
-                type="fail",
-                t="Mangler godkjent rømningsvindu",
-                d="Eksisterende vindu er for lite. Krav: bredde ≥ 0,5 m, høyde ≥ 0,6 m, sum ≥ 1,5 m, sill ≤ 1,2 m fra gulv.",
-                ref="TEK17 § 11-13 (alltid gjeldende)",
-            ))
-            tiltak.append(Tiltak(
-                name="Bygge vindusbrønn + større vindu",
-                desc="Prefabrikkert betongbrønn (ACO Self el. tilsv.) med stige og avløp i bunn. Nytt vindu 1,0 × 1,0 m.",
-                kostnad=35_000,
-            ))
-        elif room["vinduer"] == "Ingen":
-            findings.append(Finding(
-                type="fail",
-                t="Ingen vinduer i rommet",
-                d="Soverom uten vindu er ikke godkjent. Må etablere rømningsvindu.",
-                ref="TEK17 § 11-13",
-            ))
-            tiltak.append(Tiltak(
-                name="Etablere vindusbrønn med rømningsvindu",
-                desc="Krever utgraving og hulltaking i kjellervegg.",
-                kostnad=65_000,
+                regel="Mulig unntak for takhøyde",
+                tekst=f"For bygg fra {inp.byggeAar} kan kommunen gjøre en konkret vurdering av eksisterende forhold. Dette må begrunnes og dokumenteres i søknaden.",
             ))
         else:
             findings.append(Finding(
                 type="ok",
-                t="Rømningsvindu OK",
-                d="Eksisterende vindu tilfredsstiller TEK17 § 11-13.",
+                t="Takhøyde tilfredsstiller utgangspunktet",
+                d=f"Oppgitt takhøyde er {room['height']} mm.",
+                ref="TEK17 § 12-7",
+            ))
+
+    # 2. RØMNINGSVINDU — TEK17 §11-13
+    if krav["krav_romning"]:
+        has_window_measurements = all(v is not None for v in (
+            inp.vindu_bredde, inp.vindu_hoyde, inp.vindu_brystning,
+        ))
+        if not has_window_measurements:
+            findings.append(Finding(
+                type="warn", t="Rømningsvindu må måles",
+                d="Oppgi fri bredde, fri høyde og høyde fra gulv. Uten disse målene kan rømningskravet ikke avgjøres.",
+                ref="TEK17 § 11-13",
+            ))
+        else:
+            escape_ok = (
+                inp.vindu_bredde >= 0.5 and inp.vindu_hoyde >= 0.6
+                and inp.vindu_bredde + inp.vindu_hoyde >= 1.5
+                and inp.vindu_brystning <= 1.2
+            )
+            findings.append(Finding(
+                type="ok" if escape_ok else "fail",
+                t="Rømningsvindu oppfyller målene" if escape_ok else "Rømningsvindu oppfyller ikke målene",
+                d=f"Oppgitt fri åpning {inp.vindu_bredde:.2f} × {inp.vindu_hoyde:.2f} m og brystning {inp.vindu_brystning:.2f} m.",
                 ref="TEK17 § 11-13",
             ))
 
     # 3. DAGSLYS — TEK17 §13-7 + lempning §31-2
     if krav["krav_dagslys"] > 0:
-        glass = 0.005 * room["area"] * 100 if "Lite" in room["vinduer"] else 1.0
+        glass = (
+            inp.vindu_bredde * inp.vindu_hoyde
+            if inp.vindu_bredde and inp.vindu_hoyde else 0
+        )
         pct = (glass / room["area"]) * 100
         target_pct = krav["krav_dagslys"] * 100
         lempet_pct = 7
@@ -178,10 +202,10 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
                       "når funksjonelt dagslys er prosjektert iht. NS-EN 17037).",
             ))
             findings.append(Finding(
-                type="ok",
-                t="Dagslys lempet (godkjent)",
-                d=f"{pct:.1f}% godtas iht. PBL § 31-2.",
-                ref="TEK17 § 13-7 + PBL § 31-2",
+                type="warn",
+                t="Dagslys krever nærmere dokumentasjon",
+                d=f"Beregnet glassflate er omtrent {pct:.1f} %. Dagslys må dokumenteres for den konkrete løsningen, og eventuelt unntak avgjøres av kommunen.",
+                ref="TEK17 § 13-7 og PBL § 31-4",
             ))
         else:
             findings.append(Finding(
@@ -238,7 +262,8 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
             ))
 
     # 5. FUKT / DRENERING
-    if not inp.drenering:
+    drenering_status = inp.drenering_status if inp.drenering_status != "usikker" else ("ja" if inp.drenering else "usikker")
+    if drenering_status == "nei":
         findings.append(Finding(
             type="fail",
             t="Mangler fungerende drenering",
@@ -250,12 +275,19 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
             desc="Utgraving, ny knastefolie, drensrør (DN 100), returfylling.",
             kostnad=80_000,
         ))
-    else:
+    elif drenering_status == "ja":
         findings.append(Finding(
             type="ok",
             t="Drenering på plass",
             d="Forutsetning for å bruksendre er oppfylt.",
             ref="TEK17 § 13-13",
+        ))
+    else:
+        findings.append(Finding(
+            type="warn",
+            t="Drenering og fuktsikring må undersøkes",
+            d="Alder, tilstand og tegn til fukt må avklares før rommet prosjekteres for varig opphold.",
+            ref="TEK17 § 13-13/14",
         ))
 
     if inp.ny_bruk != "bad":
@@ -266,17 +298,13 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
         ))
 
     # 6. VENTILASJON
-    if krav["krav_radon"] and not inp.balansert_vent:
+    ventilation_confirmed = inp.ventilasjon_status == "ja" or inp.balansert_vent
+    if krav["krav_radon"] and not ventilation_confirmed:
         findings.append(Finding(
             type="warn",
-            t="Anbefales: balansert ventilasjon",
-            d="Kjeller-soverom bør ha balansert ventilasjon m/varmegjenvinning. Spesielt viktig for radonkontroll og fuktbalanse.",
+            t="Ventilasjon må dokumenteres",
+            d="Nødvendig luftmengde og løsning må prosjekteres for den nye bruken. Balansert ventilasjon er én mulig løsning, ikke et automatisk krav.",
             ref="TEK17 § 13-1",
-        ))
-        tiltak.append(Tiltak(
-            name="Balansert ventilasjon m/varmegjenvinning",
-            desc="Sentralt aggregat + kanaler. Anbefales for hele boligen samtidig.",
-            kostnad=100_000,
         ))
 
     # 7. HYBEL
@@ -315,16 +343,19 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
             "green", "Klar til søknad",
             "Alle TEK17-krav er oppfylt. Du kan generere søknadspakke.",
         )
+        soknadstype = krav["soknad"]
     elif fails == 0:
         status, status_text, status_desc = (
-            "amber", "Klar — med tiltak",
-            f"{warns} forhold krever oppfølging, men kan dokumenteres i søknaden.",
+            "amber", "Forhold må avklares",
+            f"{warns} forhold krever dokumentasjon eller faglig vurdering før søknadsgrunnlaget er klart.",
         )
+        soknadstype = f"Må avklares - {krav['soknad']}"
     else:
         status, status_text, status_desc = (
             "red", "Kritiske avvik",
             f"{fails} krav må rettes før søknad kan sendes.",
         )
+        soknadstype = f"Må avklares - {krav['soknad']}"
 
     return KjellerResult(
         status=status,
@@ -334,7 +365,7 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
         tiltak=tiltak,
         lempninger=lempninger,
         eldre=eldre,
-        soknadstype=krav["soknad"],
+        soknadstype=soknadstype,
         ansvarsrett=krav["ansvarsrett"],
         tiltaksklasse=2 if inp.ny_bruk == "hybel" else 1,
         totalKostnad=total_kostnad,

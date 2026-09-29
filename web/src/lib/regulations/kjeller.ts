@@ -40,6 +40,14 @@ export interface KjellerInput {
   balansert_vent: boolean;
   bra?: number | null;
   etasjer?: number | null;
+  rom_areal?: number | null;
+  takhoyde?: number | null;
+  vindu_bredde?: number | null;
+  vindu_hoyde?: number | null;
+  vindu_brystning?: number | null;
+  godkjent_bruk_bekreftet?: boolean;
+  drenering_status?: "ja" | "nei" | "usikker";
+  ventilasjon_status?: "ja" | "nei" | "usikker";
 }
 
 export interface KjellerResult {
@@ -61,12 +69,38 @@ export interface KjellerResult {
 export function evaluateKjeller(input: KjellerInput): KjellerResult {
   const krav = KJELLER_BRUK[input.ny_bruk];
   const rooms = getKjellerRooms(input.propId);
-  const room = rooms.find((r) => r.id === input.room) || rooms[0];
+  const hasMeasuredRoom = Boolean(input.rom_areal && input.takhoyde);
+  const room = hasMeasuredRoom
+    ? {
+        id: input.room,
+        name: input.room,
+        area: input.rom_areal!,
+        height: input.takhoyde!,
+        vinduer: input.vindu_bredde && input.vindu_hoyde ? "Målt" : "Ukjent",
+      }
+    : rooms.find((r) => r.id === input.room) || rooms[0];
   const eldre = input.byggeAar < 2010;
 
   const findings: Finding[] = [];
   const tiltak: Tiltak[] = [];
   const lempninger: Lempning[] = [];
+
+  if (!hasMeasuredRoom) {
+    findings.push({
+      type: "warn",
+      t: "Rommet er ikke målt",
+      d: "Areal, takhøyde og vinduer må dokumenteres før resultatet kan brukes i en søknad.",
+      ref: "Dokumentasjonskrav",
+    });
+  }
+  if (!input.godkjent_bruk_bekreftet) {
+    findings.push({
+      type: "warn",
+      t: "Godkjent bruk er ikke bekreftet",
+      d: "Siste godkjente plantegning må vise hva rommet lovlig brukes som i dag.",
+      ref: "PBL § 20-1 d",
+    });
+  }
 
   // 1. TAKHØYDE — TEK17 §12-7 + lempning §31-2
   const min_h = eldre ? krav.takhoyde_lempet : krav.takhoyde_min;
@@ -83,51 +117,43 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
       kostnad: 150_000,
     });
   } else {
-    findings.push({
-      type: "ok",
-      t: "Takhøyde OK",
-      d: `${room.height} mm tilfredsstiller ${eldre ? "lempet" : "vanlig"} krav (${min_h} mm).`,
-      ref: "TEK17 § 12-7",
-    });
     if (eldre && room.height < krav.takhoyde_min) {
+      findings.push({
+        type: "warn",
+        t: "Takhøyden krever konkret vurdering",
+        d: `Oppgitt høyde er ${room.height} mm. For eksisterende bolig kan kommunen vurdere unntak, men løsningen er ikke automatisk godkjent.`,
+        ref: "TEK17 § 12-7 og PBL § 31-4",
+      });
       lempninger.push({
-        regel: "Takhøyde",
-        tekst: `${room.height} mm aksepteres iht. PBL § 31-2 og DiBK HO-3/2016 (lempet krav 2200 mm for bygg fra ${input.byggeAar}).`,
+        regel: "Mulig unntak for takhøyde",
+        tekst: `For bygg fra ${input.byggeAar} kan kommunen gjøre en konkret vurdering av eksisterende forhold. Dette må begrunnes og dokumenteres i søknaden.`,
+      });
+    } else {
+      findings.push({
+        type: "ok",
+        t: "Takhøyde tilfredsstiller utgangspunktet",
+        d: `Oppgitt takhøyde er ${room.height} mm.`,
+        ref: "TEK17 § 12-7",
       });
     }
   }
 
   // 2. RØMNINGSVINDU — TEK17 §11-13 (alltid gjeldende)
   if (krav.krav_romning) {
-    if (room.vinduer.includes("Lite")) {
+    const hasWindowMeasurements = input.vindu_bredde != null && input.vindu_hoyde != null && input.vindu_brystning != null;
+    if (!hasWindowMeasurements) {
       findings.push({
-        type: "fail",
-        t: "Mangler godkjent rømningsvindu",
-        d: "Eksisterende vindu er for lite. Krav: bredde ≥ 0,5 m, høyde ≥ 0,6 m, sum ≥ 1,5 m, sill ≤ 1,2 m fra gulv.",
-        ref: "TEK17 § 11-13 (alltid gjeldende)",
-      });
-      tiltak.push({
-        name: "Bygge vindusbrønn + større vindu",
-        desc: "Prefabrikkert betongbrønn (ACO Self el. tilsv.) med stige og avløp i bunn. Nytt vindu 1,0 × 1,0 m.",
-        kostnad: 35_000,
-      });
-    } else if (room.vinduer === "Ingen") {
-      findings.push({
-        type: "fail",
-        t: "Ingen vinduer i rommet",
-        d: "Soverom uten vindu er ikke godkjent. Må etablere rømningsvindu.",
+        type: "warn", t: "Rømningsvindu må måles",
+        d: "Oppgi fri bredde, fri høyde og høyde fra gulv før rømningskravet kan avgjøres.",
         ref: "TEK17 § 11-13",
       });
-      tiltak.push({
-        name: "Etablere vindusbrønn med rømningsvindu",
-        desc: "Krever utgraving og hulltaking i kjellervegg.",
-        kostnad: 65_000,
-      });
     } else {
+      const escapeOk = input.vindu_bredde! >= 0.5 && input.vindu_hoyde! >= 0.6
+        && input.vindu_bredde! + input.vindu_hoyde! >= 1.5 && input.vindu_brystning! <= 1.2;
       findings.push({
-        type: "ok",
-        t: "Rømningsvindu OK",
-        d: "Eksisterende vindu tilfredsstiller TEK17 § 11-13.",
+        type: escapeOk ? "ok" : "fail",
+        t: escapeOk ? "Rømningsvindu oppfyller målene" : "Rømningsvindu oppfyller ikke målene",
+        d: `Oppgitt fri åpning ${input.vindu_bredde!.toFixed(2)} × ${input.vindu_hoyde!.toFixed(2)} m.`,
         ref: "TEK17 § 11-13",
       });
     }
@@ -135,7 +161,7 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
 
   // 3. DAGSLYS — TEK17 §13-7 + lempning §31-2
   if (krav.krav_dagslys > 0) {
-    const glass = room.vinduer.includes("Lite") ? 0.005 * room.area * 100 : 1.0;
+    const glass = input.vindu_bredde && input.vindu_hoyde ? input.vindu_bredde * input.vindu_hoyde : 0;
     const pct = (glass / room.area) * 100;
     const target_pct = krav.krav_dagslys * 100;
     const lempet_pct = 7;
@@ -152,10 +178,10 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
         tekst: `${pct.toFixed(1)}% godtas iht. PBL § 31-2 (lempet ned mot 7 % for bestående bygg når funksjonelt dagslys er prosjektert iht. NS-EN 17037).`,
       });
       findings.push({
-        type: "ok",
-        t: "Dagslys lempet (godkjent)",
-        d: `${pct.toFixed(1)}% godtas iht. PBL § 31-2.`,
-        ref: "TEK17 § 13-7 + PBL § 31-2",
+        type: "warn",
+        t: "Dagslys krever nærmere dokumentasjon",
+        d: `Beregnet glassflate er omtrent ${pct.toFixed(1)} %. Dagslys må dokumenteres for den konkrete løsningen, og eventuelt unntak avgjøres av kommunen.`,
+        ref: "TEK17 § 13-7 og PBL § 31-4",
       });
     } else {
       findings.push({
@@ -216,7 +242,8 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
   }
 
   // 5. FUKT / DRENERING
-  if (!input.drenering) {
+  const drainageStatus = input.drenering_status ?? (input.drenering ? "ja" : "usikker");
+  if (drainageStatus === "nei") {
     findings.push({
       type: "fail",
       t: "Mangler fungerende drenering",
@@ -228,12 +255,19 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
       desc: "Utgraving, ny knastefolie, drensrør (DN 100), returfylling.",
       kostnad: 80_000,
     });
-  } else {
+  } else if (drainageStatus === "ja") {
     findings.push({
       type: "ok",
       t: "Drenering på plass",
       d: "Forutsetning for å bruksendre er oppfylt.",
       ref: "TEK17 § 13-13",
+    });
+  } else {
+    findings.push({
+      type: "warn",
+      t: "Drenering og fuktsikring må undersøkes",
+      d: "Alder, tilstand og tegn til fukt må avklares før rommet prosjekteres for varig opphold.",
+      ref: "TEK17 § 13-13/14",
     });
   }
   if (input.ny_bruk !== "bad") {
@@ -245,17 +279,13 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
   }
 
   // 6. VENTILASJON
-  if (krav.krav_radon && !input.balansert_vent) {
+  const ventilationConfirmed = input.ventilasjon_status === "ja" || input.balansert_vent;
+  if (krav.krav_radon && !ventilationConfirmed) {
     findings.push({
       type: "warn",
-      t: "Anbefales: balansert ventilasjon",
-      d: "Kjeller-soverom bør ha balansert ventilasjon m/varmegjenvinning. Spesielt viktig for radonkontroll og fuktbalanse.",
+      t: "Ventilasjon må dokumenteres",
+      d: "Nødvendig luftmengde og løsning må prosjekteres. Balansert ventilasjon er én mulig løsning, ikke et automatisk krav.",
       ref: "TEK17 § 13-1",
-    });
-    tiltak.push({
-      name: "Balansert ventilasjon m/varmegjenvinning",
-      desc: "Sentralt aggregat + kanaler. Anbefales for hele boligen samtidig.",
-      kostnad: 100_000,
     });
   }
 
@@ -294,24 +324,28 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
   let status: "green" | "amber" | "red";
   let statusText: string;
   let statusDesc: string;
+  let soknadstype: string;
   if (fails === 0 && warns === 0) {
     status = "green";
     statusText = "Klar til søknad";
     statusDesc = "Alle TEK17-krav er oppfylt. Du kan generere søknadspakke.";
+    soknadstype = krav.soknad;
   } else if (fails === 0) {
     status = "amber";
-    statusText = "Klar — med tiltak";
-    statusDesc = `${warns} forhold krever oppfølging, men kan dokumenteres i søknaden.`;
+    statusText = "Forhold må avklares";
+    statusDesc = `${warns} forhold krever dokumentasjon eller faglig vurdering før søknadsgrunnlaget er klart.`;
+    soknadstype = `Må avklares - ${krav.soknad}`;
   } else {
     status = "red";
     statusText = "Kritiske avvik";
     statusDesc = `${fails} krav må rettes før søknad kan sendes.`;
+    soknadstype = `Må avklares - ${krav.soknad}`;
   }
 
   return {
     status, statusText, statusDesc,
     findings, tiltak, lempninger, eldre,
-    soknadstype: krav.soknad,
+    soknadstype,
     ansvarsrett: krav.ansvarsrett,
     tiltaksklasse: input.ny_bruk === "hybel" ? 2 : 1,
     totalKostnad,

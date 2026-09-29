@@ -1,85 +1,70 @@
-from models import FasadeInput, TiltakResult, Finding, Tiltak, Lempning
+from models import FasadeInput, TiltakResult, Finding, Tiltak
+
 
 LABEL = {
-    "kledning":      "Ny ytterkledning",
-    "farge":         "Farge / overflatebehandling",
-    "vindu_storre":  "Større vindusåpning",
-    "terrasse":      "Terrasse",
-    "dor":           "Ny dør",
+    "skifte_vindu": "Skifte vindu eller dør",
+    "nytt_hull": "Ny åpning i fasaden",
+    "kledning": "Ny ytterkledning",
+    "farge": "Farge / overflate",
+    "vindu_storre": "Større vindusåpning",
+    "terrasse": "Terrasse",
+    "dor": "Flytte ytterdør",
 }
 
 
 def evaluate_fasade(inp: FasadeInput) -> TiltakResult:
     findings: list[Finding] = []
-    tiltak:   list[Tiltak]  = []
+    ansvarsrett = False
 
-    if inp.verneverdig:
+    if inp.type == "terrasse":
+        complete = None not in (inp.terrasse_hoyde, inp.terrasse_dybde, inp.terrasse_avstand)
+        exempt = (
+            complete and inp.terrasse_hoyde <= 1.0 and inp.terrasse_dybde <= 4.0
+            and inp.terrasse_avstand >= 1.0 and not inp.terrasse_overbygd
+        )
+        if exempt:
+            status, text, desc = "green", "Unntatt søknad", "Terrassen er registrert innenfor høyde-, dybde- og avstandsvilkårene."
+            soknadstype = "Unntatt (SAK10 § 4-1 d)"
+        else:
+            status, text, desc = "amber", "Terrassen må avklares", "Opplysninger mangler eller minst ett unntaksvilkår er ikke oppfylt."
+            soknadstype = "Må avklares mot PBL og kommunal plan"
         findings.append(Finding(
-            type="fail", t="Verneverdig / antikvarisk bygning",
-            d="Endringer på verneverdig bygning krever søknad og kulturminnefaglig vurdering. Kontakt Plan- og bygningsetaten.",
-            ref="PBL § 20-1 + Kulturminneloven",
+            type="ok" if exempt else "warn", t="Terrassevilkår kontrollert",
+            d="Unntaket krever høyde inntil 1,0 m, dybde inntil 4,0 m, minst 1,0 m til grensen og ingen overbygging.",
+            ref="SAK10 § 4-1 d",
         ))
-
-    if inp.type in ("kledning", "farge"):
-        findings.append(Finding(
-            type="ok", t=f"{LABEL[inp.type]} — unntatt søknad",
-            d="Skifte av kledning/overflate uten å endre form er unntatt søknadsplikt.",
-            ref="SAK10 § 4-1",
-        ))
-        tiltak.append(Tiltak(name="Ny ytterkledning", desc="Fjerning av gammel kledning, ny vindsperre, ny kledning og maling.", kostnad=120_000))
-
-    elif inp.type == "vindu_storre":
-        findings.append(Finding(
-            type="warn", t="Større vindusåpning — trolig søknadspliktig",
-            d="Å lage ny eller større åpning i fasaden regnes som fasadeendring etter PBL § 20-1 e.",
-            ref="PBL § 20-1 e",
-        ))
-        tiltak.append(Tiltak(name="Ny/utvidet vindusåpning", desc="Hulltaking i fasade, ny karm og vindusbeslag.", kostnad=35_000))
-
-    elif inp.type == "terrasse":
-        findings.append(Finding(
-            type="warn", t="Terrasse — sjekk høyde og areal",
-            d="Terrasse > 0,5 m over terreng eller > 10 m² er søknadspliktig (PBL § 20-1 a).",
-            ref="PBL § 20-1 a",
-        ))
-        tiltak.append(Tiltak(name="Terrasse", desc="Betongfundament, stenderverksrammer, trykkimpregnert tredekk, rekkverk.", kostnad=65_000))
-
-    elif inp.type == "dor":
-        findings.append(Finding(
-            type="ok", t="Ny dør i eksisterende åpning — unntatt",
-            d="Skifte av dør uten å endre åpningsstørrelse er vedlikehold, unntatt søknad.",
-            ref="SAK10 § 4-1",
-        ))
-        tiltak.append(Tiltak(name="Ny ytterdør", desc="Standard utvendig dør inkl. montering og tetting.", kostnad=15_000))
-
-    if not inp.verneverdig:
-        findings.append(Finding(
-            type="ok", t="Ikke verneverdig — enklere prosess",
-            d="Bygningen er ikke registrert som verneverdig. Kulturminneloven krever ikke særskilt vurdering.",
-            ref="Kulturminneloven",
-        ))
-
-    fails = sum(1 for f in findings if f.type == "fail")
-    warns = sum(1 for f in findings if f.type == "warn")
-    total = sum(t.kostnad for t in tiltak)
-
-    if fails > 0:
-        status, txt, desc = "red", "Søknad påkrevd", "Verneverdig bygning krever søknad og særskilt vurdering."
-    elif warns > 0:
-        status, txt, desc = "amber", "Trolig søknadspliktig", "Sjekk med kommunen om tiltaket er søknadspliktig."
     else:
-        status, txt, desc = "green", "Unntatt søknad", "Tiltaket kan gjennomføres uten søknad."
+        structural_opening = inp.type in ("nytt_hull", "vindu_storre", "dor")
+        clearly_maintenance = inp.type == "skifte_vindu" and inp.samme_utseende
+        clearly_unchanged = inp.karakterendring == "nei" and inp.samme_utseende
 
-    soknadstype = "Søknad + kulturminnefaglig vurdering" if inp.verneverdig else (
-        "PBL § 20-1 e" if inp.type in ("vindu_storre", "terrasse") else "Unntatt (SAK10 § 4-1)"
-    )
+        if inp.verneverdig:
+            status, text, desc = "red", "Krever kulturminnefaglig avklaring", "Vernestatus og kommunale bestemmelser må kontrolleres før fasaden endres."
+            soknadstype, ansvarsrett = "Søknad og kulturminnefaglig vurdering", True
+        elif clearly_maintenance or clearly_unchanged:
+            status, text, desc = "green", "Trolig unntatt søknad", "Arbeidet er oppgitt som utskifting uten endring av bygningens karakter."
+            soknadstype = "Trolig unntatt - PBL § 20-5 f"
+        else:
+            status, text, desc = "amber", "Må avklares med kommunen", "Kommunen avgjør om fasadeendringen endrer bygningens karakter."
+            soknadstype = "Må avklares - mulig fasadeendring"
 
+        findings.append(Finding(
+            type="warn" if structural_opening else ("ok" if status == "green" else "warn"),
+            t=LABEL[inp.type],
+            d="Like tiltak kan være søknadspliktige eller unntatt avhengig av bygningens karakter, planer og vern.",
+            ref="PBL § 20-1 e og § 20-5 f",
+        ))
+        if structural_opening:
+            findings.append(Finding(
+                type="warn", t="Bæring og brannskille må kontrolleres",
+                d="En ny eller større åpning kan påvirke bærende konstruksjon eller brannskille.",
+                ref="TEK17 kap. 10 og 11",
+            ))
+
+    tiltak = [Tiltak(name=LABEL[inp.type], desc="Omfang og pris avklares etter tegninger og materialvalg.", kostnad=0)]
     return TiltakResult(
-        status=status, statusText=txt, statusDesc=desc,
-        findings=findings, tiltak=tiltak, lempninger=[],
-        soknadstype=soknadstype,
-        ansvarsrett=inp.verneverdig,
-        tiltaksklasse=1,
-        totalKostnad=total,
+        status=status, statusText=text, statusDesc=desc, findings=findings,
+        tiltak=tiltak, lempninger=[], soknadstype=soknadstype,
+        ansvarsrett=ansvarsrett, tiltaksklasse=1, totalKostnad=0,
         input=inp.model_dump(),
     )

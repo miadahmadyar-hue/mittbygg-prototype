@@ -5,10 +5,18 @@ def evaluate_bruksendring(inp: BruksendringInput) -> TiltakResult:
     findings: list[TiltakFinding] = []
     tiltak: list[TiltakTiltak] = []
 
+    if not inp.godkjent_bruk_bekreftet:
+        findings.append(TiltakFinding(
+            type="warn",
+            t="Dagens godkjente bruk må bekreftes",
+            d="Kontroller siste godkjente tegninger i kommunens byggesaksarkiv. Faktisk bruk i dag er ikke alltid den lovlig godkjente bruken.",
+            ref="PBL § 20-1 d",
+        ))
+
     findings.append(TiltakFinding(
         type="warn",
-        t="Bruksendring er søknadspliktig",
-        d="Endring av bruk fra en kategori til en annen krever søknad etter PBL § 20-1 d.",
+        t="Bruksendringen må omsøkes",
+        d="Den oppgitte overgangen mellom brukskategorier behandles som bruksendring etter PBL § 20-1 d.",
         ref="PBL § 20-1 d",
     ))
 
@@ -28,6 +36,21 @@ def evaluate_bruksendring(inp: BruksendringInput) -> TiltakResult:
             ref="Kulturminneloven § 25",
         ))
 
+    if inp.plan_status == "ikke_tillatt":
+        findings.append(TiltakFinding(
+            type="fail",
+            t="Ny bruk er ikke i samsvar med planen",
+            d="Det må vurderes dispensasjon før bruksendringen kan godkjennes.",
+            ref="PBL § 19-2",
+        ))
+    elif inp.plan_status == "usikker":
+        findings.append(TiltakFinding(
+            type="warn",
+            t="Planformålet må kontrolleres",
+            d="Sjekk at reguleringsplan eller kommuneplan tillater den nye bruken.",
+            ref="PBL § 12-7",
+        ))
+
     if inp.fra in ("naring", "kontor") and inp.til in ("bolig", "hybel"):
         findings.append(TiltakFinding(
             type="warn",
@@ -37,11 +60,19 @@ def evaluate_bruksendring(inp: BruksendringInput) -> TiltakResult:
         ))
 
     findings.append(TiltakFinding(
-        type="ok",
-        t="Nabovarsel kreves",
-        d="Søknad om bruksendring utløser nabovarsel med 2 ukers frist.",
-        ref="SAK10 § 5-2",
+        type="warn",
+        t="Behov for nabovarsel må avklares",
+        d="Kommunen eller ansvarlig søker vurderer om saken skal nabovarsles og om et unntak kan brukes.",
+        ref="PBL § 21-3",
     ))
+
+    if inp.inngrep_baerende:
+        findings.append(TiltakFinding(
+            type="fail",
+            t="Inngrep i bærekonstruksjon krever faglig prosjektering",
+            d="En konstruksjonsingeniør må avklare lastvei, stabilitet og nødvendig ansvarsrett.",
+            ref="PBL § 20-3 og TEK17 kap. 10",
+        ))
 
     tiltak.append(TiltakTiltak(
         name="Søknad om bruksendring",
@@ -54,16 +85,18 @@ def evaluate_bruksendring(inp: BruksendringInput) -> TiltakResult:
         kostnad=8000,
     ))
 
-    status = "red" if inp.verneverdig else "amber"
+    needs_professional = inp.verneverdig or inp.inngrep_baerende
+    has_failure = needs_professional or inp.plan_status == "ikke_tillatt"
+    status = "red" if has_failure else "amber"
     return TiltakResult(
         status=status,
-        statusText="Søknadspliktig bruksendring" if not inp.verneverdig else "Krever kulturminnevurdering",
-        statusDesc="Søknad må sendes kommunen. Saksbehandlingstid normalt 3–12 uker.",
+        statusText="Krever faglig avklaring" if has_failure else "Søknadspliktig bruksendring",
+        statusDesc="Søknadsgrunnlaget må dokumentere dagens godkjente bruk, planstatus og tekniske krav.",
         findings=findings,
         tiltak=tiltak,
         lempninger=[],
         soknadstype="Søknad med nabovarsel (SAK10 kap. 5)",
-        ansvarsrett=False,
+        ansvarsrett=needs_professional,
         tiltaksklasse=1,
         totalKostnad=sum(t.kostnad for t in tiltak),
         input=inp.model_dump(),

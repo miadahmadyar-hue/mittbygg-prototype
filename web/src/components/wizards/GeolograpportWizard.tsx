@@ -61,7 +61,7 @@ export function GeolograpportWizard({ p }: { p: Address }) {
               <RadioCard selected={data.timing === "planlegging"} onClick={() => setData({ ...data, timing: "planlegging" })} title="I planleggingsfasen"   desc="2–4 uker" />
               <RadioCard selected={data.timing === "usikker"}     onClick={() => setData({ ...data, timing: "usikker" })}     title="Vet ikke ennå"         desc="Ønsker prisoversikt" />
             </div>
-            <Alert>Geotekniker kontakter deg innen 2 virkedager. Rapporten inngår i søknadspakken din.</Alert>
+            <Alert>Avklar først hvilket dokumentasjonsnivå kommunen eller ansvarlig prosjekterende trenger.</Alert>
             <div className="bg-white border border-gray-100 rounded-xl mt-2">
               <KV k="Eiendom" v={p.street} />
               <KV k="Prosjekttype" v={data.type === "nybygg" ? "Nybygg / bolig" : data.type === "tilbygg" ? "Tilbygg" : data.type === "kjeller" ? "Kjellerarbeid" : data.type === "brygge" ? "Brygge" : "Annet / usikker"} last />

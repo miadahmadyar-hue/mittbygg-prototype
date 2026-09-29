@@ -1,84 +1,94 @@
-"""
-Fjern-vegg rule engine + bjelkedimensjonering.
-Python port of web/src/lib/regulations/vegg.ts,
-which mirrors norsk_arkitekt_ai/core/structural.py.
-"""
-import math
-from models import VeggInput, VeggResult, Finding, Tiltak, Lempning, Bjelke
+"""Customer-safe assessment for changes to walls, beams and columns."""
 
-STD_HEIGHTS = [180, 225, 270, 315, 360, 405, 450, 495, 540, 630, 720]
+from models import VeggInput, VeggResult, Finding, Tiltak
+
+
+TYPE_LABELS = {
+    "fjerne_vegg": "Fjerne hele veggen",
+    "ny_apning": "Lage en ny åpning",
+    "utvide_apning": "Utvide en eksisterende åpning",
+    "flytte_vegg": "Flytte veggen",
+    "endre_soyle": "Endre eller fjerne søyle",
+}
 
 
 def evaluate_vegg(inp: VeggInput) -> VeggResult:
-    L = inp.spennvidde / 1000          # metres
-    qd = inp.last * 1.5                # design load kN/m
-    M = (qd * L * L) / 8              # kNm
-    fm = 30                            # MPa — Limtre GL30c
-    b = 90 if L < 4 else (115 if L < 6 else 140)
-    h_min = math.sqrt((6 * M * 1e6) / (b * fm))
-    h = next((v for v in STD_HEIGHTS if v >= h_min), 720)
+    findings: list[Finding] = []
+    tiltak: list[Tiltak] = []
 
-    cap_moment = (b * h * h * fm) / 6 / 1e6
-
-    findings: list[Finding] = [
-        Finding(
-            type="fail",
-            t="Krever ansvarsrett (PBL § 20-3)",
-            d="Endring av bærekonstruksjon utløser alltid søknad med ansvarsrett. "
-              "Ansvarlig prosjekterende konstruksjon (PRO-RIB) må signere endelig dimensjon.",
-            ref="PBL § 20-3",
-        ),
-        Finding(
-            type="warn",
-            t="Brannmotstand på bjelken må sjekkes",
-            d="Bjelken må ha R 30 (BKL1) eller R 60 (BKL2). Limtre kan kreve ekstra tiltak.",
-            ref="TEK17 § 11-12",
-        ),
-        Finding(
+    if inp.baerende == "nei":
+        findings.append(Finding(
             type="ok",
-            t=f"Foreslått bjelke: {b}×{h} mm Limtre GL30c",
-            d=f"Spennvidde {inp.spennvidde} mm, last {inp.last} kN/m. "
-              f"Kapasitetsmoment {cap_moment:.1f} kNm > krav {M:.1f} kNm.",
-            ref="NS-EN 1995",
-        ),
-    ]
+            t="Ingen bærende funksjon oppgitt",
+            d="Innvendig arbeid på en ikke-bærende vegg kan normalt utføres uten søknad dersom brann- eller lydskille ikke berøres.",
+            ref="SAK10 § 4-1",
+        ))
+        findings.append(Finding(
+            type="warn",
+            t="Brann- og lydskille må bekreftes",
+            d="Vegger mellom boenheter og brannceller kan ikke endres som vanlig lettveggarbeid.",
+            ref="TEK17 kap. 11 og 13",
+        ))
+        status = "green"
+        status_text = "Trolig unntatt søknad"
+        status_desc = "Bekreft at veggen verken er bærende eller del av et brann- eller lydskille før arbeidet starter."
+        soknadstype = "Trolig unntatt - må bekreftes"
+        ansvarsrett = False
+    else:
+        if inp.baerende == "usikker":
+            findings.append(Finding(
+                type="warn",
+                t="Bærende funksjon er ikke avklart",
+                d="En konstruksjonsingeniør må kontrollere godkjente tegninger og konstruksjonen på stedet før veggen endres.",
+                ref="PBL § 20-1",
+            ))
+            status_text = "Må vurderes av konstruksjonsingeniør"
+            status_desc = "Ikke start riving før veggens funksjon og lastvei er dokumentert."
+            soknadstype = "Må avklares av ansvarlig foretak"
+        else:
+            findings.append(Finding(
+                type="fail",
+                t="Inngrep i bærende konstruksjon krever søknad",
+                d="Endring av bærevegg, bjelke eller søyle er en vesentlig endring. Ansvarlig prosjekterende konstruksjon må dokumentere løsningen.",
+                ref="PBL § 20-3",
+            ))
+            status_text = "Krever konstruksjonsingeniør"
+            status_desc = "Tiltaket må prosjekteres og søkes med ansvarlig foretak."
+            soknadstype = "PBL § 20-3 (med ansvarsrett)"
 
-    tiltak: list[Tiltak] = [
-        Tiltak(
-            name=f"Limtre-bjelke {b}×{h} mm",
-            desc="Limtre GL30c, ferdig overflatebehandlet. Leveres med dragar-sko (varmgalv. stål).",
-            kostnad=round(L * 4500),
-        ),
-        Tiltak(
-            name="Riving + bortkjøring av eksisterende vegg",
-            desc="Container, støvavskjerming, midlertidig avstiving under riveperioden.",
-            kostnad=25_000,
-        ),
-        Tiltak(
-            name="Konstruksjonsberegning (RIB)",
-            desc="Eurokode-beregning iht. NS-EN 1995, gjennomboyning < L/300, brannmotstand R 30 minimum.",
+        findings.append(Finding(
+            type="warn",
+            t="Ingen bjelkedimensjon beregnes her",
+            d="Dimensjon av bjelke, søyler, opplegg og midlertidig avstiving krever tegninger, materialkontroll og stedlige laster.",
+            ref="TEK17 § 10-2",
+        ))
+        tiltak.append(Tiltak(
+            name="Konstruksjonsfaglig forundersøkelse",
+            desc="Gjennomgang av tegninger, befaring og avklaring av lastvei før prosjektering.",
             kostnad=15_000,
-        ),
-        Tiltak(
-            name="Innkledning av bjelke (estetikk + brann)",
-            desc="Gips-innkledning eller eksponert. Brannmaling om eksponert.",
-            kostnad=12_000,
-        ),
-    ]
+        ))
+        status = "amber"
+        ansvarsrett = True
 
-    total_kostnad = sum(t.kostnad for t in tiltak)
+    width = f"ca. {inp.apning_bredde:.1f} m" if inp.apning_bredde else "ikke oppgitt"
+    findings.append(Finding(
+        type="ok",
+        t=f"Omfang registrert: {TYPE_LABELS[inp.type]}",
+        d=f"Åpningsbredde {width}, {inp.etasjer_over} etasje(r) over, konstruksjon: {inp.konstruksjon.replace('_', '/')}.",
+        ref="Kundeopplysninger",
+    ))
 
     return VeggResult(
-        status="amber",
-        statusText="Klar — krever arkitekt-KS",
-        statusDesc="Tiltaket er gjennomførbart, men må gå gjennom konstruksjonsfag (PRO-RIB) før søknad sendes.",
+        status=status,
+        statusText=status_text,
+        statusDesc=status_desc,
         findings=findings,
         tiltak=tiltak,
         lempninger=[],
-        soknadstype="PBL § 20-3 (med ansvarsrett)",
-        ansvarsrett=True,
+        soknadstype=soknadstype,
+        ansvarsrett=ansvarsrett,
         tiltaksklasse=1,
-        totalKostnad=total_kostnad,
-        bjelke=Bjelke(b=b, h=h, type="Limtre GL30c", spennvidde=inp.spennvidde, last=inp.last),
+        totalKostnad=sum(t.kostnad for t in tiltak),
+        bjelke=None,
         input=inp,
     )

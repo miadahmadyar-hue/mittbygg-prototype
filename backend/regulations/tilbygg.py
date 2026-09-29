@@ -1,101 +1,81 @@
-from models import TilbyggInput, TiltakResult, Finding, Tiltak, Lempning
+from models import TilbyggInput, TiltakResult, Finding, Tiltak
+
 
 LABEL = {
-    "tilbygg_1etasje":      "Tilbygg i 1. etasje",
-    "ny_etasje":            "Ny etasje",
-    "innglasset_terrasse":  "Innglasset terrasse",
+    "tilbygg_1etasje": "Tilbygg på bakken",
+    "ny_etasje": "Ny etasje / påbygg",
+    "innglasset_terrasse": "Innglasset terrasse / vinterhage",
 }
 
 
 def evaluate_tilbygg(inp: TilbyggInput) -> TiltakResult:
     findings: list[Finding] = []
-    tiltak:   list[Tiltak]  = []
-    lempninger: list[Lempning] = []
+    is_upper_storey = inp.type == "ny_etasje"
+    permanent_use = inp.bruk in ("oppholdsrom", "bad")
 
-    # Areal
-    if inp.areal <= 15:
+    if is_upper_storey:
         findings.append(Finding(
-            type="ok", t=f"Areal {inp.areal:.0f} m² — unntatt søknad",
-            d="Tilbygg ≤ 15 m² er unntatt etter SAK10 § 4-1 d.",
-            ref="SAK10 § 4-1 d",
-        ))
-    elif inp.areal <= 50:
-        findings.append(Finding(
-            type="warn", t=f"Areal {inp.areal:.0f} m² — søknad uten ansvarsrett",
-            d="15–50 m²: søknadspliktig uten ansvarsrett (tiltakshaver kan søke selv), TK1.",
-            ref="PBL § 20-4 c",
-        ))
-    else:
-        findings.append(Finding(
-            type="fail", t=f"Areal {inp.areal:.0f} m² — ansvarsrett påkrevd",
-            d="Over 50 m² krever søknad med ansvarlig søker og ansvarsrett.",
+            type="fail", t="Ny etasje er et påbygg",
+            d="Påbygg omfattes ikke av arealunntaket for små tilbygg og må prosjekteres med ansvarlige foretak.",
             ref="PBL § 20-3",
         ))
-
-    # Avstand
-    if inp.avstand >= 4.0:
-        findings.append(Finding(
-            type="ok", t=f"Avstand {inp.avstand:.1f} m fra nabogrense OK",
-            d="Minst 4 m fra nabogrense er tilfredsstilt.",
-            ref="PBL § 29-4",
-        ))
+        status, text = "red", "Krever ansvarlig foretak"
+        desc = "Bæreevne, høyde, brann, plan og visuelle virkninger må prosjekteres."
+        soknadstype, ansvarsrett = "PBL § 20-3 (påbygg)", True
     else:
-        findings.append(Finding(
-            type="fail", t=f"Avstand {inp.avstand:.1f} m — for nær nabogrense",
-            d="Krav: minst 4 m fra nabogrense. Krever nabosamtykke eller dispensasjon.",
-            ref="PBL § 29-4",
-        ))
+        exempt_size = inp.areal <= 15
+        exempt_use = not permanent_use
+        plan_confirmed = inp.plan_ok is True and inp.bya_ok is True
+        distance_ok = inp.avstand >= 4.0
+        exempt = exempt_size and exempt_use and plan_confirmed and distance_ok and not inp.pipe
 
-    # Ny etasje — ekstra høydekrav
-    if inp.type == "ny_etasje":
-        findings.append(Finding(
-            type="warn", t="Ny etasje — sjekk høyde i reguleringsplan",
-            d="Mønehøyde og gesimshøyde er regulert i kommuneplanens arealdel og reguleringsplan. Sjekk tillatt høyde.",
-            ref="PBL § 29-4 + kommuneplan",
-        ))
+        if exempt:
+            status, text = "green", "Unntatt søknad"
+            desc = "Det mindre tilbygget er registrert innenfor unntaksvilkårene. Meld arealendringen etter ferdigstillelse."
+            soknadstype, ansvarsrett = "Unntatt (SAK10 § 4-1)", False
+        elif inp.areal > 50 or inp.pipe:
+            status, text = "red", "Krever ansvarlig foretak"
+            desc = "Tilbygg over 50 m² eller tilbygg med pipe krever ansvarlige foretak."
+            soknadstype, ansvarsrett = "PBL § 20-3", True
+        elif not plan_confirmed:
+            status = "red" if inp.plan_ok is False or inp.bya_ok is False else "amber"
+            text = "Dispensasjon må avklares" if status == "red" else "Plan og BYA må avklares"
+            desc = "Søknadsløpet kan ikke avgjøres før byggegrense, planformål og utnyttelsesgrad er kontrollert."
+            soknadstype, ansvarsrett = "Må avklares mot kommunal plan", False
+        elif inp.areal <= 50:
+            status, text = "amber", "Søknad uten ansvarlig foretak"
+            desc = "Du kan normalt søke selv for et tilbygg inntil 50 m². Plan, BYA og avstand må dokumenteres."
+            soknadstype, ansvarsrett = "PBL § 20-4 / SAK10 § 3-1 a", False
 
-    # BYA check
-    findings.append(Finding(
-        type="warn", t="Sjekk BYA i reguleringsplan",
-        d="Bebygd areal (BYA) etter tilbygg må holde seg innenfor planens tillatte utnyttingsgrad (ofte 30–40 %).",
-        ref="PBL § 12-7",
-    ))
+        findings.extend([
+            Finding(
+                type="ok" if distance_ok else "warn",
+                t="Avstand til nabogrense er avklart" if distance_ok else "Avstand under 4 meter må avklares",
+                d=f"Oppgitt avstand er {inp.avstand:.1f} m. Kommunal plan eller nabosamtykke kan påvirke kravet.",
+                ref="PBL § 29-4",
+            ),
+            Finding(
+                type="ok" if plan_confirmed else "warn",
+                t="Plan og BYA er bekreftet" if plan_confirmed else "Plan og utnyttelsesgrad må kontrolleres",
+                d="Et tiltak er ikke unntatt dersom det bryter byggegrense, planformål eller tillatt utnyttelsesgrad.",
+                ref="PBL § 1-6",
+            ),
+        ])
+        if exempt_size and permanent_use:
+            findings.append(Finding(
+                type="warn", t="Rom for varig opphold faller utenfor småtilbygg-unntaket",
+                d="Areal alene er ikke nok til å være unntatt når tilbygget skal brukes som oppholdsrom eller bad.",
+                ref="SAK10 § 4-1",
+            ))
 
-    # Kostnader
-    tiltak.append(Tiltak(
+    tiltak = [Tiltak(
         name=f"{LABEL[inp.type]} ({inp.areal:.0f} m²)",
-        desc="Inkl. fundament, yttervegger, tak, vinduer og innvendig overflate.",
+        desc="Tidlig kostnadsindikasjon. Standard, grunnforhold og tilkobling til eksisterende bygg må prosjekteres.",
         kostnad=int(inp.areal * 18_000),
-    ))
-    tiltak.append(Tiltak(
-        name="Tilkobling til eksisterende hus",
-        desc="Åpne vegg, sikre bærende konstruksjon, tette mot eksisterende tak.",
-        kostnad=35_000,
-    ))
-
-    fails = sum(1 for f in findings if f.type == "fail")
-    warns = sum(1 for f in findings if f.type == "warn")
-    total = sum(t.kostnad for t in tiltak)
-
-    if fails == 0 and warns == 0:
-        status, txt, desc = "green", "Unntatt søknad", "Tiltaket kan gjennomføres uten søknad."
-    elif fails == 0:
-        status, txt, desc = "amber", "Søknad — uten ansvarsrett", "Du kan søke selv. Se neste steg."
-    else:
-        status, txt, desc = "red", "Søknad med ansvarsrett", f"{fails} krav må avklares."
-
-    soknadstype = (
-        "Unntatt (SAK10 § 4-1 d)" if inp.areal <= 15 and inp.avstand >= 4 else
-        "PBL § 20-4 c (uten ansvarsrett)" if inp.areal <= 50 else
-        "PBL § 20-3 (med ansvarsrett)"
-    )
-
+    )]
     return TiltakResult(
-        status=status, statusText=txt, statusDesc=desc,
-        findings=findings, tiltak=tiltak, lempninger=lempninger,
-        soknadstype=soknadstype,
-        ansvarsrett=(inp.areal > 50),
-        tiltaksklasse=1,
-        totalKostnad=total,
-        input=inp.model_dump(),
+        status=status, statusText=text, statusDesc=desc, findings=findings,
+        tiltak=tiltak, lempninger=[], soknadstype=soknadstype,
+        ansvarsrett=ansvarsrett, tiltaksklasse=1,
+        totalKostnad=sum(t.kostnad for t in tiltak), input=inp.model_dump(),
     )

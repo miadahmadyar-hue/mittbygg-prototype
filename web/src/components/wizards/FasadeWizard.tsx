@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { ToggleRow } from "@/components/ui/Toggle";
-import { ResultPhases, KV } from "./SimpleWizard";
+import { Alert } from "@/components/ui/Alert";
+import { ResultPhases, NumberField } from "./SimpleWizard";
 import { evaluateFasadeApi, type TiltakResult } from "@/lib/api/evaluate";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -13,61 +14,104 @@ import type { Address } from "@/lib/data/addresses";
 
 type Phase = { kind: "wizard"; step: 0 | 1 } | { kind: "loading" } | { kind: "result"; result: TiltakResult } | { kind: "betaling"; result: TiltakResult } | { kind: "sending"; result: TiltakResult } | { kind: "sent"; result: TiltakResult };
 type FType = "skifte_vindu" | "nytt_hull" | "vindu_storre" | "dor" | "kledning" | "farge" | "terrasse";
-const LABEL: Record<FType, string> = { skifte_vindu: "Skifte vindu / dør", nytt_hull: "Nytt hull i vegg", vindu_storre: "Større vindusåpning", dor: "Flytte ytterdør", kledning: "Ny ytterkledning", farge: "Farge / overflate", terrasse: "Terrasse" };
-const DESC: Record<FType, string>  = { skifte_vindu: "Samme størrelse, ny glass eller karm", nytt_hull: "Hull i eksisterende vegg uten endring av størrelse", vindu_storre: "Utvide eller forstørre eksisterende åpning", dor: "Flytte eller skifte plasseringen av ytterdør", kledning: "Skifte kledning, panel eller puss", farge: "Male om fasaden eller endre overflate", terrasse: "Ny terrasse eller uteplass" };
+type Character = "nei" | "ja" | "usikker";
+
+const OPTIONS: Record<FType, [string, string]> = {
+  skifte_vindu: ["Skifte vindu eller dør", "Samme åpning, med eller uten nytt utseende"],
+  nytt_hull: ["Nytt vindu eller ny dør", "Ny åpning i ytterveggen"],
+  vindu_storre: ["Større vindusåpning", "Utvide en eksisterende åpning"],
+  dor: ["Flytte ytterdør", "Ny plassering i fasaden"],
+  kledning: ["Skifte ytterkledning", "Panel, puss eller annet materiale"],
+  farge: ["Endre farge eller overflate", "Maling, beis eller puss"],
+  terrasse: ["Terrasse", "Uteplass forbundet med bygningen"],
+};
 
 export function FasadeWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ type: null as FType | null, verneverdig: false });
+  const [data, setData] = useState({
+    type: null as FType | null, verneverdig: false, samme_utseende: false,
+    karakterendring: "usikker" as Character,
+    terrasse_hoyde: 0, terrasse_dybde: 0, terrasse_avstand: 0, terrasse_overbygd: false,
+  });
 
   const evaluate = async () => {
     if (!data.type) return;
     setPhase({ kind: "loading" });
-    const result = await evaluateFasadeApi({ type: data.type, verneverdig: data.verneverdig });
+    const result = await evaluateFasadeApi({
+      ...data,
+      type: data.type,
+      terrasse_hoyde: data.type === "terrasse" ? data.terrasse_hoyde : null,
+      terrasse_dybde: data.type === "terrasse" ? data.terrasse_dybde : null,
+      terrasse_avstand: data.type === "terrasse" ? data.terrasse_avstand : null,
+    });
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="fasade" loadingText="Sjekker SAK10 og kulturminneregisteret…" />;
-
+  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="fasade" loadingText="Vurderer tiltakets faktiske omfang…" />;
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Fasadeendring" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar title="Fasade, vindu, dør eller terrasse" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
-        {step === 0 && (
+        {step === 0 ? (
           <>
             <div><h2 className="text-[22px] font-bold tracking-tight">Hva skal endres?</h2></div>
             <div className="space-y-2">
-              {(Object.keys(LABEL) as FType[]).map((t) => (
-                <RadioCard key={t} selected={data.type === t} onClick={() => setData({ ...data, type: t })} title={LABEL[t]} desc={DESC[t]} />
+              {(Object.entries(OPTIONS) as [FType, [string, string]][]).map(([type, option]) => (
+                <RadioCard key={type} selected={data.type === type} onClick={() => setData({ ...data, type })} title={option[0]} desc={option[1]} />
               ))}
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste →</Button>
+              <Button full disabled={!data.type} onClick={() => setPhase({ kind: "wizard", step: 1 })}>Neste</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>
-        )}
-        {step === 1 && (
+        ) : data.type === "terrasse" ? (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Bygningsstatus</h2></div>
-            <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Verneverdig / antikvarisk bygning" desc="Registrert i SEFRAK eller kommunalt vernekart" />
-            <div className="bg-white border border-gray-100 rounded-xl mt-4">
-              <KV k="Eiendom" v={p.street} />
-              <KV k="Tiltak" v={LABEL[data.type!]} />
-              <KV k="Verneverdig" v={data.verneverdig ? "Ja" : "Nei"} last />
+            <div>
+              <h2 className="text-[22px] font-bold tracking-tight">Terrassens plassering</h2>
+              <p className="text-sm text-gray-500 mt-2">Areal alene avgjør ikke om terrassen er unntatt.</p>
             </div>
-            <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>⚡ Beregn nå</Button>
-              <Button variant="ghost" full onClick={back}>Tilbake</Button>
+            <Field label="Maks høyde over terreng" value={data.terrasse_hoyde} unit="m" onChange={(terrasse_hoyde) => setData({ ...data, terrasse_hoyde })} />
+            <Field label="Hvor langt ut fra fasaden" value={data.terrasse_dybde} unit="m" onChange={(terrasse_dybde) => setData({ ...data, terrasse_dybde })} />
+            <Field label="Avstand til nabogrense" value={data.terrasse_avstand} unit="m" onChange={(terrasse_avstand) => setData({ ...data, terrasse_avstand })} />
+            <ToggleRow on={data.terrasse_overbygd} onChange={() => setData({ ...data, terrasse_overbygd: !data.terrasse_overbygd })} title="Terrassen skal være overbygd" />
+            <Alert>For unntak må terrassen blant annet være høyst 1,0 m over terreng, gå høyst 4,0 m ut, være minst 1,0 m fra grensen og ikke være overbygd.</Alert>
+            <Actions disabled={data.terrasse_hoyde <= 0 || data.terrasse_dybde <= 0 || data.terrasse_avstand < 0} onEvaluate={evaluate} onBack={back} />
+          </>
+        ) : (
+          <>
+            <div>
+              <h2 className="text-[22px] font-bold tracking-tight">Utseende og vernestatus</h2>
+              <p className="text-sm text-gray-500 mt-2">Kommunen vurderer om bygningens karakter endres.</p>
             </div>
+            <ToggleRow on={data.samme_utseende} onChange={() => setData({ ...data, samme_utseende: !data.samme_utseende })} title="Samme størrelse, materiale og utseende" desc="Vanlig vedlikehold eller tilbakeføring" />
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Vil bygningens uttrykk endres?</h3>
+              <div className="space-y-2">
+                <RadioCard selected={data.karakterendring === "nei"} onClick={() => setData({ ...data, karakterendring: "nei" })} title="Nei" />
+                <RadioCard selected={data.karakterendring === "ja"} onClick={() => setData({ ...data, karakterendring: "ja" })} title="Ja" />
+                <RadioCard selected={data.karakterendring === "usikker"} onClick={() => setData({ ...data, karakterendring: "usikker" })} title="Jeg er usikker" />
+              </div>
+            </div>
+            <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Bygningen er vernet eller registrert som bevaringsverdig" desc="Velg bare ja hvis dette er bekreftet" />
+            <Alert>En ny eller større åpning kan også berøre bæring og brannskille. Det vurderes ikke ut fra fasaden alene.</Alert>
+            <Actions disabled={false} onEvaluate={evaluate} onBack={back} />
           </>
         )}
       </div>
     </>
   );
+}
+
+function Field({ label, value, unit, onChange }: { label: string; value: number; unit: string; onChange: (value: number) => void }) {
+  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField value={value} unit={unit} step={0.1} onChange={onChange} /></div>;
+}
+
+function Actions({ disabled, onEvaluate, onBack }: { disabled: boolean; onEvaluate: () => void; onBack: () => void }) {
+  return <div className="mt-auto pt-4 flex flex-col gap-2"><Button size="lg" full disabled={disabled} onClick={onEvaluate}>Sjekk tiltaket</Button><Button variant="ghost" full onClick={onBack}>Tilbake</Button></div>;
 }

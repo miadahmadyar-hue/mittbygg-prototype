@@ -6,180 +6,94 @@ import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { RadioCard } from "@/components/ui/RadioCard";
-import { ToggleRow } from "@/components/ui/Toggle";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { ResultView } from "./ResultView";
-import { BetalingModal } from "./BetalingModal";
-import { SoknadSent } from "./SoknadFlow";
-import { DrawingUpload } from "./DrawingUpload";
-import { AiAnalyse } from "./AiAnalyse";
-import {
-  KJELLER_BRUK, getKjellerRooms, type KjellerBrukId,
-} from "@/lib/data/kjellerBruk";
-import type { KjellerResult } from "@/lib/regulations/kjeller";
-import { evaluateKjellerApi } from "@/lib/api/evaluate";
-import { downloadKjellerSoknad } from "@/lib/api/soknad";
-import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
-import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
-import { FALLBACK_ARCHITECT, FALLBACK_ENGINEER } from "@/lib/ai/fallbacks";
+import { ToggleRow } from "@/components/ui/Toggle";
+import { NumberField, ResultPhases } from "./SimpleWizard";
+import { KJELLER_BRUK, type KjellerBrukId } from "@/lib/data/kjellerBruk";
+import { evaluateKjellerApi, type TiltakResult } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
   | { kind: "wizard"; step: 0 | 1 | 2 | 3 }
   | { kind: "loading" }
-  | { kind: "result"; result: KjellerResult }
-  | { kind: "betaling"; result: KjellerResult }
-  | { kind: "sending"; result: KjellerResult }
-  | { kind: "sent"; result: KjellerResult };
+  | { kind: "result"; result: TiltakResult }
+  | { kind: "betaling"; result: TiltakResult }
+  | { kind: "sending"; result: TiltakResult }
+  | { kind: "sent"; result: TiltakResult };
+
+type CurrentUse = "bod" | "vaskerom" | "teknisk" | "annet";
+type Condition = "ja" | "nei" | "usikker";
 
 interface WizardData {
-  room: string | null;
+  room: CurrentUse | null;
   ny_bruk: KjellerBrukId | null;
+  godkjent_bruk_bekreftet: boolean;
+  rom_areal: number;
+  takhoyde: number;
+  vindu_bredde: number;
+  vindu_hoyde: number;
+  vindu_brystning: number;
   radon: number | null;
-  drenering: boolean;
-  balansert_vent: boolean;
+  drenering_status: Condition;
+  ventilasjon_status: Condition;
 }
 
 const INITIAL: WizardData = {
   room: null,
   ny_bruk: null,
+  godkjent_bruk_bekreftet: false,
+  rom_areal: 0,
+  takhoyde: 0,
+  vindu_bredde: 0,
+  vindu_hoyde: 0,
+  vindu_brystning: 0,
   radon: null,
-  drenering: true,
-  balansert_vent: false,
+  drenering_status: "usikker",
+  ventilasjon_status: "usikker",
 };
 
-type AiPhaseLocal =
-  | { kind: "loading"; result: KjellerResult }
-  | { kind: "done"; result: KjellerResult; architect: ArchitectAssessment; engineer: EngineerAssessment };
+const CURRENT_USE: Record<CurrentUse, [string, string]> = {
+  bod: ["Bod eller lager", "Ikke godkjent for varig opphold"],
+  vaskerom: ["Vaskerom", "Våtrom eller vaskesone"],
+  teknisk: ["Teknisk rom", "Rom for tekniske installasjoner"],
+  annet: ["Annet eller usikker", "Vi markerer dette for nærmere avklaring"],
+};
 
 export function KjellerWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
   const [data, setData] = useState<WizardData>(INITIAL);
-  const [uploadPending, setUploadPending] = useState<KjellerResult | null>(null);
-  const [aiPhase, setAiPhase] = useState<AiPhaseLocal | null>(null);
-  const [pendingAiResults, setPendingAiResults] = useState<{
-    result: KjellerResult; architect: ArchitectAssessment; engineer: EngineerAssessment;
-  } | null>(null);
 
   const evaluate = async () => {
-    if (!data.room || !data.ny_bruk) return;
+    if (!data.room || !data.ny_bruk || !data.rom_areal || !data.takhoyde) return;
     setPhase({ kind: "loading" });
     const result = await evaluateKjellerApi({
       propId: p.id,
       byggeAar: p.bygg.byggeAar,
-      room: data.room!,
-      ny_bruk: data.ny_bruk!,
+      room: data.room,
+      ny_bruk: data.ny_bruk,
       radon: data.radon,
-      drenering: data.drenering,
-      balansert_vent: data.balansert_vent,
+      drenering: data.drenering_status === "ja",
+      balansert_vent: data.ventilasjon_status === "ja",
       bra: p.bygg.BRA ?? null,
       etasjer: p.bygg.etasjer ?? null,
+      rom_areal: data.rom_areal,
+      takhoyde: data.takhoyde,
+      vindu_bredde: data.vindu_bredde || null,
+      vindu_hoyde: data.vindu_hoyde || null,
+      vindu_brystning: data.vindu_brystning || null,
+      godkjent_bruk_bekreftet: data.godkjent_bruk_bekreftet,
+      drenering_status: data.drenering_status,
+      ventilasjon_status: data.ventilasjon_status,
     });
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind === "loading") {
-    return <LoadingScreen text="Sjekker TEK17, SAK10 og PBL…" />;
-  }
-  if (phase.kind === "sending") {
-    return <LoadingScreen text="Genererer søknadspakke…" />;
+  if (phase.kind !== "wizard") {
+    return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="kjeller" loadingText="Vurderer rommet mot kravene…" />;
   }
 
-  if (aiPhase?.kind === "loading") {
-    return <LoadingScreen text="AI-arkitekt analyserer…" subtext="Vurderer tegninger og regelverk" />;
-  }
-
-  if (aiPhase?.kind === "done") {
-    const { result, architect, engineer } = aiPhase;
-    return (
-      <AiAnalyse
-        architect={architect}
-        engineer={engineer}
-        onContinue={() => {
-          setPendingAiResults({ result, architect, engineer });
-          setAiPhase(null);
-        }}
-      />
-    );
-  }
-
-  if (uploadPending) {
-    return (
-      <DrawingUpload
-        onContinue={async (sessionId) => {
-          const result = uploadPending;
-          setUploadPending(null);
-          setAiPhase({ kind: "loading", result });
-          const reqBase = {
-            slug: "kjeller",
-            address: p.street,
-            gnr: Number(p.matrikkel.gnr),
-            bnr: Number(p.matrikkel.bnr),
-            kommune: p.matrikkel.kommune,
-            bygg: p.bygg as Record<string, unknown>,
-          };
-          const [architect, engineer] = await Promise.all([
-            callArchitectAgent({ ...reqBase, session_id: sessionId }).catch(() => null),
-            callEngineerAgent(reqBase).catch(() => null),
-          ]);
-          setAiPhase({
-            kind: "done",
-            result,
-            architect: architect ?? FALLBACK_ARCHITECT,
-            engineer:  engineer  ?? FALLBACK_ENGINEER,
-          });
-        }}
-      />
-    );
-  }
-
-  if (phase.kind === "result") {
-    return (
-      <ResultView
-        r={phase.result}
-        onGenerateSoknad={() => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
-        onDownloadPdf={async () => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
-        onRestart={() => router.push(`/property/${p.id}/tiltak`)}
-      />
-    );
-  }
-  if (phase.kind === "betaling") {
-    return (
-      <BetalingModal
-        totalKostnad={phase.result.totalKostnad}
-        slug="kjeller"
-        onBetal={async () => {
-          setPendingAiResults(null);
-          setPhase({ kind: "sending", result: phase.result });
-          await downloadKjellerSoknad(
-            phase.result, p.street,
-            Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.matrikkel.kommune,
-          ).catch(() => {});
-          setPhase({ kind: "sent", result: phase.result });
-        }}
-        onBack={() => {
-          if (pendingAiResults) {
-            setAiPhase({ kind: "done", ...pendingAiResults });
-          } else {
-            setPhase({ kind: "result", result: phase.result });
-          }
-        }}
-      />
-    );
-  }
-  if (phase.kind === "sent") {
-    return (
-      <SoknadSent
-        onDone={() => router.push(`/property/${p.id}`)}
-      />
-    );
-  }
-
-  // Wizard phase
   const step = phase.step;
-  const rooms = getKjellerRooms(p.id, p.bygg);
-
   const back = () => {
     if (step === 0) router.push(`/property/${p.id}/tiltak`);
     else setPhase({ kind: "wizard", step: (step - 1) as 0 | 1 | 2 });
@@ -187,189 +101,78 @@ export function KjellerWizard({ p }: { p: Address }) {
 
   return (
     <>
-      <Topbar
-        title="Bruksendring kjeller"
-        right={<span className="text-sm text-gray-500">{step + 1}/4</span>}
-      />
+      <Topbar title="Bruksendring kjeller" right={<span className="text-sm text-gray-500">{step + 1}/4</span>} />
       <ProgressBar step={step} total={4} />
       <div className="view">
         {step === 0 && (
           <>
             <div>
-              <h2 className="text-[22px] font-bold tracking-tight">Hvilket rom?</h2>
-              <p className="text-sm text-gray-500 mt-2">
-                Vi har funnet disse rommene i kjelleren din.
-              </p>
+              <h2 className="text-[22px] font-bold tracking-tight">Hva er rommet godkjent som i dag?</h2>
+              <p className="text-sm text-gray-500 mt-2">Bruk siste godkjente plantegning, ikke hvordan rommet brukes akkurat nå.</p>
             </div>
             <div className="space-y-2">
-              {rooms.map((r) => (
-                <RadioCard
-                  key={r.id}
-                  selected={data.room === r.id}
-                  onClick={() => setData({ ...data, room: r.id })}
-                  title={r.name}
-                  desc={`${r.area} m² · takhøyde ${r.height} mm · ${r.vinduer.toLowerCase()}`}
-                  leadIcon={
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 21V8l9-6 9 6v13" />
-                      <path d="M3 13h18M9 21v-5h6v5" />
-                    </svg>
-                  }
-                />
+              {(Object.entries(CURRENT_USE) as [CurrentUse, [string, string]][]).map(([value, label]) => (
+                <RadioCard key={value} selected={data.room === value} onClick={() => setData({ ...data, room: value })} title={label[0]} desc={label[1]} />
               ))}
             </div>
-            <Alert>
-              Romdataene er hentet fra eksisterende tegninger på fil hos kommunen. Du kan korrigere senere.
-            </Alert>
-            <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button
-                full
-                disabled={!data.room}
-                onClick={() => setPhase({ kind: "wizard", step: 1 })}
-              >
-                Neste
-                <ArrowRight />
-              </Button>
-              <Button variant="ghost" full onClick={back}>Tilbake</Button>
-            </div>
+            <ToggleRow
+              on={data.godkjent_bruk_bekreftet}
+              onChange={() => setData({ ...data, godkjent_bruk_bekreftet: !data.godkjent_bruk_bekreftet })}
+              title="Bekreftet i godkjent tegning"
+              desc="Jeg har kontrollert siste godkjente plantegning"
+            />
+            <Alert variant="amber">Har du ikke tegningene, kan kommunen vanligvis gi innsyn i byggesaksarkivet.</Alert>
+            <Navigation canProceed={Boolean(data.room)} onNext={() => setPhase({ kind: "wizard", step: 1 })} onBack={back} />
           </>
         )}
 
         {step === 1 && (
           <>
             <div>
-              <h2 className="text-[22px] font-bold tracking-tight">Hva skal det bli?</h2>
-              <p className="text-sm text-gray-500 mt-2">Velg ny bruk av rommet.</p>
+              <h2 className="text-[22px] font-bold tracking-tight">Hva skal rommet brukes til?</h2>
+              <p className="text-sm text-gray-500 mt-2">Dette avgjør hvilke krav som må dokumenteres.</p>
             </div>
             <div className="space-y-2">
-              {(Object.entries(KJELLER_BRUK) as [KjellerBrukId, typeof KJELLER_BRUK[KjellerBrukId]][]).map(
-                ([key, b]) => (
-                  <RadioCard
-                    key={key}
-                    selected={data.ny_bruk === key}
-                    onClick={() => setData({ ...data, ny_bruk: key })}
-                    title={b.label}
-                    desc={b.desc}
-                  />
-                ),
-              )}
+              {(Object.entries(KJELLER_BRUK) as [KjellerBrukId, typeof KJELLER_BRUK[KjellerBrukId]][]).map(([key, value]) => (
+                <RadioCard key={key} selected={data.ny_bruk === key} onClick={() => setData({ ...data, ny_bruk: key })} title={value.label} desc={value.desc} />
+              ))}
             </div>
-            <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button
-                full
-                disabled={!data.ny_bruk}
-                onClick={() => setPhase({ kind: "wizard", step: 2 })}
-              >
-                Neste
-                <ArrowRight />
-              </Button>
-              <Button variant="ghost" full onClick={back}>Tilbake</Button>
-            </div>
+            <Navigation canProceed={Boolean(data.ny_bruk)} onNext={() => setPhase({ kind: "wizard", step: 2 })} onBack={back} />
           </>
         )}
 
         {step === 2 && (
           <>
             <div>
-              <h2 className="text-[22px] font-bold tracking-tight">Tilstand i dag</h2>
-              <p className="text-sm text-gray-500 mt-2">
-                Hjelper oss vurdere PBL § 31-2 lempninger og tiltakskostnad.
-              </p>
+              <h2 className="text-[22px] font-bold tracking-tight">Mål rommet</h2>
+              <p className="text-sm text-gray-500 mt-2">Oppgi faktiske mål. Vindu måles som fri åpning når det er helt åpent.</p>
             </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Radonmåling (Bq/m³)
-              </label>
-              <div className="flex items-center bg-white border-[1.5px] border-gray-200 rounded-xl px-4 py-3.5 gap-3 focus-within:border-green-500 focus-within:shadow-[0_0_0_4px_var(--color-green-50)] transition">
-                <input
-                  type="number"
-                  placeholder="La stå tom hvis ikke målt"
-                  value={data.radon ?? ""}
-                  onChange={(e) =>
-                    setData({
-                      ...data,
-                      radon: e.target.value ? parseFloat(e.target.value) : null,
-                    })
-                  }
-                  className="flex-1 bg-transparent outline-none text-base"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Tiltaksgrense 100 · Grenseverdi 200 · Anbefalt 60-dagers måling
-              </p>
+            <Measurement label="Gulvareal" value={data.rom_areal} onChange={(value) => setData({ ...data, rom_areal: value })} unit="m²" step={0.5} />
+            <Measurement label="Takhøyde" value={data.takhoyde} onChange={(value) => setData({ ...data, takhoyde: value })} unit="mm" />
+            <div className="grid grid-cols-2 gap-3">
+              <Measurement label="Vindu, fri bredde" value={data.vindu_bredde} onChange={(value) => setData({ ...data, vindu_bredde: value })} unit="m" step={0.05} />
+              <Measurement label="Vindu, fri høyde" value={data.vindu_hoyde} onChange={(value) => setData({ ...data, vindu_hoyde: value })} unit="m" step={0.05} />
             </div>
-
-            <div className="space-y-2">
-              <ToggleRow
-                on={data.drenering}
-                onChange={() => setData({ ...data, drenering: !data.drenering })}
-                title="Drenering er på plass"
-                desc="Utvendig drensrør, knastefolie, fuktbeskyttelse"
-              />
-              <ToggleRow
-                on={data.balansert_vent}
-                onChange={() =>
-                  setData({ ...data, balansert_vent: !data.balansert_vent })
-                }
-                title="Balansert ventilasjon"
-                desc="Med varmegjenvinning (anbefalt for kjeller)"
-              />
-            </div>
-
-            <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button full onClick={() => setPhase({ kind: "wizard", step: 3 })}>
-                Neste <ArrowRight />
-              </Button>
-              <Button variant="ghost" full onClick={back}>Tilbake</Button>
-            </div>
+            <Measurement label="Høyde fra gulv til vindusåpning" value={data.vindu_brystning} onChange={(value) => setData({ ...data, vindu_brystning: value })} unit="m" step={0.05} />
+            <Navigation canProceed={data.rom_areal > 0 && data.takhoyde > 0} onNext={() => setPhase({ kind: "wizard", step: 3 })} onBack={back} />
           </>
         )}
 
         {step === 3 && (
           <>
             <div>
-              <h2 className="text-[22px] font-bold tracking-tight">Bekreft og beregn</h2>
-              <p className="text-sm text-gray-500 mt-2">
-                Vi sjekker mot TEK17, SAK10 og PBL — inkludert lempninger for eldre bygg.
-              </p>
+              <h2 className="text-[22px] font-bold tracking-tight">Tilstand og dokumentasjon</h2>
+              <p className="text-sm text-gray-500 mt-2">Velg usikker når du ikke har dokumentasjon. Det gir et tryggere resultat.</p>
             </div>
-            <div className="bg-white border border-gray-100 rounded-xl">
-              <KV k="Eiendom" v={p.street} />
-              <KV
-                k="Byggeår"
-                v={`${p.bygg.byggeAar}${p.bygg.byggeAar < 2010 ? " · lempninger" : ""}`}
-              />
-              <KV
-                k="Rom"
-                v={rooms.find((r) => r.id === data.room)?.name ?? "—"}
-              />
-              <KV
-                k="Ny bruk"
-                v={data.ny_bruk ? KJELLER_BRUK[data.ny_bruk].label : "—"}
-              />
-              <KV k="Radon" v={data.radon != null ? `${data.radon} Bq/m³` : "Ikke målt"} />
-              <KV k="Drenering" v={data.drenering ? "Ja" : "Nei"} />
-              <KV
-                k="Balansert vent."
-                v={data.balansert_vent ? "Ja" : "Nei"}
-                last
-              />
+            <ConditionGroup label="Er drenering og fuktsikring kontrollert?" value={data.drenering_status} onChange={(value) => setData({ ...data, drenering_status: value })} />
+            <ConditionGroup label="Finnes dokumentert ventilasjon for ny bruk?" value={data.ventilasjon_status} onChange={(value) => setData({ ...data, ventilasjon_status: value })} />
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Radonmåling, hvis tilgjengelig</label>
+              <NumberField value={data.radon ?? 0} onChange={(value) => setData({ ...data, radon: value || null })} unit="Bq/m³" />
+              <p className="text-xs text-gray-500 mt-2">La feltet stå på 0 hvis radon ikke er målt.</p>
             </div>
-            <Alert>
-              <strong>Slik beregnes resultatet:</strong> Vi går gjennom TEK17 § 11 (brann),
-              § 12-7 (takhøyde), § 13-5 (radon), § 13-7 (dagslys) og § 14 (energi),
-              kombinert med PBL §§ 20-1, 20-3, 20-4, 31-2.
-            </Alert>
-            <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full onClick={evaluate}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                </svg>
-                Beregn nå
-              </Button>
-              <Button variant="ghost" full onClick={back}>Tilbake</Button>
-            </div>
+            <Alert>Resultatet er en tidlig regelsjekk. Tegninger og teknisk dokumentasjon må fortsatt kontrolleres før innsending.</Alert>
+            <Navigation canProceed onNext={evaluate} onBack={back} final />
           </>
         )}
       </div>
@@ -377,36 +180,33 @@ export function KjellerWizard({ p }: { p: Address }) {
   );
 }
 
-function LoadingScreen({ text, subtext }: { text: string; subtext?: string }) {
+function Measurement({ label, value, onChange, unit, step = 1 }: { label: string; value: number; onChange: (value: number) => void; unit: string; step?: number }) {
   return (
-    <>
-      <Topbar back={false} />
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
-        <div className="spinner spinner-lg" />
-        <h3 className="text-base font-semibold">{text}</h3>
-        <p className="text-sm text-gray-500">{subtext ?? "Henter fra Kartverket og DiBK…"}</p>
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+      <NumberField value={value} onChange={onChange} unit={unit} step={step} />
+    </div>
+  );
+}
+
+function ConditionGroup({ label, value, onChange }: { label: string; value: Condition; onChange: (value: Condition) => void }) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-700 mb-2">{label}</h3>
+      <div className="grid grid-cols-3 gap-2">
+        <RadioCard selected={value === "ja"} onClick={() => onChange("ja")} title="Ja" />
+        <RadioCard selected={value === "nei"} onClick={() => onChange("nei")} title="Nei" />
+        <RadioCard selected={value === "usikker"} onClick={() => onChange("usikker")} title="Usikker" />
       </div>
-    </>
+    </div>
   );
 }
 
-function ArrowRight() {
+function Navigation({ canProceed, onNext, onBack, final = false }: { canProceed: boolean; onNext: () => void; onBack: () => void; final?: boolean }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-function KV({ k, v, last }: { k: string; v: string; last?: boolean }) {
-  return (
-    <div
-      className={`flex justify-between gap-3 px-5 py-3 text-sm ${
-        last ? "" : "border-b border-gray-100"
-      }`}
-    >
-      <span className="text-gray-500 shrink-0">{k}</span>
-      <span className="font-semibold">{v}</span>
+    <div className="mt-auto pt-4 flex flex-col gap-2">
+      <Button size={final ? "lg" : undefined} full disabled={!canProceed} onClick={onNext}>{final ? "Se vurdering" : "Neste"}</Button>
+      <Button variant="ghost" full onClick={onBack}>Tilbake</Button>
     </div>
   );
 }

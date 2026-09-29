@@ -119,7 +119,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
           <div className="spinner spinner-lg" />
           <h3 className="text-base font-semibold">{loadingText ?? t("Sjekker regelverk…", "Checking regulations…")}</h3>
-          <p className="text-sm text-gray-500">{t("Henter fra Kartverket og DiBK…", "Fetching from Kartverket and DiBK…")}</p>
+          <p className="text-sm text-gray-500">{t("Vurderer svarene dine mot lagrede regler og vilkår…", "Checking your answers against stored rules and conditions…")}</p>
         </div>
       </>
     );

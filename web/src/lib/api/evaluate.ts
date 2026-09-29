@@ -36,7 +36,7 @@ export interface TiltakResult {
   ansvarsrett: boolean;
   tiltaksklasse: 1 | 2;
   totalKostnad: number;
-  input: Record<string, unknown>;
+  input: unknown;
 }
 
 // ── Existing wizards ──────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ async function evalTiltak(slug: string, input: unknown): Promise<TiltakResult> {
       ansvarsrett: false,
       tiltaksklasse: 1,
       totalKostnad: 0,
-      input: input as Record<string, unknown>,
+      input,
     };
   }
 }

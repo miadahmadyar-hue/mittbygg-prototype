@@ -1,72 +1,84 @@
-from models import BryggeInput, TiltakResult, Finding, Tiltak, Lempning
+from models import BryggeInput, TiltakResult, Finding
 
-LABEL   = {"fast": "Fast brygge", "flytende": "Flytende brygge", "stupebrett": "Badebrygge / stupebrett"}
-KOSTNAD = {"fast": 18_000, "flytende": 12_000, "stupebrett": 8_000}
+
+LABEL = {
+    "fast": "fast brygge",
+    "flytende": "flytebrygge",
+    "stupebrett": "badeplattform",
+}
 
 
 def evaluate_brygge(inp: BryggeInput) -> TiltakResult:
     findings: list[Finding] = []
-    tiltak:   list[Tiltak]  = []
+    is_maintenance = inp.arbeid == "vedlikehold"
 
-    areal = inp.lengde * inp.bredde
+    if is_maintenance:
+        findings.append(Finding(
+            type="warn",
+            t="Vedlikehold må avgrenses mot nytt tiltak",
+            d="Vanlig vedlikehold uten endret størrelse, plassering eller konstruksjon kan vurderes annerledes enn ny eller utvidet brygge. Kommunen bør bekrefte grensen i denne saken.",
+            ref="PBL § 20-1",
+        ))
+    else:
+        findings.append(Finding(
+            type="warn",
+            t="Avklar søknad og tillatelser med kommunen",
+            d=f"Ny, utvidet eller erstattet {LABEL[inp.type]} berører normalt plan- og bygningsloven. Tiltaket kan også kreve tillatelse etter havne- og farvannsloven.",
+            ref="PBL § 20-1 og havne- og farvannsloven",
+        ))
 
-    findings.append(Finding(
-        type="fail", t="Alle brygger er søknadspliktige",
-        d="Det finnes ingen unntaksregel for brygger. Alle bryggeprosjekter krever søknad etter PBL § 20-1 a.",
-        ref="PBL § 20-1 a",
-    ))
-    findings.append(Finding(
-        type="warn", t="100-metersbeltet langs sjø og vassdrag",
-        d="Brygger i 100-metersbeltet fra sjøen vurderes etter PBL § 1-8: allmennhetens tilgang og naturmangfold.",
-        ref="PBL § 1-8",
-    ))
-    findings.append(Finding(
-        type="warn", t="Nabovarsel påkrevd",
-        d="Søknad om brygge utløser nabovarsel (PBL § 21-3) med 2-ukers merknadsfrist.",
-        ref="PBL § 21-3",
-    ))
+    if inp.plan_status == "ikke_tillatt":
+        findings.append(Finding(
+            type="fail",
+            t="Tiltaket er ikke i samsvar med planen",
+            d="Det må vurderes dispensasjon før en byggesøknad kan godkjennes.",
+            ref="PBL §§ 19-2 og 1-8",
+        ))
+    elif inp.plan_status == "usikker":
+        findings.append(Finding(
+            type="warn",
+            t="Plangrunnlaget må undersøkes",
+            d="Sjekk byggegrense mot sjø, arealformål og eventuelle bestemmelser for brygger. Tiltak i strandsonen vurderes særlig strengt.",
+            ref="PBL §§ 1-8 og 12-7",
+        ))
+    else:
+        findings.append(Finding(
+            type="ok",
+            t="Oppgitt å være i samsvar med plan",
+            d="Kommunen må fortsatt kontrollere tiltakets størrelse, plassering og øvrige tillatelser.",
+            ref="Gjeldende arealplan",
+        ))
+
+    if inp.eier_strandgrunn is not True:
+        findings.append(Finding(
+            type="warn",
+            t="Rett til strandgrunnen må dokumenteres",
+            d="Avklar eierskap eller skriftlig samtykke før prosjektet går videre.",
+            ref="Privatrettslig grunnlag",
+        ))
 
     if inp.type == "fast":
         findings.append(Finding(
-            type="warn", t="Fast brygge — geoteknisk vurdering",
-            d="Pælefundamentering krever geoteknisk rapport (TEK17 § 9-2). Typisk kostnad 30–50 000 kr.",
-            ref="TEK17 § 9-2",
-        ))
-        tiltak.append(Tiltak(
-            name=f"Fast brygge {inp.lengde:.0f} × {inp.bredde:.0f} m",
-            desc="Stikkpæler, impregnert treverk, gangbane og rekkverk.",
-            kostnad=int(areal * KOSTNAD["fast"]),
-        ))
-        tiltak.append(Tiltak(
-            name="Geoteknisk rapport og pæleanbefaling",
-            desc="Prøvetaking, rapport og dimensjoneringsanbefaling for pæler.",
-            kostnad=35_000,
+            type="warn",
+            t="Fundamenteringen må prosjekteres",
+            d="Behovet for grunnundersøkelse og geoteknisk bistand avgjøres ut fra grunnforhold og valgt fundamentering. Det er ikke automatisk krav om en bestemt rapport.",
+            ref="TEK17 kap. 7 og 10",
         ))
 
-    elif inp.type == "flytende":
-        tiltak.append(Tiltak(
-            name=f"Flytende brygge {inp.lengde:.0f} × {inp.bredde:.0f} m",
-            desc="Flytende pontong, gangbane og fortøyningssystem.",
-            kostnad=int(areal * KOSTNAD["flytende"]),
-        ))
-
-    elif inp.type == "stupebrett":
-        tiltak.append(Tiltak(
-            name=f"Badebrygge {inp.lengde:.0f} × {inp.bredde:.0f} m",
-            desc="Enkel trebrygge med stikkpæler, gangbane og evt. stige.",
-            kostnad=int(areal * KOSTNAD["stupebrett"]),
-        ))
-
-    total = sum(t.kostnad for t in tiltak)
+    has_failure = any(item.type == "fail" for item in findings)
+    status = "red" if has_failure else "amber"
+    status_text = "Dispensasjon må avklares" if has_failure else "Kommunal avklaring nødvendig"
 
     return TiltakResult(
-        status="red",
-        statusText="Søknad påkrevd",
-        statusDesc="Alle brygger krever byggesøknad — ingen unntak.",
-        findings=findings, tiltak=tiltak, lempninger=[],
-        soknadstype="PBL § 20-1 a (søknadspliktig — ingen unntak)",
+        status=status,
+        statusText=status_text,
+        statusDesc="Send mål, kartplassering og bilder til kommunen for en konkret vurdering før prosjektering eller bestilling.",
+        findings=findings,
+        tiltak=[],
+        lempninger=[],
+        soknadstype="Må avklares med kommunen",
         ansvarsrett=False,
         tiltaksklasse=1,
-        totalKostnad=total,
+        totalKostnad=0,
         input=inp.model_dump(),
     )

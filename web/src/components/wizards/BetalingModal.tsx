@@ -48,7 +48,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
             </svg>
           </div>
           <div>
-            <h2 className="text-[22px] font-bold tracking-tight">{t("Betaling godkjent", "Payment approved")}</h2>
+            <h2 className="text-[22px] font-bold tracking-tight">{t("Demo fullført", "Demo completed")}</h2>
             <p className="text-sm text-gray-500 mt-1">{t("PDF-pakken genereres nå…", "Generating the PDF package now…")}</p>
           </div>
           <div className="spinner spinner-lg" />
@@ -64,8 +64,8 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
         <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center p-10">
           <div className="spinner spinner-lg" />
           <div>
-            <h3 className="text-base font-semibold">{t("Venter på Vipps-bekreftelse…", "Waiting for Vipps confirmation…")}</h3>
-            <p className="text-sm text-gray-500 mt-1">{t("Betalingen behandles i Vipps-appen din.", "The payment is being processed in your Vipps app.")}</p>
+            <h3 className="text-base font-semibold">{t("Klargjør demopakken…", "Preparing the demo package…")}</h3>
+            <p className="text-sm text-gray-500 mt-1">{t("Ingen betaling gjennomføres.", "No payment is being made.")}</p>
           </div>
         </div>
       </>
@@ -74,13 +74,13 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
 
   return (
     <>
-      <Topbar title={t("Kjøp søknadspakke", "Buy application package")} />
+      <Topbar title={t("Demo av søknadspakke", "Application package demo")} />
       <div className="view">
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
           <div className="bg-gray-900 px-5 py-4 flex items-start justify-between">
             <div>
               <div className="text-white font-bold text-lg">{t("Søknadspakke", "Application package")}</div>
-              <div className="text-green-100 text-sm mt-0.5">{t("Alt du trenger for å sende søknaden selv", "Everything you need to submit the application yourself")}</div>
+              <div className="text-green-100 text-sm mt-0.5">{t("Forhåndsvisning — ikke en ferdig innsendingstjeneste", "Preview — not a live submission service")}</div>
             </div>
             <div className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full shrink-0 ml-3">
               -{pct}%
@@ -124,7 +124,7 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
             style={{ background: "#FF5B24" }}
           >
             <VippsLogo />
-            {t("Betal med Vipps", "Pay with Vipps")}
+             {t("Fortsett i demo", "Continue in demo")}
           </button>
 
           <Button variant="ghost" full onClick={onBack}>
@@ -133,8 +133,8 @@ export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
 
           <p className="text-[11px] text-gray-400 text-center leading-relaxed">
             {t(
-              "Sikker betaling via Vipps. Du kan laste ned pakken umiddelbart etter betaling. Kjøpet refunderes ikke etter nedlasting.",
-              "Secure payment via Vipps. You can download the package immediately after payment. The purchase is non-refundable after download.",
+              "Dette er en demoflyt. Ingen Vipps-betaling eller kommunal innsending gjennomføres.",
+              "This is a demo flow. No Vipps payment or municipal submission is performed.",
             )}
           </p>
 

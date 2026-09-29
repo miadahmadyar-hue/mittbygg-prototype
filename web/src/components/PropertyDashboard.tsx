@@ -19,9 +19,8 @@ export function PropertyDashboard({ p }: { p: Address }) {
   const drawings = p.bygg.tegninger ?? [];
   const archiveSources = Array.from(new Set(drawings.map((drawing) => drawing.kilde)));
   const hasRegistryData = p.bygg.bygg_source && p.bygg.bygg_source !== "default";
-  const isKartverket = p.id.startsWith("k_");
-  const area = p.bygg.BRA ?? (isKartverket && !hasRegistryData ? "~130" : "-");
-  const floors = p.bygg.etasjer ?? (isKartverket && !hasRegistryData ? "2" : "-");
+  const area = p.bygg.BRA ?? "-";
+  const floors = p.bygg.etasjer ?? "-";
 
   return (
     <>
@@ -60,7 +59,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
               <CheckIcon />
               {hasRegistryData
                 ? t("Eiendomsdata hentet fra Matrikkelen", "Property data retrieved from the cadastre")
-                : t("Eiendomsdata kontrolleres ved innsending", "Property data is verified on submission")}
+                : t("Ikke alle bygningsopplysninger er tilgjengelige", "Not all building details are available")}
             </div>
           </div>
           <div className="property-stats">
@@ -112,7 +111,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
               meta={cases.length > 0 ? `${cases.length} ${t("saker", "cases")}` : undefined}
             />
             {cases.length === 0 ? (
-              <EmptyState text={t("Ingen byggesaker er registrert i det digitale arkivet.", "No building cases are registered in the digital archive.")} />
+              <EmptyState text={t("Ingen byggesaker er tilgjengelige i denne oversikten.", "No building cases are available in this overview.")} />
             ) : (
               <div className="divide-y divide-gray-100">
                 {cases.map((item, index) => (
@@ -139,7 +138,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
               ) : undefined}
             />
             {drawings.length === 0 ? (
-              <EmptyState text={t("Ingen digitale tegninger ble funnet hos kommunen.", "No digital drawings were found at the municipality.")} />
+              <EmptyState text={t("Ingen tegninger er tilgjengelige i denne oversikten.", "No drawings are available in this overview.")} />
             ) : (
               <div className="divide-y divide-gray-100">
                 {drawings.slice(0, 3).map((drawing, index) => (
@@ -155,7 +154,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
         <p className="page-kicker">{t("Eiendomsregister", "Property register")}</p>
         <h2 className="mt-2 text-2xl font-semibold">{p.street}</h2>
         <p className="mt-2 text-sm text-gray-500">
-          {t("Samlet eiendomsdata fra Matrikkelen og kommunale kartkilder.", "Combined property data from the cadastre and municipal map sources.")}
+          {t("Tilgjengelige eiendomsopplysninger for valgt adresse.", "Available property details for the selected address.")}
         </p>
         <dl className="mt-5 divide-y divide-gray-100 border-y border-gray-100">
           <KV label={t("Adresse", "Address")} value={`${p.street}, ${p.postal} ${p.city}`} />

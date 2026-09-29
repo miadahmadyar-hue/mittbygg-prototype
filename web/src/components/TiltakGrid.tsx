@@ -20,8 +20,16 @@ const ICON_STYLES: Record<string, string> = {
 export function TiltakGrid({ propertyId }: { propertyId: string }) {
   const t = useT();
   const [unavailable, setUnavailable] = useState<Tiltak | null>(null);
-  const available = TILTAK.filter((item) => item.available);
-  const upcoming = TILTAK.filter((item) => !item.available);
+  const visible = TILTAK.filter((item) => !item.hidden);
+  const available = visible.filter((item) => item.available);
+  const upcoming = visible.filter((item) => !item.available);
+  const categories = [
+    { id: "inside", no: "Endre inne", en: "Change the interior" },
+    { id: "expand", no: "Bygge større", en: "Expand the property" },
+    { id: "exterior", no: "Endre ute", en: "Change the exterior" },
+    { id: "site", no: "Tiltak på tomten", en: "Work on the property" },
+    { id: "help", no: "Finner du ikke riktig tiltak?", en: "Cannot find the right project?" },
+  ] as const;
 
   return (
     <>
@@ -35,17 +43,23 @@ export function TiltakGrid({ propertyId }: { propertyId: string }) {
           </p>
         </header>
 
-        <section>
-          <div className="section-line">
-            <h2>{t("Tilgjengelige tiltak", "Available project types")}</h2>
-            <span>{available.length} {t("valg", "options")}</span>
-          </div>
-          <div className="project-grid mt-4">
-            {available.map((item) => (
-              <ProjectCard key={item.id} item={item} propertyId={propertyId} onUnavailable={() => setUnavailable(item)} />
-            ))}
-          </div>
-        </section>
+        {categories.map((category) => {
+          const items = available.filter((item) => item.category === category.id);
+          if (items.length === 0) return null;
+          return (
+            <section key={category.id}>
+              <div className="section-line">
+                <h2>{t(category.no, category.en)}</h2>
+                <span>{items.length} {t(items.length === 1 ? "valg" : "valg", items.length === 1 ? "option" : "options")}</span>
+              </div>
+              <div className="project-grid mt-4">
+                {items.map((item) => (
+                  <ProjectCard key={item.id} item={item} propertyId={propertyId} onUnavailable={() => setUnavailable(item)} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
 
         {upcoming.length > 0 && (
           <section>

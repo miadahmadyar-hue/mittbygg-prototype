@@ -5,13 +5,13 @@ def evaluate_andre(inp: AndreInput) -> TiltakResult:
     findings: list[Finding] = []
 
     findings.append(Finding(
-        type="ok", t="Beskrivelse mottatt",
-        d=f"Vi har mottatt beskrivelsen din: «{inp.beskrivelse[:120]}{'…' if len(inp.beskrivelse) > 120 else ''}»",
-        ref="Søknadsklar",
+        type="ok", t="Prosjektet er beskrevet",
+        d=f"Grunnlag for videre avklaring: «{inp.beskrivelse[:120]}{'…' if len(inp.beskrivelse) > 120 else ''}»",
+        ref="Opplysninger fra tiltakshaver",
     ))
     findings.append(Finding(
         type="warn", t="Automatisk regelsjekk ikke tilgjengelig",
-        d="Dette tiltaket krever manuell vurdering av en byggesaksrådgiver. Svar innen 1 virkedag.",
+        d="Prosjektet passer ikke i en automatisk regelsjekk. Avklar tiltakstype, gjeldende plan og søknadsplikt med kommunen eller en byggesaksrådgiver.",
         ref="PBL generelt",
     ))
     findings.append(Finding(
@@ -23,17 +23,13 @@ def evaluate_andre(inp: AndreInput) -> TiltakResult:
     return TiltakResult(
         status="amber",
         statusText="Vurderes manuelt",
-        statusDesc="En rådgiver gjennomgår tiltaket og svarer innen 1 virkedag.",
+        statusDesc="Ta med prosjektbeskrivelsen når du ber kommunen eller en rådgiver om en forhåndsavklaring.",
         findings=findings,
-        tiltak=[Tiltak(
-            name="Rådgivning via Søknadsklar",
-            desc="Byggerettsekspert gjennomgår tiltaket og leverer skriftlig vurdering av søknadsplikt.",
-            kostnad=1_500,
-        )],
+        tiltak=[],
         lempninger=[],
         soknadstype="Vurderes manuelt av rådgiver",
         ansvarsrett=False,
         tiltaksklasse=1,
-        totalKostnad=1_500,
+        totalKostnad=0,
         input=inp.model_dump(),
     )
