@@ -1,4 +1,4 @@
-# MittBygg — Strategi & arkitektur
+# Søknadsklar — Strategi & arkitektur
 
 > Forbruker-app som gir alle norske husholdninger byggesøknader, tegninger og
 > fagtjenester på én flate. Du logger inn med BankID, finner din eiendom, sier
@@ -10,13 +10,13 @@
 
 ## 2. Brukerne
 
-| Segment | Smerten i dag | Hva MittBygg løser |
+| Segment | Smerten i dag | Hva Søknadsklar løser |
 |---|---|---|
 | **Boligeier (primær)** | Vet ikke om tiltaket er søknadspliktig, hva det koster, hvilke krav som gjelder, hvor man får tegninger. | Adresse → tiltak → svar på 60 sek + ferdig søknadspakke. |
 | **Hytteeier** | Samme som over, pluss kommune-spesifikke regler (LNF, byggegrenser) | Lokal regelmotor pr. kommune. |
 | **Borettslag-styre** | Skal håndtere fasade-endringer, balkong-utvidelser, vinduer for hele blokken. | Felles prosjekt-arbeidsflyt med flere boenheter. |
 | **Lokal arkitekt / ANS-foretak** | Liten administrasjon-overhead på små saker (TK1) "spiser" lønnsom tid. | Marketplace: forbruker velger arkitekt for kvalitetssikring. Arkitekten får ferdig dossier å signere. |
-| **Kommunens byggesaksavd.** | Dårlig kvalitet på innsendte søknader → mangelmelding → re-arbeid. | Strukturerte søknader fra MittBygg → kortere saksbehandling. |
+| **Kommunens byggesaksavd.** | Dårlig kvalitet på innsendte søknader → mangelmelding → re-arbeid. | Strukturerte søknader fra Søknadsklar → kortere saksbehandling. |
 
 Forretningsmodellen følger:
 - **B2C abonnement** (gratis: regelsjekk; betalt: tegninger + søknadspakke; "premium": arkitekt-signert)
@@ -26,7 +26,7 @@ Forretningsmodellen følger:
 ## 3. Service-design — kunde-reisen
 
 ```
-1. ENTRY        → Google-søk: "kan jeg gjøre om kjeller til soverom?" → MittBygg-artikkel
+1. ENTRY        → Google-søk: "kan jeg gjøre om kjeller til soverom?" → Søknadsklar-artikkel
 2. ONBOARDING   → BankID-login (Vipps Login) → Kartverket-adressesøk
 3. EIENDOM      → Auto-henter: Matrikkel (gnr/bnr, BRA, byggeår, etasjer),
                   reguleringsplan, byggegrenser, tidligere byggesaker fra DiBK.
@@ -62,7 +62,7 @@ Forretningsmodellen følger:
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                       FORBRUKER-APP                       │
-│   iOS  •  Android  •  Web (mittbygg.no)                  │
+│   iOS  •  Android  •  Web (soknadsklar.no)               │
 │   React Native + Next.js (delt komponentbibliotek)        │
 └─────────────────────┬────────────────────────────────────┘
                       │ HTTPS (REST + WebSocket for status)
@@ -98,7 +98,7 @@ Forretningsmodellen følger:
 
 ### Hva gjenbrukes fra `norsk_arkitekt_ai`
 
-| Modul | Status | Gjenbruk i MittBygg |
+| Modul | Status | Gjenbruk i Søknadsklar |
 |---|---|---|
 | `core/` (Building-modell) | Solid | Som er. Trenger import fra DXF/IFC. |
 | `regulations/` (TEK17/SAK10/PBL/lempninger/kjeller_wizard) | Den **virkelige IP-en** | Kjernen i regelmotoren. Wrappes som API-endpoint. |
@@ -157,7 +157,7 @@ Forretningsmodellen følger:
 | Lag | Valg | Begrunnelse |
 |---|---|---|
 | Mobil | React Native + Expo | Én kodebase iOS+Android. Norsk marked er liten — to native apper er ikke verdt det. |
-| Web | Next.js 15 + React Server Components | SEO for SEO-trafikk ("kan jeg gjøre om kjeller til soverom" → MittBygg-artikkel) |
+| Web | Next.js 15 + React Server Components | SEO for SEO-trafikk ("kan jeg gjøre om kjeller til soverom" → Søknadsklar-artikkel) |
 | UI | Tailwind + shadcn/ui + Norske design-tokens | Rask, polert, lett å vedlikeholde. |
 | API | FastAPI (Python) | Direkte gjenbruk av eksisterende `norsk_arkitekt_ai`. |
 | AI | Anthropic Claude (Sonnet 4.6 / Haiku 4.5) | Beste norske språkforståelse. Prompt caching for regulatoriske kontekster. |

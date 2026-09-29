@@ -1,6 +1,6 @@
-# MittBygg — web (frontend)
+# Søknadsklar — web (frontend)
 
-Next.js 16 frontend for MittBygg. See the **[root README](../README.md)** for the full
+Next.js 16 frontend for Søknadsklar. See the **[root README](../README.md)** for the full
 project overview, architecture, and setup.
 
 ## Quick start

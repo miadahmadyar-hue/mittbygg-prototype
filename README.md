@@ -1,4 +1,9 @@
-# MittBygg
+# Søknadsklar
+
+Production domains:
+
+- `soknadsklar.no` — public website
+- `app.soknadsklar.no` — application entry point
 
 **From idea to building permit.** A consumer app for Norwegian building applications
 (*byggesøknader*): search an address → pick what you want to build (*tiltak*) → get a

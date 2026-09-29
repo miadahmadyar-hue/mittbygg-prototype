@@ -51,7 +51,7 @@ class _PDF(FPDF):
         self.set_font("Sans", "I", 7)
         self.set_text_color(*C_GRAY)
         self.cell(0, 5,
-            f"MittBygg.no  —  Automatisk generert dokumentasjon. Ikke juridisk bindende.  "
+            f"Søknadsklar.no  —  Automatisk generert dokumentasjon. Ikke juridisk bindende.  "
             f"Side {self.page_no()}", align="C")
         self.set_text_color(*C_DARK)
 
@@ -100,7 +100,7 @@ def generate_generic_pdf(
     pdf.set_text_color(*C_WHITE)
     pdf.set_font("Sans", "B", 17)
     pdf.set_xy(15, 7)
-    pdf.cell(130, 10, "MittBygg")
+    pdf.cell(130, 10, "Søknadsklar")
     pdf.set_font("Sans", "", 8)
     pdf.set_xy(100, 9)
     pdf.cell(95, 5, date.today().strftime("%d.%m.%Y"), align="R")

@@ -7,7 +7,7 @@ def evaluate_andre(inp: AndreInput) -> TiltakResult:
     findings.append(Finding(
         type="ok", t="Beskrivelse mottatt",
         d=f"Vi har mottatt beskrivelsen din: «{inp.beskrivelse[:120]}{'…' if len(inp.beskrivelse) > 120 else ''}»",
-        ref="MittBygg",
+        ref="Søknadsklar",
     ))
     findings.append(Finding(
         type="warn", t="Automatisk regelsjekk ikke tilgjengelig",
@@ -26,7 +26,7 @@ def evaluate_andre(inp: AndreInput) -> TiltakResult:
         statusDesc="En rådgiver gjennomgår tiltaket og svarer innen 1 virkedag.",
         findings=findings,
         tiltak=[Tiltak(
-            name="Rådgivning via MittBygg",
+            name="Rådgivning via Søknadsklar",
             desc="Byggerettsekspert gjennomgår tiltaket og leverer skriftlig vurdering av søknadsplikt.",
             kostnad=1_500,
         )],

@@ -28,7 +28,7 @@ export async function downloadKjellerSoknad(
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`PDF-generering feilet (${res.status})`);
-  await _triggerDownload(await res.blob(), `mittbygg-soknad-${result.input.propId}.pdf`);
+  await _triggerDownload(await res.blob(), `soknadsklar-${result.input.propId}.pdf`);
 }
 
 export async function downloadTiltakSoknad(
@@ -48,5 +48,5 @@ export async function downloadTiltakSoknad(
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`PDF-generering feilet (${res.status})`);
-  await _triggerDownload(await res.blob(), `mittbygg-soknad-${slug}.pdf`);
+  await _triggerDownload(await res.blob(), `soknadsklar-${slug}.pdf`);
 }

@@ -27,7 +27,7 @@ def post_kjeller_soknad(req: KjellerSoknadRequest) -> StreamingResponse:
         bnr=req.bnr,
         kommune=req.kommune,
     )
-    filename = f"mittbygg-soknad-{req.result.input.propId}.pdf"
+    filename = f"soknadsklar-{req.result.input.propId}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -58,7 +58,7 @@ def post_tiltak_soknad(req: TiltakSoknadRequest) -> StreamingResponse:
         architect=req.architect,
         engineer=req.engineer,
     )
-    filename = f"mittbygg-soknad-{req.slug}.pdf"
+    filename = f"soknadsklar-{req.slug}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",

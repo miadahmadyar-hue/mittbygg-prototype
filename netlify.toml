@@ -9,6 +9,12 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+[[redirects]]
+  from = "https://app.soknadsklar.no/"
+  to = "https://app.soknadsklar.no/address"
+  status = 302
+  force = true
+
 [[headers]]
   for = "/*"
   [headers.values]

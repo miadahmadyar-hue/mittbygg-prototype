@@ -191,11 +191,11 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                   </div>
                   <div>
                     <div className="font-semibold text-sm text-amber-900">{t("Får du ikke til søknaden selv?", "Can't manage the application yourself?")}</div>
-                    <div className="text-xs text-amber-700 mt-0.5">{t("En rådgiver fra MittBygg kan hjelpe deg videre — selv med krevende tilfeller.", "A MittBygg advisor can help you — even with difficult cases.")}</div>
+                    <div className="text-xs text-amber-700 mt-0.5">{t("En rådgiver fra Søknadsklar kan hjelpe deg videre — selv med krevende tilfeller.", "A Søknadsklar advisor can help you — even with difficult cases.")}</div>
                   </div>
                 </div>
                 <a
-                  href="mailto:hei@mittbygg.no?subject=Trenger hjelp med søknad"
+                  href="mailto:hei@soknadsklar.no?subject=Trenger hjelp med søknad"
                   className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm rounded-xl py-3 text-center transition-colors"
                 >
                   {t("Kontakt en rådgiver", "Contact an advisor")}
@@ -236,7 +236,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onDownloadPdf, pdfLoadin
                 {t("Start på nytt", "Start over")}
               </Button>
               <a
-                href="mailto:hei@mittbygg.no?subject=Trenger hjelp med søknad"
+                href="mailto:hei@soknadsklar.no?subject=Trenger hjelp med søknad"
                 className="flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -378,7 +378,7 @@ function PricingCard({ slug }: { slug?: string }) {
           </div>
         </div>
         <div className="border-t border-gray-100 pt-4">
-          <div className="text-xs text-gray-500 mb-1">{t("Din pris via MittBygg", "Your price via MittBygg")}</div>
+          <div className="text-xs text-gray-500 mb-1">{t("Din pris via Søknadsklar", "Your price via Søknadsklar")}</div>
           <div className="text-3xl font-extrabold tracking-tight">{formatKr(p.mittbygg)}</div>
           <div className="text-sm text-gray-500 font-semibold mt-1">{t("Du sparer", "You save")} {formatKr(p.market - p.mittbygg)}</div>
         </div>

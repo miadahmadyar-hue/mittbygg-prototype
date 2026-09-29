@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="utf-8">
-<title>MittBygg — Fra idé til ferdigattest</title>
+<title>Søknadsklar — Fra idé til ferdigattest</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a4f3c">
 <style>
@@ -1998,10 +1998,10 @@ function evaluateGeolograpport(input) {
     findings.push({ type: "warn", t: "Setningsskader — vanlig risiko i Oslo-regionen",
       d: "Leirgrunn under Oslo kan gi setningsskader ved feil fundamentering. Grunnundersøkelse sikrer riktig fundamenttype.", ref: "NS-EN 1997 (Eurokode 7)" });
   }
-  findings.push({ type: "ok", t: "Geolog tilgjengelig via MittBygg-markedsplassen",
+  findings.push({ type: "ok", t: "Geolog tilgjengelig via Søknadsklar-markedsplassen",
     d: "Vi kobler deg med sertifisert geotekniker innen 2 virkedager. Rapport normalt klar på 5–10 dager.", ref: "NGF Melding nr. 2" });
   findings.push({ type: "ok", t: "Rapport kreves av kommunen ved søknad",
-    d: "Mange kommuner krever geoteknisk rapport som vedlegg til byggesøknaden. MittBygg inkluderer rapporten automatisk i søknadspakken.", ref: "SAK10 § 5-4" });
+    d: "Mange kommuner krever geoteknisk rapport som vedlegg til byggesøknaden. Søknadsklar inkluderer rapporten automatisk i søknadspakken.", ref: "SAK10 § 5-4" });
 
   tiltak.push({ name: "Geoteknisk rapport (grunnundersøkelse)",
     desc: "Prøvetaking (dreietrykksondering + prøvegrop), laboratorieanalyse, geoteknisk rapport med fundamentanbefalinger.",
@@ -2035,7 +2035,7 @@ function evaluateAndre(input) {
       { type: "ok", t: "Alternativ: ring byggesaksavdelingen",
         d: `De fleste kommuner har veiledningstelefon. ${state.property?.matrikkel?.kommune || 'Din'} kommune: se kommunens nettside.`, ref: "" },
     ],
-    tiltak: [{ name: "Rådgivning via MittBygg", desc: "En byggesaksekspert gjennomgår tiltaket og gir skriftlig vurdering.", kostnad: 1500 }],
+    tiltak: [{ name: "Rådgivning via Søknadsklar", desc: "En byggesaksekspert gjennomgår tiltaket og gir skriftlig vurdering.", kostnad: 1500 }],
     lempninger: [],
     soknadstype: "Avklares ved manuell gjennomgang",
     ansvarsrett: false, tiltaksklasse: 1, totalKostnad: 1500, input,
@@ -2250,7 +2250,7 @@ function renderSplash() {
   <div class="hero">
     <div class="orb">${ICONS.shield}</div>
     <h1>Fra <em>idé</em> til <em>ferdigattest</em>.</h1>
-    <p>MittBygg gir deg byggesøknader, tegninger og fagtjenester for hjemmet ditt — på minutter, ikke uker.</p>
+    <p>Søknadsklar gir deg byggesøknader, tegninger og fagtjenester for hjemmet ditt — på minutter, ikke uker.</p>
     <div style="margin-top: 36px; display:flex; flex-direction: column; gap: 10px;">
       <button class="btn primary lg" data-action="start-bankid">
         ${ICONS.bankid} Logg inn med BankID
@@ -3186,7 +3186,7 @@ function renderResult() {
           <div class="total">${formatKr(r.totalKostnad)}</div>
         </div>
         <div class="row"><span class="k">Materialer + arbeid</span><span class="v">${formatKr(Math.round(r.totalKostnad * 0.75))}</span></div>
-        <div class="row"><span class="k">Søknad + tegninger (gjennom MittBygg)</span><span class="v">${formatKr(Math.round(r.totalKostnad * 0.05) + 4900)}</span></div>
+        <div class="row"><span class="k">Søknad + tegninger (gjennom Søknadsklar)</span><span class="v">${formatKr(Math.round(r.totalKostnad * 0.05) + 4900)}</span></div>
         <div class="row"><span class="k">Reserve (10%)</span><span class="v">${formatKr(Math.round(r.totalKostnad * 0.10))}</span></div>
       </div>
     ` : ''}
@@ -3449,7 +3449,7 @@ function sheetArkitekt() {
         </div>
         <span class="pill green">★ 4.9</span>
       </div>
-      <div class="mt-3 small muted">Spesialitet: kjellerbruksendring, småhus i Oslo. 47 prosjekter via MittBygg.</div>
+      <div class="mt-3 small muted">Spesialitet: kjellerbruksendring, småhus i Oslo. 47 prosjekter via Søknadsklar.</div>
       <div class="mt-3" style="display: flex; gap: 12px; font-size: 13px;">
         <span><strong>8 000 kr</strong> · KS av søknadspakke</span>
       </div>

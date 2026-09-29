@@ -13,7 +13,7 @@ export default function HomePage() {
     <main className="bg-white">
       <section className="relative flex min-h-[78dvh] flex-col overflow-hidden bg-green-700 text-white">
         <Image
-          src="/mittbygg-home.webp"
+          src="/soknadsklar-home.webp"
           alt={t("Moderne norsk trehus i landskapet", "Modern Norwegian timber home in the landscape")}
           fill
           priority
@@ -41,7 +41,7 @@ export default function HomePage() {
               {t("Digital byggerådgivning", "Digital building advisory")}
             </p>
             <h1 className="mt-5 font-serif text-[64px] font-medium leading-[0.92] text-white sm:text-[82px] md:text-[104px]">
-              MittBygg
+              Søknadsklar
             </h1>
             <p className="mt-6 max-w-[680px] font-serif text-[27px] leading-[1.15] text-white sm:text-[34px] md:text-[42px]">
               {t("Trygg vei gjennom byggesaken.", "A clearer path through your building project.")}
@@ -90,8 +90,8 @@ export default function HomePage() {
           </div>
           <p className="max-w-[680px] text-base leading-7 text-gray-600 md:text-lg">
             {t(
-              "MittBygg samler det som vanligvis ligger spredt hos kommune, rådgivere og fagfolk. Du får en tydelig vurdering av saken, hva som mangler og hvilke steg som følger.",
-              "MittBygg brings together information normally spread across municipalities, advisers and specialists. You get a clear assessment, the missing documentation and the next steps.",
+              "Søknadsklar samler det som vanligvis ligger spredt hos kommune, rådgivere og fagfolk. Du får en tydelig vurdering av saken, hva som mangler og hvilke steg som følger.",
+              "Søknadsklar brings together information normally spread across municipalities, advisers and specialists. You get a clear assessment, the missing documentation and the next steps.",
             )}
           </p>
         </div>

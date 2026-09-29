@@ -22,14 +22,14 @@ def evaluate_geolograpport(inp: GeolograpportInput) -> TiltakResult:
 
     findings.append(TiltakFinding(
         type="ok",
-        t="Geolog tilgjengelig via MittBygg-markedsplassen",
+        t="Geolog tilgjengelig via Søknadsklar-markedsplassen",
         d="Vi kobler deg med sertifisert geotekniker innen 2 virkedager. Rapport normalt klar på 5–10 dager.",
         ref="NGF Melding nr. 2",
     ))
     findings.append(TiltakFinding(
         type="ok",
         t="Rapport kreves av kommunen ved søknad",
-        d="Mange kommuner krever geoteknisk rapport som vedlegg til byggesøknaden. MittBygg inkluderer rapporten automatisk i søknadspakken.",
+        d="Mange kommuner krever geoteknisk rapport som vedlegg til byggesøknaden. Søknadsklar inkluderer rapporten automatisk i søknadspakken.",
         ref="SAK10 § 5-4",
     ))
 
