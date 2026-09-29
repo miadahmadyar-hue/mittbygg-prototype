@@ -3,13 +3,13 @@ import "./globals.css";
 import { LangProvider } from "@/lib/i18n/context";
 
 export const metadata: Metadata = {
-  title: "MittBygg — Fra idé til ferdigattest",
+  title: "MittBygg | Digital byggerådgivning",
   description:
-    "Forbruker-app for byggesøknader. Adresse → tiltak → svar på 60 sekunder.",
+    "Digital byggerådgivning for norske boligeiere. Eiendomsdata, regelsjekk og dokumentasjon samlet på ett sted.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a4f3c",
+  themeColor: "#214c3d",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

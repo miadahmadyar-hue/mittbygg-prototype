@@ -8,7 +8,7 @@ export function LangToggle({ className = "" }: { className?: string }) {
 
   return (
     <div
-      className={`inline-flex items-center rounded-full bg-gray-100 p-0.5 text-[11px] font-bold ${className}`}
+      className={`inline-flex items-center rounded-[5px] border border-gray-200 bg-gray-50 p-0.5 text-[11px] font-bold ${className}`}
       role="group"
       aria-label="Språk / Language"
     >
@@ -18,7 +18,7 @@ export function LangToggle({ className = "" }: { className?: string }) {
           type="button"
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
-          className={`px-2 py-1 rounded-full transition-colors ${
+          className={`rounded-[3px] px-2 py-1 transition-colors ${
             lang === l
               ? "bg-white text-gray-900 shadow-sm"
               : "text-gray-400 hover:text-gray-600"

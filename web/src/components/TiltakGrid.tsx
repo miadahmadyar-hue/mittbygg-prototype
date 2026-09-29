@@ -11,106 +11,104 @@ import { TiltakIcon } from "@/components/ui/TiltakIcon";
 import { TILTAK, TAG_EN, type Tiltak } from "@/lib/data/tiltak";
 import { useT } from "@/lib/i18n/context";
 
-const ICON_BG: Record<string, string> = {
-  "":     "bg-green-50 text-green-500",
-  warm:   "bg-[#fef0e6] text-orange-500",
-  blue:   "bg-[#e3edf7] text-[#2156a8]",
+const ICON_STYLES: Record<string, string> = {
+  "": "bg-green-50 text-green-600",
+  warm: "bg-[#f8eee9] text-orange-600",
+  blue: "bg-[#edf2f4] text-[#315b70]",
 };
 
 export function TiltakGrid({ propertyId }: { propertyId: string }) {
-  const tr = useT();
+  const t = useT();
   const [unavailable, setUnavailable] = useState<Tiltak | null>(null);
+  const available = TILTAK.filter((item) => item.available);
+  const upcoming = TILTAK.filter((item) => !item.available);
 
   return (
     <>
-      <Topbar title={tr("Velg tiltak", "Choose a project")} />
-      <div className="view">
-        <div>
-          <h2 className="text-[22px] font-bold tracking-tight">{tr("Hva vil du gjøre?", "What would you like to do?")}</h2>
-          <p className="text-sm text-gray-500 mt-2">
-            {tr("Velg det som ligner mest. AI-en hjelper deg med detaljene.", "Pick whatever fits best. The AI helps with the details.")}
+      <Topbar title={t("Velg tiltak", "Choose project")} />
+      <main className="view view-wide">
+        <header className="max-w-3xl border-b border-gray-200 pb-7">
+          <p className="page-kicker">{t("Ny byggesak", "New building project")}</p>
+          <h1 className="page-title mt-2">{t("Hva planlegger du?", "What are you planning?")}</h1>
+          <p className="mt-4 max-w-2xl text-[15px] leading-7 text-gray-500">
+            {t("Velg tiltaket som passer best. Du får en strukturert vurdering av søknadsplikt, dokumentkrav og neste steg.", "Choose the closest project type. You will get a structured assessment of permit requirements, documentation and next steps.")}
           </p>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-2 gap-3">
-          {TILTAK.map((t) => (
-            <TiltakCard
-              key={t.id}
-              t={t}
-              propertyId={propertyId}
-              onUnavailable={() => setUnavailable(t)}
-            />
-          ))}
-        </div>
-      </div>
+        <section>
+          <div className="section-line">
+            <h2>{t("Tilgjengelige tiltak", "Available project types")}</h2>
+            <span>{available.length} {t("valg", "options")}</span>
+          </div>
+          <div className="project-grid mt-4">
+            {available.map((item) => (
+              <ProjectCard key={item.id} item={item} propertyId={propertyId} onUnavailable={() => setUnavailable(item)} />
+            ))}
+          </div>
+        </section>
+
+        {upcoming.length > 0 && (
+          <section>
+            <div className="section-line">
+              <h2>{t("Kommer senere", "Coming later")}</h2>
+              <span>{upcoming.length} {t("tiltak", "project types")}</span>
+            </div>
+            <div className="project-grid mt-4">
+              {upcoming.map((item) => (
+                <ProjectCard key={item.id} item={item} propertyId={propertyId} onUnavailable={() => setUnavailable(item)} />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
 
       <Sheet open={!!unavailable} onClose={() => setUnavailable(null)}>
-        <h2 className="text-[22px] font-bold">{unavailable ? tr(unavailable.name, unavailable.name_en) : ""}</h2>
-        <p className="text-sm text-gray-500 mt-2">{unavailable ? tr(unavailable.desc, unavailable.desc_en) : ""}</p>
-        <div className="mt-4">
-          <Alert>
-            {tr(
-              "Denne tiltakstypen er under utvikling og blir tilgjengelig i Stage 2 (Q3 2026). Bli varslet når den åpner.",
-              "This project type is under development and will be available in Stage 2 (Q3 2026). Get notified when it opens.",
-            )}
-          </Alert>
+        <p className="page-kicker">{t("Under utvikling", "In development")}</p>
+        <h2 className="mt-2 text-2xl font-semibold">{unavailable ? t(unavailable.name, unavailable.name_en) : ""}</h2>
+        <p className="mt-2 text-sm leading-6 text-gray-500">{unavailable ? t(unavailable.desc, unavailable.desc_en) : ""}</p>
+        <div className="mt-5">
+          <Alert>{t("Denne tiltakstypen er ikke tilgjengelig ennå. Du kan registrere interesse og få beskjed når den åpner.", "This project type is not available yet. You can register interest and be notified when it opens.")}</Alert>
         </div>
-        <div className="mt-4 flex flex-col gap-2">
-          <Button full onClick={() => setUnavailable(null)}>{tr("Varsle meg", "Notify me")}</Button>
-          <Button variant="ghost" full onClick={() => setUnavailable(null)}>{tr("Lukk", "Close")}</Button>
+        <div className="mt-5 flex flex-col gap-2">
+          <Button full onClick={() => setUnavailable(null)}>{t("Registrer interesse", "Register interest")}</Button>
+          <Button variant="ghost" full onClick={() => setUnavailable(null)}>{t("Lukk", "Close")}</Button>
         </div>
       </Sheet>
     </>
   );
 }
 
-function TiltakCard({
-  t,
-  propertyId,
-  onUnavailable,
-}: {
-  t: Tiltak;
-  propertyId: string;
-  onUnavailable: () => void;
-}) {
-  const tr = useT();
-  const cardClasses =
-    "bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-2 text-left min-h-[140px] transition-all";
-  const enabledClasses = "hover:border-green-300 hover:-translate-y-0.5 hover:shadow-md cursor-pointer";
-
-  const inner = (
+function ProjectCard({ item, propertyId, onUnavailable }: { item: Tiltak; propertyId: string; onUnavailable: () => void }) {
+  const t = useT();
+  const content = (
     <>
-      <div
-        className={`w-11 h-11 rounded-xl grid place-items-center mb-1 ${ICON_BG[t.iconClass]}`}
-      >
-        <TiltakIcon k={t.icon} />
+      <div className={`project-icon ${ICON_STYLES[item.iconClass] ?? ICON_STYLES[""]}`}>
+        <TiltakIcon k={item.icon} />
       </div>
-      <div className="text-sm font-bold leading-tight">{tr(t.name, t.name_en)}</div>
-      <div className="text-xs text-gray-500 leading-snug">{tr(t.desc, t.desc_en)}</div>
-      <div className="mt-auto flex flex-wrap gap-1">
-        {t.tags.map((tag, i) => (
-          <Pill key={i} variant={tag.variant === "" ? "default" : tag.variant}>
-            {tr(tag.text, TAG_EN[tag.text] ?? tag.text)}
-          </Pill>
-        ))}
-        {!t.available && <Pill>{tr("Kommer", "Coming")}</Pill>}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-[15px] font-semibold leading-5 text-gray-900">{t(item.name, item.name_en)}</h3>
+          {item.available ? <ArrowIcon /> : <Pill>{t("Kommer", "Coming")}</Pill>}
+        </div>
+        <p className="mt-2 text-[13px] leading-5 text-gray-500">{t(item.desc, item.desc_en)}</p>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {item.tags.map((tag, index) => (
+            <Pill key={`${tag.text}-${index}`} variant={tag.variant === "" ? "default" : tag.variant}>
+              {t(tag.text, TAG_EN[tag.text] ?? tag.text)}
+            </Pill>
+          ))}
+        </div>
       </div>
     </>
   );
 
-  if (t.available && t.slug) {
-    return (
-      <Link
-        href={`/property/${propertyId}/tiltak/${t.slug}`}
-        className={`${cardClasses} ${enabledClasses}`}
-      >
-        {inner}
-      </Link>
-    );
+  const className = `project-card ${item.available ? "project-card-active" : "project-card-muted"}`;
+  if (item.available && item.slug) {
+    return <Link href={`/property/${propertyId}/tiltak/${item.slug}`} className={className}>{content}</Link>;
   }
-  return (
-    <button type="button" onClick={onUnavailable} className={`${cardClasses} opacity-80`}>
-      {inner}
-    </button>
-  );
+  return <button type="button" onClick={onUnavailable} className={className}>{content}</button>;
+}
+
+function ArrowIcon() {
+  return <svg className="mt-0.5 shrink-0 text-gray-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 }

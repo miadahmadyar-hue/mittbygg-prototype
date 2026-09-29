@@ -19,7 +19,7 @@ export function Pill({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${STYLES[variant]}`}
+      className={`inline-flex items-center gap-1 rounded-[4px] px-2 py-1 text-[11px] font-semibold ${STYLES[variant]}`}
     >
       {children}
     </span>

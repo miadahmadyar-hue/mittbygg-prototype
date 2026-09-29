@@ -1,55 +1,47 @@
 @import "tailwindcss";
 
-/* ===========================================================================
-   MittBygg design tokens — ported from prototype/index.html
-   =========================================================================== */
+/* MittBygg advisory design system */
 @theme {
-  /* Brand */
-  --color-green-50:  #f1f7f4;
-  --color-green-100: #d8ebe1;
-  --color-green-300: #6da690;
-  --color-green-500: #0a4f3c;
-  --color-green-600: #084134;
-  --color-green-700: #052f24;
-  --color-orange-500: #e9763a;
-  --color-orange-600: #d2632a;
+  --color-green-50:  #f0f5f2;
+  --color-green-100: #dbe7e0;
+  --color-green-300: #7a9b8c;
+  --color-green-500: #214c3d;
+  --color-green-600: #183c30;
+  --color-green-700: #102c23;
+  --color-orange-500: #ae603b;
+  --color-orange-600: #914b2e;
 
-  /* Status */
-  --color-red-500:   #c53030;
+  --color-red-500:   #b63b3b;
   --color-red-50:    #fff4f4;
-  --color-amber-500: #d97706;
+  --color-amber-500: #b66b13;
   --color-amber-50:  #fff8eb;
 
-  /* Neutrals */
-  --color-gray-50:  #f7f7f6;
-  --color-gray-100: #ededeb;
-  --color-gray-200: #dedcd9;
-  --color-gray-300: #c9c6c2;
-  --color-gray-400: #94918c;
-  --color-gray-500: #6b6863;
-  --color-gray-700: #3a3835;
-  --color-gray-900: #1a1917;
+  --color-gray-50:  #f5f7f6;
+  --color-gray-100: #e8ecea;
+  --color-gray-200: #d4dad6;
+  --color-gray-300: #b8c0bb;
+  --color-gray-400: #858f89;
+  --color-gray-500: #5f6963;
+  --color-gray-700: #303934;
+  --color-gray-900: #17201c;
 
-  --color-background: #f7f7f6;
-  --color-foreground: #1a1917;
+  --color-background: #f5f7f6;
+  --color-foreground: #17201c;
 
-  /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-               "Segoe UI", "Inter", Roboto, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
   --font-mono: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
 
-  /* Radii */
-  --radius-sm:  8px;
-  --radius:     12px;
-  --radius-lg:  20px;
-  --radius-xl:  28px;
+  --radius-sm:  4px;
+  --radius:     6px;
+  --radius-lg:  8px;
+  --radius-xl:  10px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(10, 30, 25, 0.04),
-               0 1px 3px rgba(10, 30, 25, 0.06);
-  --shadow-md: 0 4px 12px rgba(10, 30, 25, 0.08);
-  --shadow-lg: 0 16px 40px rgba(10, 30, 25, 0.12);
+  --shadow-sm: 0 1px 2px rgba(13, 31, 24, 0.06);
+  --shadow-md: 0 8px 24px rgba(13, 31, 24, 0.08);
+  --shadow-lg: 0 20px 48px rgba(13, 31, 24, 0.14);
 }
+
+* { letter-spacing: 0 !important; }
 
 html, body {
   background: var(--color-background);
@@ -59,60 +51,209 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-@media (min-width: 900px) {
-  body {
-    background: linear-gradient(160deg,
-                #eaf3ee 0%, #f7f7f6 50%, #fef4ec 100%);
-  }
-}
+body { margin: 0; }
 
-/* Mobile-shell wrapper used by every route */
+button, a { -webkit-tap-highlight-color: transparent; }
+
 .shell {
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  background: white;
+  margin: 0;
+  background: var(--color-background);
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-@media (min-width: 900px) {
-  .shell {
-    margin: 24px auto;
-    min-height: calc(100vh - 48px);
-    border-radius: var(--radius-xl);
-  }
-}
-
-/* View transition */
 .view {
   flex: 1;
-  padding: 20px;
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 28px 20px 56px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  animation: viewIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  gap: 20px;
+  animation: viewIn 0.24s ease-out;
 }
+
+.view-wide { max-width: 1220px; }
+
+.page-kicker {
+  color: var(--color-orange-500);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.page-title {
+  color: var(--color-gray-900);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1.04;
+}
+
+.panel {
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.primary-link,
+.secondary-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: var(--radius);
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.primary-link {
+  background: var(--color-green-500);
+  color: white;
+}
+
+.primary-link:hover { background: var(--color-green-600); }
+
+.secondary-link {
+  width: 100%;
+  border: 1px solid var(--color-gray-200);
+  color: var(--color-gray-900);
+}
+
+.secondary-link:hover { border-color: var(--color-green-300); color: var(--color-green-600); }
+
+.text-link {
+  color: var(--color-green-500);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.text-link:hover { color: var(--color-green-700); }
+
+.property-summary {
+  display: grid;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-green-700);
+  box-shadow: var(--shadow-md);
+}
+
+.property-summary-copy { padding: 26px; }
+
+.property-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 16px;
+  padding: 22px 26px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.project-status { padding: 24px; }
+
+.status-marker {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin-top: 24px;
+  place-items: center;
+  border-radius: var(--radius);
+  background: var(--color-green-50);
+  color: var(--color-green-500);
+}
+
+.section-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.section-line h2 { font-size: 16px; font-weight: 700; }
+.section-line span { color: var(--color-gray-500); font-size: 12px; }
+
+.project-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.project-card {
+  display: flex;
+  min-width: 0;
+  min-height: 172px;
+  gap: 16px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  background: white;
+  padding: 20px;
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.project-card-active:hover {
+  border-color: var(--color-green-300);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.project-card-muted { background: var(--color-gray-50); opacity: 0.82; }
+
+.project-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: var(--radius);
+}
+
+@media (min-width: 768px) {
+  .view { padding: 48px 32px 72px; gap: 28px; }
+  .property-summary { grid-template-columns: 1.3fr 1fr; }
+  .property-summary-copy { padding: 34px 36px; }
+  .property-stats { border-top: 0; border-left: 1px solid rgba(255, 255, 255, 0.12); padding: 32px; }
+  .dashboard-grid { grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.75fr); gap: 24px; }
+  .project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+}
+
+@media (min-width: 1100px) {
+  .project-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @keyframes viewIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Spinner used during BankID + loading screens */
 .spinner {
-  width: 24px; height: 24px;
+  width: 24px;
+  height: 24px;
   border: 3px solid var(--color-gray-200);
   border-top-color: var(--color-green-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-.spinner-lg {
-  width: 56px; height: 56px;
-  border-width: 4px;
-}
+
+.spinner-lg { width: 52px; height: 52px; border-width: 4px; }
 @keyframes spin { to { transform: rotate(360deg); } }

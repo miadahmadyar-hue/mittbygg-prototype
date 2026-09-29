@@ -1,130 +1,118 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
+import { Brand } from "@/components/ui/Brand";
 import { LangToggle } from "@/components/ui/LangToggle";
 import { useT } from "@/lib/i18n/context";
 
-export default function Splash() {
+export default function HomePage() {
   const t = useT();
+
   return (
-    <>
-      <div
-        className="flex-1 flex flex-col justify-center px-5 py-10 text-center relative overflow-hidden"
-        style={{
-          background: "linear-gradient(180deg, #fafaf8 0%, #ecf3ef 100%)",
-        }}
-      >
-        <div className="absolute top-4 right-4 z-10">
-          <LangToggle />
-        </div>
-
-        <div
-          aria-hidden
-          className="absolute pointer-events-none"
-          style={{
-            width: 320,
-            height: 320,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(closest-side, rgba(233,118,58,0.18), transparent)",
-            top: -60,
-            right: -100,
-          }}
+    <main className="bg-white">
+      <section className="relative flex min-h-[78dvh] flex-col overflow-hidden bg-green-700 text-white">
+        <Image
+          src="/mittbygg-home.webp"
+          alt={t("Moderne norsk trehus i landskapet", "Modern Norwegian timber home in the landscape")}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
         />
-        <div
-          aria-hidden
-          className="absolute pointer-events-none"
-          style={{
-            width: 280,
-            height: 280,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(closest-side, rgba(10,79,60,0.10), transparent)",
-            bottom: -80,
-            left: -80,
-          }}
-        />
+        <div className="absolute inset-0 bg-[#0d241dcf]" aria-hidden />
 
-        <div
-          className="mx-auto rounded-[28px] grid place-items-center mb-6"
-          style={{
-            width: 88,
-            height: 88,
-            background:
-              "linear-gradient(135deg, #0a4f3c, #052f24 70%, #2a7a5e)",
-            boxShadow:
-              "0 12px 28px rgba(10,79,60,0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
-          }}
-        >
-          <svg
-            width="40" height="40" viewBox="0 0 24 24" fill="none"
-            stroke="white" strokeWidth="1.6" strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
-        </div>
+        <nav className="relative z-10 mx-auto flex h-[76px] w-full max-w-[1220px] items-center justify-between px-5 md:px-8">
+          <Brand inverse />
+          <div className="flex items-center gap-3">
+            <LangToggle className="border-white/25 bg-white/10 text-white" />
+            <Link
+              href="/bankid"
+              className="hidden min-h-10 items-center rounded-[5px] border border-white/35 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:inline-flex"
+            >
+              {t("Logg inn", "Sign in")}
+            </Link>
+          </div>
+        </nav>
 
-        <h1 className="text-[38px] leading-[1.05] font-bold tracking-[-0.025em] text-gray-900">
-          {t("Fra", "From")}{" "}
-          <span
-            className="bg-clip-text text-transparent"
-            style={{
-              backgroundImage: "linear-gradient(120deg, #0a4f3c, #e9763a)",
-            }}
-          >
-            {t("idé", "idea")}
-          </span>{" "}
-          {t("til", "to")}{" "}
-          <span
-            className="bg-clip-text text-transparent"
-            style={{
-              backgroundImage: "linear-gradient(120deg, #0a4f3c, #e9763a)",
-            }}
-          >
-            {t("ferdigattest", "approval")}
-          </span>
-          .
-        </h1>
-        <p className="text-[17px] mt-4 mx-auto max-w-[320px] text-gray-700 leading-snug">
-          {t(
-            "MittBygg gir deg byggesøknader, tegninger og fagtjenester for hjemmet ditt — på minutter, ikke uker.",
-            "MittBygg gives you building applications, drawings and professional services for your home — in minutes, not weeks.",
-          )}
-        </p>
+        <div className="relative z-10 mx-auto flex w-full max-w-[1220px] flex-1 items-center px-5 py-12 md:px-8 md:py-16">
+          <div className="max-w-[760px]">
+            <p className="text-xs font-extrabold uppercase text-[#e2a17e]">
+              {t("Digital byggerådgivning", "Digital building advisory")}
+            </p>
+            <h1 className="mt-5 font-serif text-[64px] font-medium leading-[0.92] text-white sm:text-[82px] md:text-[104px]">
+              MittBygg
+            </h1>
+            <p className="mt-6 max-w-[680px] font-serif text-[27px] leading-[1.15] text-white sm:text-[34px] md:text-[42px]">
+              {t("Trygg vei gjennom byggesaken.", "A clearer path through your building project.")}
+            </p>
+            <p className="mt-5 max-w-[620px] text-base leading-7 text-white/72 md:text-lg">
+              {t(
+                "Eiendomsdata, regelsjekk og profesjonell dokumentasjon samlet i én strukturert prosess.",
+                "Property data, regulatory review and professional documentation in one structured process.",
+              )}
+            </p>
 
-        <div className="mt-9 flex flex-col gap-2.5 max-w-[340px] mx-auto w-full relative z-10">
-          <Link href="/bankid" className="contents">
-            <Button size="lg" full>
-              <svg
-                width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round"
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/address"
+                className="inline-flex min-h-12 items-center justify-center gap-3 rounded-[6px] bg-white px-6 text-[15px] font-bold text-green-700 transition-colors hover:bg-gray-50"
               >
-                <rect x="3" y="6" width="18" height="14" rx="2" />
-                <path d="M7 10h10M7 14h6M7 18h4" />
-              </svg>
-              {t("Logg inn med BankID", "Sign in with BankID")}
-            </Button>
-          </Link>
-          <Link href="/address" className="contents">
-            <Button variant="ghost" full>
-              {t("Prøv demo (uten BankID)", "Try demo (without BankID)")}
-            </Button>
-          </Link>
+                {t("Start med eiendommen", "Start with your property")}
+                <ArrowIcon />
+              </Link>
+              <Link
+                href="/bankid"
+                className="inline-flex min-h-12 items-center justify-center rounded-[6px] border border-white/35 px-6 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                {t("Logg inn med BankID", "Sign in with BankID")}
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="bg-white border-t border-gray-100 text-center py-5">
-        <p className="text-xs text-gray-500">
-          {t(
-            "Drives på sikker norsk infrastruktur · GDPR · Datalagring i EU",
-            "Runs on secure Norwegian infrastructure · GDPR · Data stored in the EU",
-          )}
-        </p>
-      </div>
-    </>
+        <div className="relative z-10 border-t border-white/20">
+          <div className="mx-auto grid w-full max-w-[1220px] grid-cols-1 gap-4 px-5 py-5 text-sm text-white/70 sm:grid-cols-3 md:px-8">
+            <Assurance number="01" text={t("Eiendomsdata fra offentlige kilder", "Property data from public sources")} />
+            <Assurance number="02" text={t("Regelvurdering mot PBL, SAK10 og TEK17", "Review against Norwegian building regulation")} />
+            <Assurance number="03" text={t("Dokumentasjon klar for neste steg", "Documentation prepared for the next step")} />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-gray-200 bg-white">
+        <div className="mx-auto grid max-w-[1220px] gap-8 px-5 py-12 md:grid-cols-[0.8fr_1.2fr] md:px-8 md:py-16">
+          <div>
+            <p className="page-kicker">{t("Én samlet oversikt", "One clear overview")}</p>
+            <h2 className="mt-3 max-w-[420px] font-serif text-3xl font-medium leading-tight text-gray-900 md:text-4xl">
+              {t("Bedre beslutninger før du bygger.", "Better decisions before you build.")}
+            </h2>
+          </div>
+          <p className="max-w-[680px] text-base leading-7 text-gray-600 md:text-lg">
+            {t(
+              "MittBygg samler det som vanligvis ligger spredt hos kommune, rådgivere og fagfolk. Du får en tydelig vurdering av saken, hva som mangler og hvilke steg som følger.",
+              "MittBygg brings together information normally spread across municipalities, advisers and specialists. You get a clear assessment, the missing documentation and the next steps.",
+            )}
+          </p>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function Assurance({ number, text }: { number: string; text: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="font-mono text-xs font-bold text-[#e2a17e]">{number}</span>
+      <span>{text}</span>
+    </div>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
   );
 }

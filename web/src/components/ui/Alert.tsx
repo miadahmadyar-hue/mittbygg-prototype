@@ -44,7 +44,7 @@ export function Alert({
 }) {
   return (
     <div
-      className={`flex gap-3 p-4 rounded-xl text-sm items-start ${STYLES[variant]}`}
+      className={`flex items-start gap-3 rounded-[6px] p-4 text-sm ${STYLES[variant]}`}
     >
       <span className="shrink-0 mt-0.5">{ICONS[variant]}</span>
       <div className="leading-snug">{children}</div>

@@ -13,14 +13,14 @@ export function RadioCard({ selected, onClick, title, desc, leadIcon }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 p-4 rounded-xl bg-white text-left w-full transition-all ${
+      className={`flex w-full items-center gap-3 rounded-[6px] bg-white p-4 text-left transition-all ${
         selected
           ? "border-[1.5px] border-green-500 bg-green-50 shadow-[0_0_0_1px_var(--color-green-500)_inset]"
           : "border-[1.5px] border-gray-200 hover:border-gray-300 hover:bg-gray-50"
       }`}
     >
       {leadIcon && (
-        <div className="w-10 h-10 rounded-[10px] bg-gray-100 grid place-items-center shrink-0">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[5px] bg-gray-100">
           {leadIcon}
         </div>
       )}
