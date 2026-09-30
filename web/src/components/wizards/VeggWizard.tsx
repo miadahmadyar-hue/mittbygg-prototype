@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -39,8 +39,8 @@ const INITIAL: VeggInput = {
 
 export function VeggWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState<VeggInput>(INITIAL);
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState<VeggInput>("data", INITIAL);
 
   const evaluate = async () => {
     setPhase({ kind: "loading" });
@@ -49,7 +49,7 @@ export function VeggWizard({ p }: { p: Address }) {
   };
 
   if (phase.kind !== "wizard") {
-    return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="vegg" loadingText="Klargjør faglig avklaring…" />;
+    return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="vegg" loadingText="Klargjør faglig avklaring…" />;
   }
 
   const step = phase.step;
@@ -59,7 +59,7 @@ export function VeggWizard({ p }: { p: Address }) {
 
   return (
     <>
-      <Topbar title="Endring i bærekonstruksjon" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar onBack={back} title="Endring i bærekonstruksjon" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
         {step === 0 ? (
@@ -95,7 +95,7 @@ export function VeggWizard({ p }: { p: Address }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Omtrentlig bredde på åpningen</label>
-              <NumberField value={data.apning_bredde ?? 0} onChange={(value) => setData({ ...data, apning_bredde: value || null })} step={0.1} unit="m" />
+              <NumberField label="Åpningsbredde" value={data.apning_bredde ?? 0} onChange={(value) => setData({ ...data, apning_bredde: value || null })} step={0.1} unit="m" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Hvor er veggen?</h3>
@@ -107,7 +107,7 @@ export function VeggWizard({ p }: { p: Address }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Antall etasjer over</label>
-              <NumberField value={data.etasjer_over} onChange={(value) => setData({ ...data, etasjer_over: Math.max(0, Math.round(value)) })} unit="stk" />
+              <NumberField label="Etasjer over" value={data.etasjer_over} onChange={(value) => setData({ ...data, etasjer_over: Math.max(0, Math.round(value)) })} unit="stk" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Hovedmateriale</h3>

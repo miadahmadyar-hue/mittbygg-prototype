@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
+import { mapProperty } from "@/lib/data/property";
 import { ADDRESSES, type Address } from "@/lib/data/addresses";
 import { getUser, setUser, type User } from "@/lib/auth";
 import { useT } from "@/lib/i18n/context";
@@ -17,33 +18,7 @@ async function searchBackend(q: string): Promise<Address[]> {
   if (!res.ok) throw new Error("search failed");
   const data = await res.json();
 
-  return (data.results ?? []).map((a: Record<string, unknown>) => ({
-    id: a.id,
-    street: a.street,
-    postal: a.postal ?? "",
-    city: a.city ?? "",
-    coords: [
-      (a as Record<string, { lat: number; lon: number }>).coords?.lat ?? 0,
-      (a as Record<string, { lat: number; lon: number }>).coords?.lon ?? 0,
-    ],
-    matrikkel: {
-      gnr: String((a as Record<string, Record<string, unknown>>).matrikkel?.gnr ?? ""),
-      bnr: String((a as Record<string, Record<string, unknown>>).matrikkel?.bnr ?? ""),
-      kommune: String((a as Record<string, Record<string, unknown>>).matrikkel?.kommune ?? ""),
-    },
-    bygg: {
-      byggeAar: (a as Record<string, Record<string, unknown>>).bygg?.byggeAar ?? 1975,
-      BRA: (a as Record<string, Record<string, unknown>>).bygg?.BRA ?? null,
-      etasjer: (a as Record<string, Record<string, unknown>>).bygg?.etasjer ?? null,
-      kjeller: (a as Record<string, Record<string, unknown>>).bygg?.kjeller ?? true,
-      garasje: (a as Record<string, Record<string, unknown>>).bygg?.garasje ?? false,
-      tomt: null,
-      regplan: "Kommuneplan",
-      byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
-      tidligereSaker: [],
-      bygg_source: String((a as Record<string, Record<string, unknown>>).bygg?.bygg_source ?? "default"),
-    },
-  }));
+  return (data.results ?? []).map(mapProperty);
 }
 
 async function searchKartverket(q: string): Promise<Address[]> {
@@ -74,14 +49,14 @@ async function searchKartverket(q: string): Promise<Address[]> {
       coords: [punkt.lat ?? 0, punkt.lon ?? 0] as [number, number],
       matrikkel: { gnr: String(gnr), bnr: String(bnr), kommune },
       bygg: {
-        byggeAar: 1975,
+        byggeAar: null,
         BRA: null,
         etasjer: null,
-        kjeller: true,
-        garasje: false,
+        kjeller: null,
+        garasje: null,
         tomt: null,
-        regplan: "Kommuneplan",
-        byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
+        regplan: null,
+        byggegrenser: { nord: null, sor: null, ost: null, vest: null },
         tidligereSaker: [],
         bygg_source: "default",
       },
@@ -105,7 +80,6 @@ export default function AddressPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [user, setUserState] = useState<User | null>(() => getUser());
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -123,26 +97,25 @@ export default function AddressPage() {
     const trimmed = query.trim();
     if (trimmed.length < 2) return;
 
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    let active = true;
+    const timer = setTimeout(async () => {
       setLoading(true);
       setError(false);
       try {
-        setResults(await search(trimmed));
+        const next = await search(trimmed);
+        if (active) setResults(next);
       } catch {
-        setError(true);
-        setResults([]);
+        if (active) { setError(true); setResults([]); }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }, 350);
+    return () => { active = false; clearTimeout(timer); };
   }, [query]);
 
   const updateQuery = (value: string) => {
     setQuery(value);
-    if (value.trim().length >= 2) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    setLoading(false);
+    setLoading(value.trim().length >= 2);
     setResults([]);
     setError(false);
   };
@@ -150,9 +123,9 @@ export default function AddressPage() {
   const select = (id: string, address?: Address) => {
     if (address) {
       try {
-        localStorage.setItem(`property_${id}`, JSON.stringify(address));
+        localStorage.setItem(`property_v2_${id}`, JSON.stringify(address));
       } catch {
-        sessionStorage.setItem(`property_${id}`, JSON.stringify(address));
+        try { sessionStorage.setItem(`property_v2_${id}`, JSON.stringify(address)); } catch { /* Backend can reload the property. */ }
       }
     }
     router.push(`/property/${id}`);
@@ -188,6 +161,7 @@ export default function AddressPage() {
         <div className="panel flex max-w-[900px] items-center gap-4 px-5 py-4 shadow-md transition focus-within:border-green-500 focus-within:shadow-[0_0_0_3px_var(--color-green-100)]">
           <span className="shrink-0 text-gray-400">{loading ? <SpinnerIcon /> : <SearchIcon />}</span>
           <input
+            aria-label={t("Søk etter eiendom", "Search for property")}
             type="text"
             value={query}
             onChange={(e) => updateQuery(e.target.value)}

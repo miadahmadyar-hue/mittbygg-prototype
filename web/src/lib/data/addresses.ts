@@ -26,16 +26,18 @@ export interface Address {
   coords: [number, number];
   matrikkel: { gnr: string; bnr: string; kommune: string };
   bygg: {
-    byggeAar: number;
+    byggeAar: number | null;
     BRA: number | null;
     etasjer: number | null;
-    kjeller: boolean;
-    garasje: boolean;
+    kjeller: boolean | null;
+    garasje: boolean | null;
     tomt: number | null;
-    regplan: string;
-    byggegrenser: { nord: number; sor: number; ost: number; vest: number };
+    regplan: string | null;
+    byggegrenser: { nord: number | null; sor: number | null; ost: number | null; vest: number | null };
     tidligereSaker: Sak[];
     tegninger?: Tegning[];
+    confirmedAt?: string;
+    demo?: boolean;
     bygg_source?: "matrikkel" | "eiendomsinfo" | "default";
   };
 }

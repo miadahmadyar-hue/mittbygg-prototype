@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { ToggleRow } from "@/components/ui/Toggle";
@@ -18,8 +18,8 @@ type TriState = "ja" | "nei" | "usikker";
 
 export function GarasjeWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", {
     type: null as GType | null,
     areal: 0,
     avstand: 0,
@@ -44,13 +44,13 @@ export function GarasjeWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="garasje" loadingText="Kontrollerer vilkårene for garasje og uthus…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="garasje" loadingText="Kontrollerer vilkårene for garasje og uthus…" />;
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Garasje, carport eller bod" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar onBack={back} title="Garasje, carport eller bod" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
         {step === 0 ? (
@@ -62,6 +62,7 @@ export function GarasjeWizard({ p }: { p: Address }) {
               <RadioCard selected={data.type === "bod"} onClick={() => setData({ ...data, type: "bod" })} title="Bod eller uthus" desc="Lager, verksted eller hageutstyr" />
             </div>
             <ToggleRow on={data.overnatting} onChange={() => setData({ ...data, overnatting: !data.overnatting })} title="Skal brukes til overnatting eller beboelse" desc="Dette faller utenfor unntaket for garasje og bod" />
+            <details className="panel p-4 text-sm"><summary className="cursor-pointer font-semibold">Hvordan måler jeg?</summary><p className="mt-2">BRA er bruksareal inne i bygget. BYA er arealet bygget opptar på tomten. Oppgi det største av de to arealene for denne foreløpige sjekken. Mønehøyde er høyden til takets øverste punkt; gesimshøyde er høyden der tak og yttervegg møtes. Bruk dokumenterte mål fra tegningene.</p><svg viewBox="0 0 260 130" role="img" aria-label="Takprofil med møne på toppen og gesims ved takets kant" className="mt-3 w-full max-w-xs"><path d="M40 110V65L120 20L200 65V110Z" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M120 20H240M200 65H240" stroke="currentColor" strokeDasharray="4 3"/><text x="150" y="16" fontSize="12">Møne</text><text x="205" y="60" fontSize="12">Gesims</text></svg></details>
             <div className="grid grid-cols-2 gap-3">
               <Field label="BRA/BYA" value={data.areal} unit="m²" onChange={(areal) => setData({ ...data, areal })} />
               <Field label="Etasjer" value={data.etasjer} unit="stk" onChange={(value) => setData({ ...data, etasjer: Math.max(1, Math.round(value)) })} />
@@ -108,5 +109,5 @@ export function GarasjeWizard({ p }: { p: Address }) {
 }
 
 function Field({ label, value, unit, step = 1, onChange }: { label: string; value: number; unit: string; step?: number; onChange: (value: number) => void }) {
-  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField value={value} unit={unit} step={step} onChange={onChange} /></div>;
+  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField label={label} value={value} unit={unit} step={step} onChange={onChange} /></div>;
 }

@@ -1,47 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { findAddress, type Address } from "@/lib/data/addresses";
+import { type Address } from "@/lib/data/addresses";
 import { useT } from "@/lib/i18n/context";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-async function fetchFromBackend(id: string): Promise<Address | null> {
-  try {
-    const res = await fetch(`${API_URL}/api/property/${id}`, {
-      cache: "no-store", signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return null;
-    const d = await res.json();
-    return {
-      id: d.id, street: d.street, postal: d.postal ?? "", city: d.city ?? "",
-      coords: [d.coords?.lat ?? 0, d.coords?.lon ?? 0],
-      matrikkel: { gnr: String(d.matrikkel?.gnr ?? ""), bnr: String(d.matrikkel?.bnr ?? ""), kommune: String(d.matrikkel?.kommune ?? "") },
-      bygg: {
-        byggeAar: d.bygg?.byggeAar ?? 1975, BRA: d.bygg?.BRA ?? null, etasjer: d.bygg?.etasjer ?? null,
-        kjeller: d.bygg?.kjeller ?? true, garasje: d.bygg?.garasje ?? false, tomt: d.bygg?.tomt ?? null,
-        regplan: d.bygg?.regplan ?? "Kommuneplan", byggegrenser: { nord: 4, sor: 4, ost: 4, vest: 4 },
-        tidligereSaker: (d.tidligereSaker ?? []).map((s: Record<string, unknown>) => ({
-          aar: s.aar, type: s.type, status: s.status === "Godkjent" ? "Tillatelse" : s.status,
-        })),
-        bygg_source: d.bygg?.bygg_source ?? "default",
-      },
-    };
-  } catch { return null; }
-}
-
-export async function loadProperty(id: string): Promise<Address | null> {
-  const local = findAddress(id);
-  if (local) return local;
-  try {
-    const cached =
-      localStorage.getItem(`property_${id}`) ??
-      sessionStorage.getItem(`property_${id}`);
-    if (cached) return JSON.parse(cached);
-  } catch { /* ignore */ }
-  return fetchFromBackend(id);
-}
+export { loadProperty } from "@/lib/data/property";
+import { loadProperty } from "@/lib/data/property";
 
 export function PropertyLoader({ children }: { children: (p: Address) => React.ReactNode }) {
   const params = useParams();
@@ -50,7 +16,9 @@ export function PropertyLoader({ children }: { children: (p: Address) => React.R
   const [property, setProperty] = useState<Address | null | "loading">("loading");
 
   useEffect(() => {
-    loadProperty(id).then(setProperty);
+    let active = true;
+    loadProperty(id).then((next) => { if (active) setProperty(next); });
+    return () => { active = false; };
   }, [id]);
 
   if (property === "loading") {
@@ -66,10 +34,10 @@ export function PropertyLoader({ children }: { children: (p: Address) => React.R
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
         <p className="text-lg font-semibold">{t("Eiendom ikke funnet", "Property not found")}</p>
-        <p className="text-sm text-gray-500">{t("Gå tilbake og søk på nytt.", "Go back and search again.")}</p>
+        <p className="text-sm text-gray-500">{t("Opplysningene kan være midlertidig utilgjengelige.", "Property information may be temporarily unavailable.")}</p><Link className="primary-link" href="/address">{t("Søk etter eiendom", "Search for property")}</Link>
       </div>
     );
   }
 
-  return <>{children(property)}</>;
+  return <>{property.bygg.demo && <p className="bg-amber-50 px-5 py-2 text-sm" role="status">{t("Demo-eiendom — opplysninger og arkiv er eksempler.", "Demo property — facts and archive entries are examples.")}</p>}{children(property)}</>;
 }

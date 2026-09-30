@@ -3,9 +3,9 @@ Generic PDF søknadspakke — works for all TiltakResult-based tiltak.
 """
 from fpdf import FPDF
 from datetime import date
-from pathlib import Path
+from .fonts import font_path
 
-_FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
+
 
 C_GREEN      = (34, 197, 94)
 C_GREEN_DARK = (21, 128, 61)
@@ -42,9 +42,9 @@ SLUG_TITLE = {
 class _PDF(FPDF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_font("Sans", "",   str(_FONT_DIR / "DejaVuSans.ttf"))
-        self.add_font("Sans", "B",  str(_FONT_DIR / "DejaVuSans-Bold.ttf"))
-        self.add_font("Sans", "I",  str(_FONT_DIR / "DejaVuSans.ttf"))
+        self.add_font("Sans", "",   font_path())
+        self.add_font("Sans", "B",  font_path(bold=True))
+        self.add_font("Sans", "I",  font_path())
 
     def footer(self):
         self.set_y(-12)
@@ -108,7 +108,7 @@ def generate_generic_pdf(
 
     pdf.set_xy(15, 34)
     pdf.set_font("Sans", "B", 24)
-    pdf.cell(180, 13, "Søknadspakke", ln=True)
+    pdf.cell(180, 13, "Dokumentgrunnlag — utkast", ln=True)
     pdf.set_x(15)
     pdf.set_font("Sans", "", 13)
     pdf.set_text_color(*C_GRAY)

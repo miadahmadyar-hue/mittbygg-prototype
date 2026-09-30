@@ -182,8 +182,7 @@ This is a **working prototype** under active development. Honest status:
 - ✅ Stage 1 complete: address search, property dashboard, 15 tiltak wizards with
   regulation checks, application-package PDF, NO/EN toggle.
 - ✅ Stage 2 live: drawing upload + AI architect/engineer agents (real Claude in prod).
-- ⚠️ **No automated tests yet** — the regulation engine (`web/src/lib/regulations/`) is the
-  priority for unit coverage.
+- ✅ Automated regulation and API integration tests, frontend session tests, and CI checks.
 - ⚠️ Payment (Vipps) and BankID login are **simulated** (demo mode), not real integrations.
 - ⚠️ In EN mode, deep legal/AI-generated text stays Norwegian by design; 3 of 15 wizards are
   fully translated.
@@ -198,3 +197,29 @@ See the issue tracker / team notes for the prioritized backlog.
 **Frontend:** Next.js 16, React 19, TypeScript (strict), Tailwind CSS 4
 **Backend:** FastAPI, Python 3.12, Pydantic 2, httpx, fpdf2, Anthropic SDK
 **Infra:** Netlify (web), Render (api), Anthropic Claude, Kartverket/Geonorge APIs
+
+
+## Customer-flow reliability
+
+- Draft answers and wizard steps are saved per property and project type in this browser only. There is one draft per project type; this is not an account-backed project database. Storage failures are shown explicitly.
+- Generated PDFs are kept in IndexedDB and can be downloaded from the property dashboard. Clearing browser data removes local drafts and documents.
+- Missing property facts remain unknown. Customer corrections are stored separately with a confirmation timestamp. Older property caches are intentionally discarded.
+- Outages have retry/edit controls. Rejected drawing files must be acknowledged; PDF success requires a valid PDF response and local save. Uploaded drawings are not embedded in the generated PDF.
+- Results expose a stable `outcome` field. The PDF endpoint re-evaluates submitted answers before creating an application draft.
+- BankID/payment/submission remain demo-only. No verified customer identity or municipal submission is claimed.
+- AI requests include the project answers. Engineer output is a preliminary documentation review, not generated structural calculations. Invalid model responses use the explicit unavailable state.
+
+### API sessions and limits
+
+Before calling AI, upload or document endpoints, request `POST /api/auth/session` and send the returned token in `X-Session-Token`. Sessions expire after one hour and do not verify identity. Drawing analysis requires the session that uploaded the files. The frontend renews expired sessions; expired drawings must be uploaded again.
+
+Session creation is limited to 10/minute per direct client IP. Resource calls are limited to 20/minute per IP; AI calls also have a 30/day per-IP limit and a 300/day process-wide limit. These counters and sessions are process-local, reset on restart, and are intended for the single-worker demo deployment. Configure a shared session store and gateway limits before scaling to multiple workers or exposing paid production accounts. Reverse-proxy client-IP handling must be configured by the host; the app does not trust arbitrary forwarded headers.
+
+Deploy the backend and frontend together: the frontend expects the session endpoint and result outcome field. Netlify may deploy automatically on push; the Render service may require a manual deployment (see Deployment above).
+
+### Verification
+
+- Frontend (Node 24): `cd web`, then `npm test`, `npm run lint`, `npm run build`.
+- Backend: `cd backend`, then `python -m unittest discover -s tests -v`.
+- PDF generation uses DejaVu fonts on Linux or Arial on Windows. Set `PDF_FONT_DIR` to a directory containing DejaVuSans.ttf and DejaVuSans-Bold.ttf if needed.
+- Browser regression: create a garage draft, reload on step two, use header Back, retry an unavailable backend, simulate a failed PDF request, generate a PDF, return to the dashboard and download it again.

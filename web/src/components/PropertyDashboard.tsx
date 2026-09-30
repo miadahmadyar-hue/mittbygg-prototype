@@ -1,5 +1,7 @@
 "use client";
 
+import { PropertyFacts } from "./PropertyFacts";
+import { SavedProjects } from "./SavedProjects";
 import Link from "next/link";
 import { useState } from "react";
 import { Topbar } from "@/components/ui/Topbar";
@@ -10,7 +12,8 @@ import { Sheet } from "@/components/ui/Sheet";
 import { useT } from "@/lib/i18n/context";
 import type { Address, Tegning } from "@/lib/data/addresses";
 
-export function PropertyDashboard({ p }: { p: Address }) {
+export function PropertyDashboard({ p: initial }: { p: Address }) {
+  const [p, setProperty] = useState(initial);
   const t = useT();
   const [showArchive, setShowArchive] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -26,15 +29,7 @@ export function PropertyDashboard({ p }: { p: Address }) {
     <>
       <Topbar
         title={t("Eiendomsoversikt", "Property overview")}
-        right={
-          <button
-            type="button"
-            className="grid h-9 w-9 place-items-center border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50"
-            aria-label={t("Varsler", "Notifications")}
-          >
-            <BellIcon />
-          </button>
-        }
+
       />
 
       <main className="view view-wide">
@@ -58,16 +53,18 @@ export function PropertyDashboard({ p }: { p: Address }) {
             <div className="mt-5 flex items-center gap-2 text-xs text-white/70">
               <CheckIcon />
               {hasRegistryData
-                ? t("Eiendomsdata hentet fra Matrikkelen", "Property data retrieved from the cadastre")
+                ? t("Bygningsdata fra offentlig register — planvilkår må kontrolleres separat", "Building data from a public register — planning conditions need separate verification")
                 : t("Ikke alle bygningsopplysninger er tilgjengelige", "Not all building details are available")}
             </div>
           </div>
           <div className="property-stats">
             <Stat value={area} label={t("m² BRA", "m² floor area")} />
-            <Stat value={p.bygg.byggeAar} label={t("Byggeår", "Year built")} />
+            <Stat value={p.bygg.byggeAar ?? "Ukjent"} label={t("Byggeår", "Year built")} />
             <Stat value={`${floors}${p.bygg.kjeller ? "+K" : ""}`} label={t("Etasjer", "Floors")} />
           </div>
         </section>
+
+        <PropertyFacts property={p} onSave={setProperty} />
 
         <div className="dashboard-grid">
           <section className="panel overflow-hidden">
@@ -84,23 +81,12 @@ export function PropertyDashboard({ p }: { p: Address }) {
               <KV label="Gnr/Bnr" value={`${p.matrikkel.gnr}/${p.matrikkel.bnr}`} />
               <KV label={t("Kommune", "Municipality")} value={p.matrikkel.kommune} />
               <KV label={t("Tomteareal", "Plot area")} value={p.bygg.tomt ? `${p.bygg.tomt} m²` : t("Ikke registrert", "Not registered")} />
-              <KV label={t("Byggegrense", "Building limit")} value={`${p.bygg.byggegrenser.nord} ${t("meter", "metres")}`} />
-              <KV label={t("Reguleringsplan", "Zoning plan")} value={p.bygg.regplan} />
+              <KV label={t("Byggegrense", "Building limit")} value={p.bygg.byggegrenser.nord === null ? t("Ukjent — kontroller kommunal plan", "Unknown — check municipal plan") : `${p.bygg.byggegrenser.nord} ${t("meter", "metres")}`} />
+              <KV label={t("Reguleringsplan", "Zoning plan")} value={p.bygg.regplan ?? t("Ikke hentet", "Not retrieved")} />
             </dl>
           </section>
 
-          <aside className="panel project-status">
-            <p className="page-kicker">{t("Aktive prosjekter", "Active projects")}</p>
-            <div className="status-marker"><FolderIcon /></div>
-            <h2 className="mt-5 text-xl font-semibold">{t("Ingen aktive tiltak", "No active projects")}</h2>
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              {t("Start et tiltak for å få dokumentkrav, fremdrift og innsending samlet på ett sted.", "Start a project to manage requirements, progress and submission in one place.")}
-            </p>
-            <Link href={`/property/${p.id}/tiltak`} className="secondary-link mt-6">
-              {t("Opprett tiltak", "Create project")}
-              <ArrowIcon />
-            </Link>
-          </aside>
+          <SavedProjects propertyId={p.id} />
         </div>
 
         <div className="dashboard-grid">
@@ -162,10 +148,10 @@ export function PropertyDashboard({ p }: { p: Address }) {
           <KV label={t("Kommune", "Municipality")} value={p.matrikkel.kommune} />
           <KV label={t("Tomt", "Plot")} value={p.bygg.tomt ? `${p.bygg.tomt} m²` : t("Ukjent", "Unknown")} />
           <KV label="BRA" value={p.bygg.BRA != null ? `${p.bygg.BRA} m²` : t("Ukjent", "Unknown")} />
-          <KV label={t("Byggeår", "Year built")} value={String(p.bygg.byggeAar)} />
+          <KV label={t("Byggeår", "Year built")} value={String(p.bygg.byggeAar ?? "Ukjent")} />
           <KV label={t("Etasjer", "Floors")} value={`${p.bygg.etasjer ?? "-"}${p.bygg.kjeller ? t(" + kjeller", " + basement") : ""}${p.bygg.garasje ? t(" + garasje", " + garage") : ""}`} />
-          <KV label={t("Reguleringsplan", "Zoning plan")} value={p.bygg.regplan} />
-          <KV label={t("Byggegrenser", "Building limits")} value={`N/S/Ø/V: ${p.bygg.byggegrenser.nord}/${p.bygg.byggegrenser.sor}/${p.bygg.byggegrenser.ost}/${p.bygg.byggegrenser.vest} m`} />
+          <KV label={t("Reguleringsplan", "Zoning plan")} value={p.bygg.regplan ?? t("Ikke hentet", "Not retrieved")} />
+          <KV label={t("Byggegrenser", "Building limits")} value={`N/S/Ø/V: ${p.bygg.byggegrenser.nord ?? "?"}/${p.bygg.byggegrenser.sor ?? "?"}/${p.bygg.byggegrenser.ost ?? "?"}/${p.bygg.byggegrenser.vest ?? "?"} m`} />
         </dl>
         <Button full className="mt-6" onClick={() => setShowInfo(false)}>{t("Lukk", "Close")}</Button>
       </Sheet>
@@ -253,7 +239,7 @@ function DrawingRow({ drawing }: { drawing: Tegning }) {
         <p className="truncate text-sm font-semibold text-gray-900">{drawing.title}</p>
         <p className="mt-0.5 truncate text-xs text-gray-500">{drawing.year} · {drawing.kilde} · {drawing.saksnr}</p>
       </div>
-      <button type="button" className="grid h-8 w-8 shrink-0 place-items-center text-gray-400 hover:text-green-600" aria-label={`Last ned ${drawing.title}`}>
+      <button type="button" className="grid h-8 w-8 shrink-0 place-items-center text-gray-400 hover:text-green-600" disabled title="Eksempeltegning — fil er ikke tilgjengelig" aria-label={`Eksempeltegning: ${drawing.title}`}>
         <DownloadIcon />
       </button>
     </div>
@@ -264,16 +250,8 @@ function ArrowIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 }
 
-function BellIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10 21a2 2 0 0 0 4 0" /></svg>;
-}
-
 function CheckIcon() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>;
-}
-
-function FolderIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h5l2 2h11v10H3z" /><path d="M3 7V5h6l2 2" /></svg>;
 }
 
 function DownloadIcon() {

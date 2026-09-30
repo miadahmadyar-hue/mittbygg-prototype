@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -61,8 +61,8 @@ const CURRENT_USE: Record<CurrentUse, [string, string]> = {
 
 export function KjellerWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState<WizardData>(INITIAL);
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState<WizardData>("data", INITIAL);
 
   const evaluate = async () => {
     if (!data.room || !data.ny_bruk || !data.rom_areal || !data.takhoyde) return;
@@ -90,7 +90,7 @@ export function KjellerWizard({ p }: { p: Address }) {
   };
 
   if (phase.kind !== "wizard") {
-    return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="kjeller" loadingText="Vurderer rommet mot kravene…" />;
+    return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="kjeller" loadingText="Vurderer rommet mot kravene…" />;
   }
 
   const step = phase.step;
@@ -101,7 +101,7 @@ export function KjellerWizard({ p }: { p: Address }) {
 
   return (
     <>
-      <Topbar title="Bruksendring kjeller" right={<span className="text-sm text-gray-500">{step + 1}/4</span>} />
+      <Topbar onBack={back} title="Bruksendring kjeller" right={<span className="text-sm text-gray-500">{step + 1}/4</span>} />
       <ProgressBar step={step} total={4} />
       <div className="view">
         {step === 0 && (
@@ -168,7 +168,7 @@ export function KjellerWizard({ p }: { p: Address }) {
             <ConditionGroup label="Finnes dokumentert ventilasjon for ny bruk?" value={data.ventilasjon_status} onChange={(value) => setData({ ...data, ventilasjon_status: value })} />
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Radonmåling, hvis tilgjengelig</label>
-              <NumberField value={data.radon ?? 0} onChange={(value) => setData({ ...data, radon: value || null })} unit="Bq/m³" />
+              <NumberField label="Radon" value={data.radon ?? 0} onChange={(value) => setData({ ...data, radon: value || null })} unit="Bq/m³" />
               <p className="text-xs text-gray-500 mt-2">La feltet stå på 0 hvis radon ikke er målt.</p>
             </div>
             <Alert>Resultatet er en tidlig regelsjekk. Tegninger og teknisk dokumentasjon må fortsatt kontrolleres før innsending.</Alert>
@@ -184,7 +184,7 @@ function Measurement({ label, value, onChange, unit, step = 1 }: { label: string
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
-      <NumberField value={value} onChange={onChange} unit={unit} step={step} />
+      <NumberField label={label} value={value} onChange={onChange} unit={unit} step={step} />
     </div>
   );
 }

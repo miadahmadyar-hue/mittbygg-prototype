@@ -10,6 +10,7 @@ export interface VeggInput {
 }
 
 export interface VeggResult {
+  outcome: "exempt" | "professional" | "clarify" | "application";
   status: "green" | "amber" | "red";
   statusText: string;
   statusDesc: string;
@@ -78,6 +79,7 @@ export function evaluateVegg(input: VeggInput): VeggResult {
   }];
 
   return {
+    outcome: isNonBearing ? "clarify" : "professional",
     status: isNonBearing ? "green" : "amber",
     statusText: isNonBearing ? "Trolig unntatt søknad" : "Krever konstruksjonsfaglig vurdering",
     statusDesc: isNonBearing

@@ -30,7 +30,7 @@ export default function HomePage() {
               href="/bankid"
               className="hidden min-h-10 items-center rounded-[5px] border border-white/35 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:inline-flex"
             >
-              {t("Logg inn", "Sign in")}
+              {t("Om demoen", "About the demo")}
             </Link>
           </div>
         </nav>
@@ -53,6 +53,7 @@ export default function HomePage() {
               )}
             </p>
 
+            <p className="mt-5 max-w-[620px] text-sm leading-6 text-white/85">{t("Prøv den foreløpige regelsjekken gratis. Du ser dokumentinnhold og eksempelpris før du går videre. Dette er en demo uten betaling eller kommunal innsending. Noen tiltak krever fagperson.", "Try the preliminary assessment free. Review document contents and example pricing before continuing. This demo does not take payment or submit to the municipality. Some projects require a professional.")}</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/address"
@@ -65,7 +66,7 @@ export default function HomePage() {
                 href="/bankid"
                 className="inline-flex min-h-12 items-center justify-center rounded-[6px] border border-white/35 px-6 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
               >
-                {t("Logg inn med BankID", "Sign in with BankID")}
+                {t("Slik fungerer demoen", "How the demo works")}
               </Link>
             </div>
           </div>

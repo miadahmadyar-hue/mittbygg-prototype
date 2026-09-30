@@ -23,6 +23,8 @@ import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer
 import { FALLBACK_ARCHITECT, FALLBACK_ENGINEER } from "@/lib/ai/fallbacks";
 import { useT } from "@/lib/i18n/context";
 import type { TiltakResult } from "@/lib/api/evaluate";
+import { evalTiltak } from "@/lib/api/evaluate";
+import { listDocuments, downloadBlob } from "@/lib/documents";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -92,6 +94,7 @@ export function SimpleWizard({
 // ── Non-wizard phases ─────────────────────────────────────────────────────────
 
 interface ResultPhasesProps {
+  onEdit: () => void;
   phase: Phase;
   setPhase: (p: NonWizardPhase) => void;
   p: Address;
@@ -103,14 +106,33 @@ type AiPhase =
   | { kind: "loading"; result: TiltakResult }
   | { kind: "done"; result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment };
 
-export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPhasesProps) {
+export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: ResultPhasesProps) {
   const router = useRouter();
   const t = useT();
+  const [downloadError, setDownloadError] = useState(false);
   const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
   const [pendingAiResults, setPendingAiResults] = useState<{
     result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment;
   } | null>(null);
+
+  const download = async () => {
+    if (!("result" in phase)) return;
+    setDownloadError(false);
+    setPhase({ kind: "sending", result: phase.result });
+    try {
+      await downloadTiltakSoknad(slug ?? "andre", phase.result, p.street,
+        Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.matrikkel.kommune,
+        pendingAiResults?.architect as unknown as Record<string, unknown>,
+        pendingAiResults?.engineer as unknown as Record<string, unknown>);
+      setPhase({ kind: "sent", result: phase.result });
+    } catch {
+      setDownloadError(true);
+      setPhase({ kind: "betaling", result: phase.result });
+    }
+  };
+
+  if (downloadError) return <><Topbar title={t("Dokumentet ble ikke generert", "Document generation failed")} onBack={onEdit} /><main className="view"><p role="alert">{t("Vi kunne ikke lage eller lagre PDF-en. Ingen pakke er bekreftet klar. Svarene dine er beholdt.", "We could not generate or save the PDF. No package is confirmed ready. Your answers have been kept.")}</p><Button full onClick={download}>{t("Prøv igjen", "Retry")}</Button><Button full variant="ghost" onClick={() => { setDownloadError(false); onEdit(); }}>{t("Tilbake til svarene", "Back to answers")}</Button></main></>;
 
   if (phase.kind === "loading") {
     return (
@@ -141,7 +163,14 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   if (phase.kind === "result") {
     return (
       <ResultView
-        r={phase.result as never}
+        r={phase.result}
+        onEdit={onEdit}
+        onRetry={async () => {
+          const input = phase.result.input;
+          setPhase({ kind: "loading" });
+          const result = await evalTiltak(slug ?? "andre", input);
+          setPhase({ kind: "result", result });
+        }}
         slug={slug}
         onGenerateSoknad={() => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
         onDownloadPdf={async () => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
@@ -181,6 +210,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   if (uploadPending) {
     return (
       <DrawingUpload
+        onBack={() => { setUploadPending(null); onEdit(); }}
         onContinue={async (sessionId) => {
           const result = uploadPending;
           setUploadPending(null);
@@ -192,6 +222,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
             bnr: Number(p.matrikkel.bnr),
             kommune: p.matrikkel.kommune,
             bygg: p.bygg as Record<string, unknown>,
+            project: result.input as Record<string, unknown>,
           };
           const [architect, engineer] = await Promise.all([
             callArchitectAgent({ ...reqBase, session_id: sessionId }).catch(() => null),
@@ -213,22 +244,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
       <BetalingModal
         totalKostnad={phase.result.totalKostnad}
         slug={slug}
-        onBetal={async () => {
-          const ai = pendingAiResults;
-          setPendingAiResults(null);
-          setPhase({ kind: "sending", result: phase.result });
-          await downloadTiltakSoknad(
-            slug ?? "andre",
-            phase.result,
-            p.street,
-            Number(p.matrikkel.gnr),
-            Number(p.matrikkel.bnr),
-            p.matrikkel.kommune,
-            ai?.architect as unknown as Record<string, unknown>,
-            ai?.engineer as unknown as Record<string, unknown>,
-          ).catch(() => {});
-          setPhase({ kind: "sent", result: phase.result });
-        }}
+        onBetal={download}
         onBack={() => {
           if (pendingAiResults) {
             setAiPhase({ kind: "done", ...pendingAiResults });
@@ -243,6 +259,14 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
   if (phase.kind === "sent") {
     return (
       <SoknadSent
+        onDownload={async () => {
+          try {
+            const documents = await listDocuments(p.id);
+            const saved = documents.find((document) => document.id === window.location.pathname);
+            if (saved) { downloadBlob(saved.blob, saved.filename); return; }
+          } catch { /* Regenerate when local storage cannot be read. */ }
+          await download();
+        }}
         onDone={() => router.push(`/property/${p.id}`)}
       />
     );
@@ -254,20 +278,22 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug }: ResultPh
 // ── Shared UI primitives ──────────────────────────────────────────────────────
 
 export function NumberField({
-  value, onChange, placeholder, step = 1, unit,
+  value, onChange, placeholder, step = 1, unit, label,
 }: {
   value: number; onChange: (v: number) => void;
-  placeholder?: string; step?: number; unit?: string;
+  placeholder?: string; step?: number; unit?: string; label?: string;
 }) {
   return (
     <div className="flex items-center bg-white border-[1.5px] border-gray-200 rounded-xl px-4 py-3.5 gap-3 focus-within:border-green-500 focus-within:shadow-[0_0_0_4px_var(--color-green-50)] transition">
       <input
+        aria-label={label}
+        min={0}
         type="number"
         value={value}
         step={step}
         placeholder={placeholder}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="flex-1 bg-transparent outline-none text-base"
+        className="min-w-0 w-full flex-1 bg-transparent outline-none text-base"
       />
       {unit && <span className="text-sm text-gray-400 shrink-0">{unit}</span>}
     </div>

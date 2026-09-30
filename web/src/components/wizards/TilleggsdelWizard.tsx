@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { Alert } from "@/components/ui/Alert";
@@ -21,8 +21,8 @@ const FORMAAL_LABEL: Record<Formaal, string> = { soverom: "Soverom", stue: "Stue
 
 export function TilleggsdelWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ romtype: null as RomType | null, areal: 15, formaal: null as Formaal | null });
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", { romtype: null as RomType | null, areal: 15, formaal: null as Formaal | null });
 
   const evaluate = async () => {
     if (!data.romtype || !data.formaal) return;
@@ -31,14 +31,14 @@ export function TilleggsdelWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="tilleggsdel" loadingText="Sjekker TEK17 og PBL…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="tilleggsdel" loadingText="Sjekker TEK17 og PBL…" />;
 
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Tilleggsdel til hoveddel" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar onBack={back} title="Tilleggsdel til hoveddel" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
         {step === 0 && (
@@ -51,7 +51,7 @@ export function TilleggsdelWizard({ p }: { p: Address }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">Areal (m²)</label>
-              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
+              <NumberField label="Areal" value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
             </div>
             <Alert>Tilleggsdel til hoveddel krever søknad og at rommet oppfyller TEK17.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">

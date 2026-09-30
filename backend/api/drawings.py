@@ -2,7 +2,9 @@ import os
 import uuid
 import re
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from .access import require_session
+import hashlib
+from fastapi import Depends, APIRouter, UploadFile, File, HTTPException
 from typing import List
 
 router = APIRouter()
@@ -45,7 +47,7 @@ def _validate_upload(upload: UploadFile) -> str | None:
 
 
 @router.post("/drawings/upload")
-async def upload_drawings(files: List[UploadFile] = File(...)):
+async def upload_drawings(files: List[UploadFile] = File(...), owner: str = Depends(require_session)):
     session_id = uuid.uuid4().hex[:12]
     upload_root = Path(UPLOAD_DIR).resolve()
     session_dir = (upload_root / session_id).resolve()
@@ -66,6 +68,7 @@ async def upload_drawings(files: List[UploadFile] = File(...)):
             continue
 
         os.makedirs(session_dir, exist_ok=True)
+        (session_dir / ".owner").write_text(hashlib.sha256(owner.encode()).hexdigest())
         filename = _safe_filename(upload.filename, index)
         dest = (session_dir / filename).resolve()
         if upload_root not in dest.parents:

@@ -113,8 +113,8 @@ def _default_bygg() -> dict:
         "byggeAar":    None,
         "BRA":         None,
         "etasjer":     None,
-        "kjeller":     True,
-        "garasje":     False,
+        "kjeller":     None,
+        "garasje":     None,
         "bygningstype": None,
         "source":      "default",
     }
@@ -147,7 +147,7 @@ def _parse_eiendomsinfo(data: dict) -> dict:
     out["BRA"]      = _int(b.get("bruksareal") or b.get("bra"))
     out["etasjer"]  = _int(b.get("antallEtasjer") or b.get("etasjer"))
     har_kjeller = b.get("harKjeller")
-    out["kjeller"]  = bool(har_kjeller) if har_kjeller is not None else True
+    out["kjeller"]  = bool(har_kjeller) if har_kjeller is not None else None
     out["garasje"]  = bool(b.get("harGarasje") or False)
     return out
 
@@ -158,7 +158,7 @@ def _infer_kjeller(b: dict) -> bool:
     for e in (b.get("etasjeplan") or []):
         if isinstance(e, dict) and str(e.get("etasjebetegnelse", "")).upper() in ("KJ", "U1", "U2", "KP"):
             return True
-    return True  # safe default: most Norwegian houses have a basement
+    return None  # Missing registry evidence is not a confirmed basement.
 
 
 def _infer_garasje(bygningstype: Optional[str]) -> bool:

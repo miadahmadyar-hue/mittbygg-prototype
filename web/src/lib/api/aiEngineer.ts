@@ -1,3 +1,4 @@
+import { sessionFetch } from "./session";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export interface Beregning {
@@ -25,11 +26,12 @@ interface EngineerRequest {
   gnr: number;
   bnr: number;
   bygg: Record<string, unknown>;
+  project: Record<string, unknown>;
   architect_summary?: string;
 }
 
 export async function callEngineerAgent(req: EngineerRequest): Promise<EngineerAssessment> {
-  const res = await fetch(`${API_URL}/api/ai/engineer`, {
+  const res = await sessionFetch(`${API_URL}/api/ai/engineer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),

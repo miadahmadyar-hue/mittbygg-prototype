@@ -68,3 +68,24 @@ def post_evaluate_tilleggsdel(inp: TilleggsdelInput)     -> TiltakResult: return
 
 @router.post("/evaluate/boenhet",       response_model=TiltakResult)
 def post_evaluate_boenhet(inp: BoenhetInput)             -> TiltakResult: return evaluate_boenhet(inp)
+
+
+# Re-evaluate submitted answers when generating documents. Never trust a
+# customer-supplied green status or application-ready flag.
+EVALUATORS = {
+    "kjeller": (KjellerInput, evaluate_kjeller),
+    "vegg": (VeggInput, evaluate_vegg),
+    "garasje": (GarasjeInput, evaluate_garasje),
+    "tilbygg": (TilbyggInput, evaluate_tilbygg),
+    "fasade": (FasadeInput, evaluate_fasade),
+    "tak": (TakInput, evaluate_tak),
+    "anneks": (AnneksInput, evaluate_anneks),
+    "levegg": (LevegInput, evaluate_levegg),
+    "vindu": (VinduInput, evaluate_vindu),
+    "brygge": (BryggeInput, evaluate_brygge),
+    "andre": (AndreInput, evaluate_andre),
+    "geolograpport": (GeolograpportInput, evaluate_geolograpport),
+    "bruksendring": (BruksendringInput, evaluate_bruksendring),
+    "tilleggsdel": (TilleggsdelInput, evaluate_tilleggsdel),
+    "boenhet": (BoenhetInput, evaluate_boenhet),
+}

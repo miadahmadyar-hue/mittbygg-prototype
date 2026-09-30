@@ -56,21 +56,30 @@ interface Props {
   onDownloadPdf?: () => Promise<void>;
   pdfLoading?: boolean;
   onRestart: () => void;
+  onRetry?: () => void;
+  onEdit?: () => void;
 }
 
-export function ResultView({ r, slug, onGenerateSoknad, onRestart }: Props) {
+export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEdit }: Props) {
   const t = useT();
   const sCard = STATUS_CARDS[r.status];
-  const applicationType = r.soknadstype.toLowerCase();
-  const needsClarification = applicationType.includes("må avklares") || applicationType.includes("vurderes manuelt") || applicationType.includes("trolig");
-  const isExempt = !needsClarification && (applicationType.startsWith("unntatt") || applicationType.startsWith("ikke oppdeling"));
-  const needsProfessional = r.ansvarsrett;
-  const canBuildPackage = !isExempt && !needsProfessional && !needsClarification && r.status !== "red";
-  const outcome = isExempt ? "exempt" : needsProfessional ? "professional" : needsClarification || r.status === "red" ? "clarify" : "application";
+  const outcome = r.outcome ?? "clarify";
+  const needsClarification = outcome === "clarify";
+  const isExempt = outcome === "exempt";
+  const needsProfessional = outcome === "professional";
+  const canBuildPackage = outcome === "application";
+
+
+  if (r.availability === "unavailable") return <>
+    <Topbar title={t("Kunne ikke sjekke prosjektet", "Unable to check project")} onBack={onEdit} />
+    <main className="view"><div role="alert" className="panel p-6"><h1 className="text-xl font-semibold">{t("Regeltjenesten svarte ikke", "The assessment service did not respond")}</h1><p className="mt-3">{t("Ingen vurdering er utført. Svarene dine er beholdt. Prøv igjen om litt.", "No assessment was performed. Your answers have been kept. Please try again shortly.")}</p></div>
+      <Button full onClick={onRetry}>{t("Prøv igjen", "Retry")}</Button>
+      <Button full variant="ghost" onClick={onEdit}>{t("Se eller endre svar", "Review or edit answers")}</Button>
+    </main></>;
 
   return (
     <>
-      <Topbar title={t("Resultat", "Result")} />
+      <Topbar title={t("Resultat", "Result")} onBack={onEdit} />
       <div className="view">
         <div
           className={`flex items-center gap-3 p-5 rounded-2xl border ${sCard.bg} ${sCard.border}`}
@@ -103,6 +112,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart }: Props) {
           </div>
         )}
 
+        <details className="panel p-4"><summary className="cursor-pointer font-semibold">{t("Se regelsjekk og henvisninger", "View assessment details and references")}</summary>
         <SectionHead>{t("Regelsjekk", "Rule check")}</SectionHead>
         <ul className="space-y-2">
           {r.findings.map((f, i) => (
@@ -132,12 +142,15 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart }: Props) {
           <KV k={t("Tiltaksklasse", "Work class")} v={`TK${r.tiltaksklasse}`} last />
         </div>
 
+        </details>
+
         {canBuildPackage && <PricingCard slug={slug} />}
 
         <SectionHead>{t("Anbefalt vei videre", "Recommended next steps")}</SectionHead>
         <Timeline outcome={outcome} />
 
         <div className="mt-2 flex flex-col gap-2">
+          {onEdit && <Button full variant="ghost" onClick={onEdit}>{t("Se eller endre svar", "Review or edit answers")}</Button>}
           {isExempt ? (
             <>
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-900">
@@ -338,7 +351,7 @@ function PricingCard({ slug }: { slug?: string }) {
         <div>
           <div className="text-xs font-semibold uppercase text-gray-500 mb-1">{t("Demo", "Demo")}</div>
           <div className="text-xs text-gray-500 mb-1">{t("Eksempelpris for søknadspakke", "Example price for an application package")}</div>
-          <div className="text-3xl font-extrabold tracking-tight">{formatKr(p.mittbygg)}</div>
+          <div className="text-3xl font-extrabold tracking-tight">{formatKr(p.mittbygg)} <span className="text-sm font-normal">{t("eks. mva", "excl. VAT")}</span></div>
         </div>
         {p.note && <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">{p.note}</div>}
         <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">

@@ -1,3 +1,4 @@
+import { mapProperty } from "@/lib/data/property";
 import { apiGet } from "./client";
 import type { Address } from "@/lib/data/addresses";
 
@@ -7,7 +8,7 @@ export async function searchAddressesApi(q: string): Promise<Address[]> {
     const data = await apiGet<{ results: Address[] }>(
       `/api/address/search?q=${encodeURIComponent(q)}`,
     );
-    return data.results;
+    return data.results.map(mapProperty);
   } catch {
     return [];
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { ToggleRow } from "@/components/ui/Toggle";
@@ -28,8 +28,8 @@ const OPTIONS: Record<FType, [string, string]> = {
 
 export function FasadeWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", {
     type: null as FType | null, verneverdig: false, samme_utseende: false,
     karakterendring: "usikker" as Character,
     terrasse_hoyde: 0, terrasse_dybde: 0, terrasse_avstand: 0, terrasse_overbygd: false,
@@ -48,13 +48,13 @@ export function FasadeWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="fasade" loadingText="Vurderer tiltakets faktiske omfang…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="fasade" loadingText="Vurderer tiltakets faktiske omfang…" />;
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Fasade, vindu, dør eller terrasse" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar onBack={back} title="Fasade, vindu, dør eller terrasse" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
         {step === 0 ? (
@@ -109,7 +109,7 @@ export function FasadeWizard({ p }: { p: Address }) {
 }
 
 function Field({ label, value, unit, onChange }: { label: string; value: number; unit: string; onChange: (value: number) => void }) {
-  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField value={value} unit={unit} step={0.1} onChange={onChange} /></div>;
+  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField label={label} value={value} unit={unit} step={0.1} onChange={onChange} /></div>;
 }
 
 function Actions({ disabled, onEvaluate, onBack }: { disabled: boolean; onEvaluate: () => void; onBack: () => void }) {

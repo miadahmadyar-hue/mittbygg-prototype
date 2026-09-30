@@ -1,3 +1,4 @@
+import { sessionFetch } from "./session";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type AssessmentItemType = "ok" | "warn" | "missing";
@@ -27,10 +28,11 @@ interface ArchitectRequest {
   bnr: number;
   kommune: string;
   bygg: Record<string, unknown>;
+  project: Record<string, unknown>;
 }
 
 export async function callArchitectAgent(req: ArchitectRequest): Promise<ArchitectAssessment> {
-  const res = await fetch(`${API_URL}/api/ai/architect`, {
+  const res = await sessionFetch(`${API_URL}/api/ai/architect`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),

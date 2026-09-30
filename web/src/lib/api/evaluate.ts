@@ -26,6 +26,8 @@ export interface TiltakTiltak {
 }
 
 export interface TiltakResult {
+  availability?: "available" | "unavailable";
+  outcome?: "exempt" | "professional" | "clarify" | "application";
   status: "green" | "amber" | "red";
   statusText: string;
   statusDesc: string;
@@ -59,11 +61,12 @@ export async function evaluateVeggApi(input: VeggInput): Promise<VeggResult> {
 
 // ── New tiltak evaluate functions (backend-only, no client fallback needed) ───
 
-async function evalTiltak(slug: string, input: unknown): Promise<TiltakResult> {
+export async function evalTiltak(slug: string, input: unknown): Promise<TiltakResult> {
   try {
     return await apiPost<TiltakResult>(`/api/evaluate/${slug}`, input);
   } catch {
     return {
+      availability: "unavailable",
       status: "red",
       statusText: "Tjenesten er ikke tilgjengelig",
       statusDesc: "Kunne ikke koble til regelmotoren. Sjekk internettforbindelsen og prøv igjen.",

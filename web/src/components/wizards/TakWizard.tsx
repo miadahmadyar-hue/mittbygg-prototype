@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { ToggleRow } from "@/components/ui/Toggle";
@@ -17,8 +17,8 @@ type TakType = "bytte_materiale" | "endre_form" | "bygge_loft";
 
 export function TakWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ type: null as TakType | null, samme_utseende: false, verneverdig: false, etterisolere: false });
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", { type: null as TakType | null, samme_utseende: false, verneverdig: false, etterisolere: false });
 
   const evaluate = async () => {
     if (!data.type) return;
@@ -27,13 +27,13 @@ export function TakWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="tak" loadingText="Klassifiserer takarbeidet etter faktisk omfang…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="tak" loadingText="Klassifiserer takarbeidet etter faktisk omfang…" />;
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Tak og loft" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar onBack={back} title="Tak og loft" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
         {step === 0 ? (

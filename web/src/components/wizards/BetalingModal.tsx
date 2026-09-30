@@ -1,169 +1,21 @@
 "use client";
-
-import { useState } from "react";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
-import { formatKr } from "@/lib/format";
-import { getPricing, discountPct } from "@/lib/data/pricing";
+import { getPricing, formatKr } from "@/lib/data/pricing";
 import { useT } from "@/lib/i18n/context";
 
-type BetalingState = "idle" | "processing" | "success";
-
-const INKLUDERT: [string, string][] = [
-  ["Komplett PDF-søknadspakke", "Complete PDF application package"],
-  ["Ferdig utfylt DiBK-skjema (5153)", "Pre-filled DiBK form (5153)"],
-  ["Tiltaksliste og paragrafhenvisninger", "Task list and statute references"],
-  ["Neste-steg-guide med tidsplan", "Next-steps guide with schedule"],
-  ["Nabovarselmal og følgebrev", "Neighbor-notice template and cover letter"],
-];
-
-interface Props {
-  totalKostnad: number;
-  slug?: string;
-  onBetal: () => void;
-  onBack: () => void;
-}
-
-export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: Props) {
+export function BetalingModal({ totalKostnad, slug, onBetal, onBack }: { totalKostnad: number; slug?: string; onBetal: () => void; onBack: () => void }) {
   const t = useT();
-  const [state, setState] = useState<BetalingState>("idle");
-  const pricing = getPricing(slug ?? "");
-  const pct = discountPct(pricing);
-
-  const handleVipps = async () => {
-    setState("processing");
-    await new Promise<void>((r) => setTimeout(r, 2000));
-    setState("success");
-    setTimeout(onBetal, 1200);
-  };
-
-  if (state === "success") {
-    return (
-      <>
-        <Topbar back={false} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center p-10">
-          <div className="w-20 h-20 rounded-full bg-green-100 grid place-items-center">
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m5 13 4 4L19 7" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-[22px] font-bold tracking-tight">{t("Demo fullført", "Demo completed")}</h2>
-            <p className="text-sm text-gray-500 mt-1">{t("PDF-pakken genereres nå…", "Generating the PDF package now…")}</p>
-          </div>
-          <div className="spinner spinner-lg" />
-        </div>
-      </>
-    );
-  }
-
-  if (state === "processing") {
-    return (
-      <>
-        <Topbar back={false} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center p-10">
-          <div className="spinner spinner-lg" />
-          <div>
-            <h3 className="text-base font-semibold">{t("Klargjør demopakken…", "Preparing the demo package…")}</h3>
-            <p className="text-sm text-gray-500 mt-1">{t("Ingen betaling gjennomføres.", "No payment is being made.")}</p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Topbar title={t("Demo av søknadspakke", "Application package demo")} />
-      <div className="view">
-        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-          <div className="bg-gray-900 px-5 py-4 flex items-start justify-between">
-            <div>
-              <div className="text-white font-bold text-lg">{t("Søknadspakke", "Application package")}</div>
-              <div className="text-green-100 text-sm mt-0.5">{t("Forhåndsvisning — ikke en ferdig innsendingstjeneste", "Preview — not a live submission service")}</div>
-            </div>
-            <div className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full shrink-0 ml-3">
-              -{pct}%
-            </div>
-          </div>
-
-          <div className="px-5 pt-4 pb-3 border-b border-gray-100">
-            <div className="flex items-end gap-2">
-              <span className="text-[34px] font-extrabold tracking-tight leading-none text-green-700">
-                {formatKr(pricing.mittbygg)}
-              </span>
-              <span className="text-sm text-gray-500 mb-1">{t("eks. mva", "excl. VAT")}</span>
-            </div>
-            <div className="text-sm text-gray-400 mt-1 line-through">{formatKr(pricing.market)} {t("hos arkitekt/konsulent", "at an architect/consultant")}</div>
-          </div>
-
-          <ul className="px-5 py-4 space-y-2.5">
-            {INKLUDERT.map((item, i) => (
-              <li key={i} className="flex items-center gap-2.5 text-sm">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                  <path d="m5 13 4 4L19 7" />
-                </svg>
-                {t(item[0], item[1])}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {totalKostnad > 0 && (
-          <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm flex justify-between">
-            <span className="text-gray-500">{t("Estimert tiltakskostnad", "Estimated project cost")}</span>
-            <span className="font-bold text-gray-800">{formatKr(totalKostnad)}</span>
-          </div>
-        )}
-
-        <div className="mt-auto flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={handleVipps}
-            className="w-full rounded-2xl py-4 flex items-center justify-center gap-3 font-bold text-white text-[17px] active:opacity-90 transition-opacity"
-            style={{ background: "#FF5B24" }}
-          >
-            <VippsLogo />
-             {t("Fortsett i demo", "Continue in demo")}
-          </button>
-
-          <Button variant="ghost" full onClick={onBack}>
-            {t("Tilbake", "Back")}
-          </Button>
-
-          <p className="text-[11px] text-gray-400 text-center leading-relaxed">
-            {t(
-              "Dette er en demoflyt. Ingen Vipps-betaling eller kommunal innsending gjennomføres.",
-              "This is a demo flow. No Vipps payment or municipal submission is performed.",
-            )}
-          </p>
-
-          <button
-            type="button"
-            onClick={onBetal}
-            className="text-[11px] text-gray-300 hover:text-gray-400 underline underline-offset-2 text-center transition-colors"
-          >
-            {t("Demo: hopp over betaling", "Demo: skip payment")}
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function VippsLogo() {
-  return (
-    <svg width="62" height="20" viewBox="0 0 62 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <text
-        x="0" y="16"
-        fontFamily="Arial, sans-serif"
-        fontWeight="bold"
-        fontSize="18"
-        fill="white"
-        letterSpacing="1"
-      >
-        vipps
-      </text>
-    </svg>
-  );
+  const price = getPricing(slug ?? "");
+  return <><Topbar title={t("Kontroller dokumentgrunnlaget", "Review the document draft")} onBack={onBack} /><main className="view">
+    <section className="panel p-6"><p className="page-kicker">Demo</p><h1 className="mt-3 text-2xl font-semibold">{t("Dette inneholder PDF-en", "What the PDF contains")}</h1>
+      <ul className="mt-4 list-disc pl-5 space-y-2"><li>{t("Eiendomsopplysninger og foreløpig regelsjekk", "Property facts and preliminary assessment")}</li><li>{t("Tiltaksliste, kostnadsindikasjoner og regelhenvisninger", "Project actions, cost indications and rule references")}</li><li>{t("Neste steg og tilgjengelig AI-gjennomgang", "Next steps and available AI review")}</li></ul>
+      <p className="mt-4 text-sm text-gray-600">{t("Tegninger er ikke vedlagt PDF-en. Dokumentet erstatter ikke godkjente tegninger, signerte skjemaer, nabovarsel eller faglig prosjektering. Kontroller kommunens dokumentkrav før innsending.", "Drawings are not attached to this PDF. It does not replace approved drawings, signed forms, neighbor notices or professional design. Check the municipality’s document requirements before submission.")}</p>
+      <p className="mt-6 text-lg font-semibold">{t("Eksempelpris", "Example price")}: {formatKr(price.mittbygg)} {t("eks. mva", "excl. VAT")}</p>
+      <p className="mt-2 text-sm">{t("Ingen betaling i demoen. Kommunale gebyrer og eventuell fagbistand er ikke inkludert.", "No payment in this demo. Municipal fees and professional services are not included.")}</p>
+      {totalKostnad > 0 && <p className="mt-3 text-sm text-gray-500">{t("Separat kostnadsindikasjon for byggearbeidet", "Separate indicative construction cost")}: {formatKr(totalKostnad)}</p>}
+    </section>
+    <Button full onClick={onBetal}>{t("Generer gratis demo-PDF", "Generate free demo PDF")}</Button>
+    <Button full variant="ghost" onClick={onBack}>{t("Tilbake", "Back")}</Button>
+  </main></>;
 }

@@ -1,5 +1,5 @@
 from typing import Literal, Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 
 class Finding(BaseModel):
@@ -20,11 +20,28 @@ class Lempning(BaseModel):
     tekst: str
 
 
+
+class AssessmentResult(BaseModel):
+    @computed_field
+    @property
+    def outcome(self) -> Literal["exempt", "professional", "clarify", "application"]:
+        # Legacy rule engines retain their display wording; only this adapter
+        # translates it. Clients consume a stable, language-independent outcome.
+        text = self.soknadstype.lower()
+        unclear = any(marker in text for marker in ("må avklares", "vurderes manuelt", "trolig"))
+        if not unclear and text.startswith(("unntatt", "ikke oppdeling")):
+            return "exempt"
+        if self.ansvarsrett:
+            return "professional"
+        if unclear or self.status == "red":
+            return "clarify"
+        return "application"
+
 # ── Kjeller ──────────────────────────────────────────────────────────────────
 
 class KjellerInput(BaseModel):
     propId: str
-    byggeAar: int
+    byggeAar: Optional[int] = None
     room: str
     ny_bruk: Literal["soverom", "hybel", "stue", "kontor", "bad"]
     radon: Optional[float] = None
@@ -42,7 +59,7 @@ class KjellerInput(BaseModel):
     ventilasjon_status: Literal["ja", "nei", "usikker"] = "usikker"
 
 
-class KjellerResult(BaseModel):
+class KjellerResult(AssessmentResult):
     status: Literal["green", "amber", "red"]
     statusText: str
     statusDesc: str
@@ -76,7 +93,7 @@ class Bjelke(BaseModel):
     last: float
 
 
-class VeggResult(BaseModel):
+class VeggResult(AssessmentResult):
     status: Literal["green", "amber", "red"]
     statusText: str
     statusDesc: str
@@ -105,14 +122,14 @@ class Matrikkel(BaseModel):
 
 
 class Bygg(BaseModel):
-    byggeAar: int
+    byggeAar: Optional[int] = None
     BRA: Optional[int] = None
     etasjer: Optional[int] = None
-    kjeller: bool = True
-    garasje: bool = False
+    kjeller: Optional[bool] = None
+    garasje: Optional[bool] = None
     tomt: Optional[int] = None
-    regplan: str = "Kommuneplan"
-    byggegrenser: str = "4 m fra nabo, 15 m fra vassdrag"
+    regplan: Optional[str] = None
+    byggegrenser: Optional[str] = None
     bygg_source: str = "default"
 
 
@@ -135,7 +152,7 @@ TiltakTiltak = Tiltak
 
 from typing import Any
 
-class TiltakResult(BaseModel):
+class TiltakResult(AssessmentResult):
     status: Literal["green", "amber", "red"]
     statusText: str
     statusDesc: str

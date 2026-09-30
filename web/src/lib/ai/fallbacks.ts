@@ -2,6 +2,7 @@ import type { ArchitectAssessment } from "@/lib/api/aiArchitect";
 import type { EngineerAssessment } from "@/lib/api/aiEngineer";
 
 export const FALLBACK_ARCHITECT: ArchitectAssessment = {
+  meta: { source: "fallback", reason: "service_unavailable" },
   feasible: false,
   summary:
     "Faglig vurdering er ikke tilgjengelig. Ingen konklusjon om gjennomførbarhet er laget.",
@@ -16,6 +17,7 @@ export const FALLBACK_ARCHITECT: ArchitectAssessment = {
 };
 
 export const FALLBACK_ENGINEER: EngineerAssessment = {
+  meta: { source: "fallback", reason: "service_unavailable" },
   tittel: "Teknisk vurdering ikke tilgjengelig",
   beregninger: [],
   konklusjon: "Det er ikke utført tekniske beregninger eller kontroll av konstruksjon, brann eller energi.",

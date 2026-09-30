@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { ToggleRow } from "@/components/ui/Toggle";
@@ -26,8 +26,8 @@ const TIL_LABEL_EN: Record<TilType, string> = { bolig: "Dwelling", hybel: "Bedsi
 export function BruksendringWizard({ p }: { p: Address }) {
   const router = useRouter();
   const tr = useT();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", {
     fra: null as FraType | null,
     til: null as TilType | null,
     areal: 0,
@@ -44,7 +44,7 @@ export function BruksendringWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="bruksendring" loadingText={tr("Sjekker PBL og reguleringsplan…", "Checking PBL and zoning plan…")} />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="bruksendring" loadingText={tr("Sjekker PBL og reguleringsplan…", "Checking PBL and zoning plan…")} />;
 
   const step = phase.step;
   const back = () => {
@@ -54,7 +54,7 @@ export function BruksendringWizard({ p }: { p: Address }) {
 
   return (
     <>
-      <Topbar title={tr("Bruksendring", "Change of use")} right={<span className="text-sm text-gray-500">{step + 1}/3</span>} />
+      <Topbar onBack={back} title={tr("Bruksendring", "Change of use")} right={<span className="text-sm text-gray-500">{step + 1}/3</span>} />
       <ProgressBar step={step} total={3} />
       <div className="view">
         {step === 0 && (
@@ -82,7 +82,7 @@ export function BruksendringWizard({ p }: { p: Address }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">{tr("Areal (m²)", "Area (m²)")}</label>
-              <NumberField value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
+              <NumberField label="Areal" value={data.areal} onChange={(v) => setData({ ...data, areal: v })} unit="m²" />
             </div>
             <Alert>{tr("Ny bruk må også være tillatt i gjeldende plan og oppfylle relevante tekniske krav.", "The new use must also comply with the applicable plan and relevant technical requirements.")}</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">

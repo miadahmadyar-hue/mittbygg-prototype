@@ -1,13 +1,14 @@
 import io
-from fastapi import APIRouter
+from .access import require_session
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import Any
+from pydantic import BaseModel, ValidationError
+from .evaluate import EVALUATORS
 from models import KjellerResult, TiltakResult
 from pdf.kjeller import generate_kjeller_pdf
 from pdf.generic import generate_generic_pdf
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_session)])
 
 
 class KjellerSoknadRequest(BaseModel):
@@ -20,8 +21,11 @@ class KjellerSoknadRequest(BaseModel):
 
 @router.post("/soknad/kjeller")
 def post_kjeller_soknad(req: KjellerSoknadRequest) -> StreamingResponse:
+    current = EVALUATORS["kjeller"][1](req.result.input)
+    if current.outcome != "application":
+        raise HTTPException(409, "Project requires clarification before document generation")
     pdf_bytes = generate_kjeller_pdf(
-        result=req.result,
+        result=current,
         address=req.address,
         gnr=req.gnr,
         bnr=req.bnr,
@@ -48,9 +52,19 @@ class TiltakSoknadRequest(BaseModel):
 
 @router.post("/soknad/tiltak")
 def post_tiltak_soknad(req: TiltakSoknadRequest) -> StreamingResponse:
+    entry = EVALUATORS.get(req.slug)
+    if entry is None:
+        raise HTTPException(422, "Unknown project type")
+    model, evaluate = entry
+    try:
+        current = evaluate(model.model_validate(req.result.input))
+    except ValidationError as exc:
+        raise HTTPException(422, "Invalid project answers") from exc
+    if current.outcome != "application":
+        raise HTTPException(409, "Project requires clarification before document generation")
     pdf_bytes = generate_generic_pdf(
         slug=req.slug,
-        result=req.result.model_dump(),
+        result=current.model_dump(),
         address=req.address,
         gnr=req.gnr,
         bnr=req.bnr,

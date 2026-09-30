@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Pill } from "@/components/ui/Pill";
 import { PlanSvg, SnittSvg, FasadeSvg, SitSvg } from "./Thumbnails";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useT } from "@/lib/i18n/context";
 
 interface PreviewProps {
@@ -72,19 +72,16 @@ export function SoknadPreview({ ansvarsrett, onBack, onSend }: PreviewProps) {
 }
 
 interface SentProps {
+  onDownload?: () => void;
   onDone: () => void;
 }
 
-export function SoknadSent({ onDone }: SentProps) {
+export function SoknadSent({ onDone, onDownload }: SentProps) {
   const t = useT();
-  const [{ ref, now }] = useState(() => ({
-    ref: "DBK-" + Math.floor(100_000 + Math.random() * 900_000),
-    now: new Date().toLocaleString("nb-NO"),
-  }));
 
   return (
     <>
-      <Topbar title={t("Sendt", "Done")} back={false} />
+      <Topbar title={t("Dokument klart", "Document ready")} back={false} />
       <div className="view text-center pt-8">
         <div
           className="rounded-[28px] grid place-items-center mx-auto mb-6"
@@ -101,18 +98,18 @@ export function SoknadSent({ onDone }: SentProps) {
           </svg>
         </div>
 
-        <h1 className="text-[32px] font-bold tracking-[-0.025em] leading-[1.1]">{t("Søknadspakke klar!", "Application package ready!")}</h1>
+        <h1 className="text-[32px] font-bold tracking-[-0.025em] leading-[1.1]">{t("PDF-grunnlaget er klart", "Your draft PDF is ready")}</h1>
         <p className="text-[17px] text-gray-700 mt-3 leading-snug">
-          {t("PDF-pakken er lastet ned. Du kan nå sende den til kommunen.", "The PDF package has been downloaded. You can now send it to the municipality.")}
+          {t("PDF-en er lagret i denne nettleseren, og nedlasting er startet. Kontroller dokumentet og vedlegg før du sender noe til kommunen.", "The PDF is saved in this browser and a download has been started. Check the document and attachments before submitting anything to the municipality.")}
         </p>
 
         <div className="bg-white border border-gray-100 rounded-xl mt-6 text-left">
-          <KV k={t("Referanse", "Reference")} v={ref} mono />
-          <KV k={t("Generert", "Generated")} v={now} />
+
+
           <KV k={t("Neste steg", "Next step")} v={t("Send til kommunen", "Send to the municipality")} />
           <KV
             k="Status"
-            vEl={<Pill variant="green">{t("Klar til innsending", "Ready to submit")}</Pill>}
+            vEl={<Pill variant="green">{t("Utkast — ikke sendt", "Draft — not submitted")}</Pill>}
             last
           />
         </div>
@@ -120,13 +117,14 @@ export function SoknadSent({ onDone }: SentProps) {
         <div className="mt-4 text-left">
           <Alert variant="green">
             {t(
-              "Pakken inneholder søknadsskjema, regelsjekk og neste-steg-guide. Lever den digitalt på kommunens innbyggerportal eller send per post.",
-              "The package contains the application form, rule check and next-steps guide. Submit it digitally on the municipality's citizen portal or send it by post.",
+              "Kontroller eiendomsdata, tegninger, planvilkår og eventuelt nabovarsel. Finn kommunens innsendingsløsning på kommunens offisielle nettside. Ingen innsending er utført her.",
+              "Check property facts, drawings, planning conditions and any neighbor notice. Find submission instructions on the municipality’s official website. Nothing has been submitted here.",
             )}
           </Alert>
         </div>
 
         <div className="mt-6">
+          {onDownload && <Button full variant="ghost" onClick={onDownload}>{t("Last ned PDF på nytt", "Download PDF again")}</Button>}
           <Button full onClick={onDone}>{t("Tilbake til min eiendom", "Back to my property")}</Button>
         </div>
       </div>

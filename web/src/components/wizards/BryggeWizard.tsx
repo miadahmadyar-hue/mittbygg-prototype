@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { Alert } from "@/components/ui/Alert";
@@ -18,8 +18,8 @@ type PlanStatus = "tillatt" | "ikke_tillatt" | "usikker";
 
 export function BryggeWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", {
     type: null as BType | null,
     arbeid: null as Work | null,
     lengde: 0,
@@ -35,14 +35,14 @@ export function BryggeWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="brygge" loadingText="Vurderer tiltaket mot plan- og kystreglene…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="brygge" loadingText="Vurderer tiltaket mot plan- og kystreglene…" />;
 
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar title="Brygge og tiltak i strandsonen" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar onBack={back} title="Brygge og tiltak i strandsonen" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
         {step === 0 ? (
@@ -77,8 +77,8 @@ export function BryggeWizard({ p }: { p: Address }) {
               <p className="text-sm text-gray-500 mt-2">Lokale planer og rett til grunnen er avgjørende i strandsonen.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Lengde</label><NumberField value={data.lengde} onChange={(lengde) => setData({ ...data, lengde })} step={0.5} unit="m" /></div>
-              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Bredde</label><NumberField value={data.bredde} onChange={(bredde) => setData({ ...data, bredde })} step={0.5} unit="m" /></div>
+              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Lengde</label><NumberField label="Lengde" value={data.lengde} onChange={(lengde) => setData({ ...data, lengde })} step={0.5} unit="m" /></div>
+              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Bredde</label><NumberField label="Bredde" value={data.bredde} onChange={(bredde) => setData({ ...data, bredde })} step={0.5} unit="m" /></div>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Tillater gjeldende plan tiltaket?</h3>

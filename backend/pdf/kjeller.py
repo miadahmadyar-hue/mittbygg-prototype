@@ -4,10 +4,10 @@ Uses fpdf2 with built-in Helvetica (WIN-1252 covers æøå).
 """
 from fpdf import FPDF
 from datetime import date
-from pathlib import Path
+from .fonts import font_path
 from models import KjellerResult
 
-_FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
+
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 C_GREEN      = (34, 197, 94)
@@ -35,8 +35,8 @@ NY_BRUK_LABEL = {
 class _PDF(FPDF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        regular = str(_FONT_DIR / "DejaVuSans.ttf")
-        bold    = str(_FONT_DIR / "DejaVuSans-Bold.ttf")
+        regular = font_path()
+        bold    = font_path(bold=True)
         self.add_font("Sans", "",   regular)
         self.add_font("Sans", "B",  bold)
         self.add_font("Sans", "I",  regular)   # no oblique in core package
@@ -105,7 +105,7 @@ def generate_kjeller_pdf(
     # Title block
     pdf.set_xy(15, 34)
     pdf.set_font("Sans", "B", 24)
-    pdf.cell(180, 13, "Søknadspakke", ln=True)
+    pdf.cell(180, 13, "Dokumentgrunnlag — utkast", ln=True)
     pdf.set_x(15)
     pdf.set_font("Sans", "", 13)
     pdf.set_text_color(*C_GRAY)

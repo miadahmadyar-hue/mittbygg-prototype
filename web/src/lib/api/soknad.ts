@@ -1,17 +1,14 @@
+import { sessionFetch } from "./session";
 import type { KjellerResult } from "@/lib/regulations/kjeller";
 import type { TiltakResult } from "@/lib/api/evaluate";
+import { saveDocument, downloadBlob } from "@/lib/documents";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 async function _triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  if (blob.size === 0 || !(await blob.slice(0, 5).text()).startsWith("%PDF-")) throw new Error("Invalid PDF response");
+  await saveDocument(blob, filename);
+  downloadBlob(blob, filename);
 }
 
 export async function downloadKjellerSoknad(
@@ -21,7 +18,7 @@ export async function downloadKjellerSoknad(
   bnr: number,
   kommune: string,
 ): Promise<void> {
-  const res = await fetch(`${API_URL}/api/soknad/kjeller`, {
+  const res = await sessionFetch(`${API_URL}/api/soknad/kjeller`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ result, address, gnr, bnr, kommune }),
@@ -41,7 +38,7 @@ export async function downloadTiltakSoknad(
   architect?: Record<string, unknown> | null,
   engineer?: Record<string, unknown> | null,
 ): Promise<void> {
-  const res = await fetch(`${API_URL}/api/soknad/tiltak`, {
+  const res = await sessionFetch(`${API_URL}/api/soknad/tiltak`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ slug, result, address, gnr, bnr, kommune, architect, engineer }),

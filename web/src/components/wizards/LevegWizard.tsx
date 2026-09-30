@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/Alert";
 import { RadioCard } from "@/components/ui/RadioCard";
@@ -14,8 +14,8 @@ type Phase = { kind: "wizard"; step: 0 } | { kind: "loading" } | { kind: "result
 
 export function LevegWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ hoyde: 0, lengde: 0, avstand: 0, plan: "usikker" as "ja" | "nei" | "usikker" });
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", { hoyde: 0, lengde: 0, avstand: 0, plan: "usikker" as "ja" | "nei" | "usikker" });
 
   const evaluate = async () => {
     setPhase({ kind: "loading" });
@@ -23,12 +23,14 @@ export function LevegWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="levegg" loadingText="Kontrollerer høyde, lengde og avstand…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="levegg" loadingText="Kontrollerer høyde, lengde og avstand…" />;
   const maxLength = data.avstand < 1 ? 5 : 10;
+
+  const back = () => router.push(`/property/${p.id}/tiltak`);
 
   return (
     <>
-      <Topbar title="Levegg" />
+      <Topbar onBack={back} title="Levegg" />
       <div className="view">
         <div>
           <h2 className="text-[22px] font-bold tracking-tight">Mål og plassering</h2>
@@ -59,5 +61,5 @@ export function LevegWizard({ p }: { p: Address }) {
 }
 
 function Field({ label, value, unit, step, onChange }: { label: string; value: number; unit: string; step: number; onChange: (value: number) => void }) {
-  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField value={value} unit={unit} step={step} onChange={onChange} /></div>;
+  return <div><label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label><NumberField label={label} value={value} unit={unit} step={step} onChange={onChange} /></div>;
 }

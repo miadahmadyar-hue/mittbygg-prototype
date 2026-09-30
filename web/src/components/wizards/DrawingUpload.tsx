@@ -15,23 +15,30 @@ const DRAWING_HINTS: [string, string][] = [
 
 interface Props {
   onContinue: (sessionId: string | null) => void;
+  onBack: () => void;
 }
 
-export function DrawingUpload({ onContinue }: Props) {
+export function DrawingUpload({ onContinue, onBack }: Props) {
   const t = useT();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState("");
+  const [uploaded, setUploaded] = useState<{ session: string; names: string[] } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const addFiles = useCallback((list: FileList | null) => {
     if (!list) return;
     const valid = Array.from(list).filter(
-      (f) => f.type.startsWith("image/") || f.type === "application/pdf"
+      (f) => ["image/jpeg", "image/png", "application/pdf"].includes(f.type) && f.size <= 10 * 1024 * 1024
     );
+    setUploaded(null);
+    setError(valid.length !== list.length ? "Noen filer ble avvist. Velg PDF, PNG eller JPG, maks 10 MB per fil." : "");
     setFiles((prev) => {
       const existing = new Set(prev.map((f) => f.name));
-      return [...prev, ...valid.filter((f) => !existing.has(f.name))];
+      const next = [...prev, ...valid.filter((f) => !existing.has(f.name))];
+      if (next.length > 6) setError("Du kan laste opp maksimalt 6 filer. De øvrige filene er ikke lagt til.");
+      return next.slice(0, 6);
     });
   }, []);
 
@@ -47,11 +54,17 @@ export function DrawingUpload({ onContinue }: Props) {
       return;
     }
     setUploading(true);
+    setError("");
     try {
       const result = await uploadDrawings(files);
+      if (result.rejected?.length) {
+        setUploaded({ session: result.session_id, names: result.files.map((f) => f.name) });
+        setError(`Avvist: ${result.rejected.map((f) => `${f.name} (${f.reason})`).join(", ")}. Velg filer på nytt eller fortsett med de godkjente.`);
+        return;
+      }
       onContinue(result.session_id);
     } catch {
-      onContinue(null);
+      setError("Opplastingen mislyktes. Filene er beholdt her. Prøv igjen eller fjern filene for å fortsette uten tegninger.");
     } finally {
       setUploading(false);
     }
@@ -59,12 +72,14 @@ export function DrawingUpload({ onContinue }: Props) {
 
   return (
     <>
-      <Topbar title={t("Tegninger", "Drawings")} back={false} />
+      <Topbar title={t("Tegninger", "Drawings")} onBack={onBack} />
       <div className="view">
+        {error && <p role="alert" className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">{error}</p>}
+        {uploaded && <div className="panel p-4"><p>{t("Lastet opp:", "Uploaded:")} {uploaded.names.join(", ")}</p><Button onClick={() => onContinue(uploaded.session)}>{t("Fortsett med disse filene", "Continue with these files")}</Button></div>}
         <div>
           <h2 className="text-[22px] font-bold tracking-tight">{t("Last opp tegninger", "Upload drawings")}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            {t("Valgfritt, men øker sjansen for rask saksbehandling.", "Optional, but improves the odds of fast processing.")}
+            {t("Du kan hoppe over dette for en foreløpig vurdering. Kommunen kan kreve tegninger før innsending. Bildeanalyse støtter PNG og JPG; PDF lagres, men analyseres ikke visuelt.", "You can skip this for a preliminary assessment. The municipality may require drawings before submission. Image analysis supports PNG and JPG; PDFs are stored but are not visually analyzed.")}
           </p>
         </div>
 
@@ -84,6 +99,9 @@ export function DrawingUpload({ onContinue }: Props) {
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onClick={() => inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inputRef.current?.click(); } }}
           className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
             dragging
               ? "border-green-400 bg-green-50"
@@ -103,7 +121,7 @@ export function DrawingUpload({ onContinue }: Props) {
             ref={inputRef}
             type="file"
             multiple
-            accept="image/*,.pdf"
+            accept="image/png,image/jpeg,.pdf"
             className="hidden"
             onChange={(e) => addFiles(e.target.files)}
           />
@@ -116,7 +134,7 @@ export function DrawingUpload({ onContinue }: Props) {
                 key={f.name}
                 file={f}
                 last={i === files.length - 1}
-                onRemove={() => setFiles((prev) => prev.filter((x) => x.name !== f.name))}
+                onRemove={() => { setUploaded(null); setFiles((prev) => prev.filter((x) => x.name !== f.name)); }}
               />
             ))}
           </div>
@@ -160,6 +178,7 @@ function FileRow({
       </div>
       <button
         onClick={onRemove}
+        aria-label={`Fjern ${file.name}`}
         className="text-gray-400 hover:text-red-500 transition-colors p-1"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

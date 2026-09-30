@@ -98,14 +98,16 @@ def evaluate_kjeller(inp: KjellerInput) -> KjellerResult:
             "vinduer": "Målt" if inp.vindu_bredde and inp.vindu_hoyde else "Ukjent",
         }
     else:
-        rooms = get_kjeller_rooms(inp.propId, bra=inp.bra, etasjer=inp.etasjer, bygge_aar=inp.byggeAar)
+        rooms = get_kjeller_rooms(inp.propId, bra=inp.bra, etasjer=inp.etasjer, bygge_aar=inp.byggeAar or 2010)
         room = next((r for r in rooms if r["id"] == inp.room), rooms[0])
-    eldre = inp.byggeAar < 2010
+    eldre = inp.byggeAar is not None and inp.byggeAar < 2010
 
     findings: list[Finding] = []
     tiltak: list[Tiltak] = []
     lempninger: list[Lempning] = []
 
+    if inp.byggeAar is None:
+        findings.append(Finding(type="warn", t="Byggeår er ukjent", d="Bekreft byggeåret før eventuelle unntak for eldre bygg vurderes.", ref="Dokumentasjonsgrunnlag"))
     if not has_measured_room:
         findings.append(Finding(
             type="warn",

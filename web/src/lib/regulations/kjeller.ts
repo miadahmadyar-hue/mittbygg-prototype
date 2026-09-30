@@ -32,7 +32,7 @@ export interface Lempning {
 
 export interface KjellerInput {
   propId: string;
-  byggeAar: number;
+  byggeAar: number | null;
   room: string;
   ny_bruk: KjellerBrukId;
   radon: number | null;
@@ -51,6 +51,7 @@ export interface KjellerInput {
 }
 
 export interface KjellerResult {
+  outcome: "exempt" | "professional" | "clarify" | "application";
   status: "green" | "amber" | "red";
   statusText: string;
   statusDesc: string;
@@ -79,12 +80,13 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
         vinduer: input.vindu_bredde && input.vindu_hoyde ? "Målt" : "Ukjent",
       }
     : rooms.find((r) => r.id === input.room) || rooms[0];
-  const eldre = input.byggeAar < 2010;
+  const eldre = input.byggeAar !== null && input.byggeAar < 2010;
 
   const findings: Finding[] = [];
   const tiltak: Tiltak[] = [];
   const lempninger: Lempning[] = [];
 
+  if (input.byggeAar === null) findings.push({ type: "warn", t: "Byggeår er ukjent", d: "Bekreft byggeåret før eventuelle unntak vurderes.", ref: "Dokumentasjonsgrunnlag" });
   if (!hasMeasuredRoom) {
     findings.push({
       type: "warn",
@@ -343,6 +345,7 @@ export function evaluateKjeller(input: KjellerInput): KjellerResult {
   }
 
   return {
+    outcome: krav.ansvarsrett ? "professional" : fails || warns ? "clarify" : "application",
     status, statusText, statusDesc,
     findings, tiltak, lempninger, eldre,
     soknadstype,

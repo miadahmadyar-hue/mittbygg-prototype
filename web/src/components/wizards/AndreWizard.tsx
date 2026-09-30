@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/Alert";
 import { ResultPhases } from "./SimpleWizard";
@@ -13,8 +13,8 @@ type Phase = { kind: "wizard"; step: 0 } | { kind: "loading" } | { kind: "result
 
 export function AndreWizard({ p }: { p: Address }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>({ kind: "wizard", step: 0 });
-  const [data, setData] = useState({ beskrivelse: "" });
+  const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
+  const [data, setData] = useDraftState("data", { beskrivelse: "" });
 
   const evaluate = async () => {
     if (!data.beskrivelse.trim()) return;
@@ -23,13 +23,13 @@ export function AndreWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases phase={phase} setPhase={setPhase} p={p} slug="andre" loadingText="Analyserer tiltaket…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="andre" loadingText="Analyserer tiltaket…" />;
 
   const back = () => router.push(`/property/${p.id}/tiltak`);
 
   return (
     <>
-      <Topbar title="Andre tiltak" />
+      <Topbar onBack={back} title="Andre tiltak" />
       <div className="view">
         <div>
           <h2 className="text-[22px] font-bold tracking-tight">Beskriv det du vil gjøre</h2>

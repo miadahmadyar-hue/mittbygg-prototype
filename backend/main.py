@@ -3,6 +3,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+# Load configuration before router modules read environment variables.
+load_dotenv()
+
+from api.access import router as access_router
 from api.address import router as address_router
 from api.auth import router as auth_router
 from api.property import router as property_router
@@ -11,8 +15,6 @@ from api.soknad import router as soknad_router
 from api.drawings import router as drawings_router
 from api.ai_architect import router as ai_architect_router
 from api.ai_engineer import router as ai_engineer_router
-
-load_dotenv()
 
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
@@ -29,6 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(access_router, prefix="/api")
 app.include_router(address_router, prefix="/api")
 app.include_router(auth_router,    prefix="/api")
 app.include_router(property_router, prefix="/api")
