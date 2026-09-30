@@ -52,6 +52,7 @@ async def upload_drawings(files: List[UploadFile] = File(...), owner: str = Depe
     upload_root = Path(UPLOAD_DIR).resolve()
     session_dir = (upload_root / session_id).resolve()
 
+    total_size = 0
     saved = []
     rejected = []
 
@@ -66,6 +67,11 @@ async def upload_drawings(files: List[UploadFile] = File(...), owner: str = Depe
         if len(content) > MAX_FILE_SIZE:
             rejected.append({"name": display_name, "reason": "file too large"})
             continue
+
+        if total_size + len(content) > 20 * 1024 * 1024:
+            rejected.append({"name": display_name, "reason": "maximum 20 MB total per upload"})
+            continue
+        total_size += len(content)
 
         os.makedirs(session_dir, exist_ok=True)
         (session_dir / ".owner").write_text(hashlib.sha256(owner.encode()).hexdigest())

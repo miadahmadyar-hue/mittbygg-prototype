@@ -35,9 +35,12 @@ Mobile-first, Norwegian-first (with an EN toggle for demos).
   components; property data flows via `localStorage` + backend fallback.
 - **Backend** — FastAPI (Python 3.12). Thin routers per domain under `backend/api/`.
   The regulation logic and PDF generation live here.
-- **AI agents** — two Claude-backed endpoints (architect = vision over uploaded drawings,
-  engineer = structural/technical calcs). Both **fall back to rule-based output** when no
-  `ANTHROPIC_API_KEY` is set, so the app works fully offline-of-Claude.
+- **AI agents** — Claude reviews uploaded PDF/PNG/JPG drawings and project answers.
+  The architect runs first; the engineer receives its findings and the original drawings
+  for a preliminary document review, not structural calculations. Provider failures or
+  a missing `ANTHROPIC_API_KEY` produce explicit unavailable results with a retry path.
+  Uploads allow 6 files, 10 MB per file and 20 MB total. Password-protected or oversized
+  PDF documents may be rejected by the provider; the UI asks the user to retry.
 
 ---
 
@@ -181,7 +184,9 @@ This is a **working prototype** under active development. Honest status:
 
 - ✅ Stage 1 complete: address search, property dashboard, 15 tiltak wizards with
   regulation checks, application-package PDF, NO/EN toggle.
-- ✅ Stage 2 live: drawing upload + AI architect/engineer agents (real Claude in prod).
+- AI integration: PDF/image review and architect-to-engineer handoff implemented.
+  Deploy the frontend and backend together; verify `/api/auth/session` and both AI
+  endpoints after deployment. A healthy `/health` response alone is insufficient.
 - ✅ Automated regulation and API integration tests, frontend session tests, and CI checks.
 - ⚠️ Payment (Vipps) and BankID login are **simulated** (demo mode), not real integrations.
 - ⚠️ In EN mode, deep legal/AI-generated text stays Norwegian by design; 3 of 15 wizards are

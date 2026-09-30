@@ -36,7 +36,7 @@ export async function callArchitectAgent(req: ArchitectRequest): Promise<Archite
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(90_000),
   });
   if (!res.ok) throw new Error("architect api failed");
   return res.json();

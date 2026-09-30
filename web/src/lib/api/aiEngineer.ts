@@ -21,6 +21,7 @@ export interface EngineerAssessment {
 }
 
 interface EngineerRequest {
+  session_id: string | null;
   slug: string;
   address: string;
   gnr: number;
@@ -35,7 +36,7 @@ export async function callEngineerAgent(req: EngineerRequest): Promise<EngineerA
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(90_000),
   });
   if (!res.ok) throw new Error("engineer api failed");
   return res.json();

@@ -10,9 +10,10 @@ interface Props {
   architect: ArchitectAssessment;
   engineer: EngineerAssessment;
   onContinue: () => void;
+  onRetry: () => void;
 }
 
-export function AiAnalyse({ architect, engineer, onContinue }: Props) {
+export function AiAnalyse({ architect, engineer, onContinue, onRetry }: Props) {
   const t = useT();
   const degraded =
     architect.meta?.source === "fallback" ||
@@ -26,10 +27,11 @@ export function AiAnalyse({ architect, engineer, onContinue }: Props) {
           <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
             <p className="text-sm text-amber-800 leading-snug">
               {t(
-                "Faglig AI-vurdering er ikke tilgjengelig. Informasjonen under angir hva som fortsatt må avklares.",
-                "The AI assessment is unavailable. The information below identifies what still needs to be clarified.",
+                "Én eller begge AI-vurderinger kunne ikke fullføres. Prøv igjen; hvis det gjelder en PDF, sjekk at den ikke er passordbeskyttet og bruk et kortere dokument.",
+                "One or both AI reviews could not complete. Retry; for PDFs, check that they are not password protected and try a shorter document.",
               )}
             </p>
+            <Button variant="ghost" onClick={onRetry}>{t("Se tegninger og prøv igjen", "Review drawings and retry")}</Button>
           </div>
         )}
 

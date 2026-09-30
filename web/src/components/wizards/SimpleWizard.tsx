@@ -20,6 +20,7 @@ import { AiAnalyse } from "./AiAnalyse";
 import { downloadTiltakSoknad } from "@/lib/api/soknad";
 import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
 import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
+import { runAiReview } from "@/lib/ai/review";
 import { FALLBACK_ARCHITECT, FALLBACK_ENGINEER } from "@/lib/ai/fallbacks";
 import { useT } from "@/lib/i18n/context";
 import type { TiltakResult } from "@/lib/api/evaluate";
@@ -103,7 +104,7 @@ interface ResultPhasesProps {
 }
 
 type AiPhase =
-  | { kind: "loading"; result: TiltakResult }
+  | { kind: "loading"; result: TiltakResult; stage: "architect" | "engineer" }
   | { kind: "done"; result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment };
 
 export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: ResultPhasesProps) {
@@ -185,7 +186,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
         <Topbar back={false} />
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
           <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">{t("AI-arkitekt analyserer…", "AI architect analyzing…")}</h3>
+          <h3 className="text-base font-semibold">{aiPhase.stage === "architect" ? t("AI-arkitekt analyserer…", "AI architect analyzing…") : t("AI-ingeniør gjennomgår…", "AI engineer reviewing…")}</h3>
           <p className="text-sm text-gray-500">{t("Vurderer tegninger og regelverk", "Assessing drawings and regulations")}</p>
         </div>
       </>
@@ -198,6 +199,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
       <AiAnalyse
         architect={architect}
         engineer={engineer}
+        onRetry={() => { setAiPhase(null); setUploadPending(result); }}
         onContinue={() => {
           setPendingAiResults({ result, architect, engineer });
           setAiPhase(null);
@@ -214,7 +216,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
         onContinue={async (sessionId) => {
           const result = uploadPending;
           setUploadPending(null);
-          setAiPhase({ kind: "loading", result });
+          setAiPhase({ kind: "loading", result, stage: "architect" });
           const reqBase = {
             slug: slug ?? "andre",
             address: p.street,
@@ -224,10 +226,12 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
             bygg: p.bygg as Record<string, unknown>,
             project: result.input as Record<string, unknown>,
           };
-          const [architect, engineer] = await Promise.all([
-            callArchitectAgent({ ...reqBase, session_id: sessionId }).catch(() => null),
-            callEngineerAgent(reqBase).catch(() => null),
-          ]);
+          const { architect, engineer } = await runAiReview(
+            () => callArchitectAgent({ ...reqBase, session_id: sessionId }),
+            (architect_summary) => callEngineerAgent({ ...reqBase, session_id: sessionId, architect_summary }),
+            { architect: FALLBACK_ARCHITECT, engineer: FALLBACK_ENGINEER },
+            () => setAiPhase({ kind: "loading", result, stage: "engineer" }),
+          );
           setAiPhase({
             kind: "done",
             result,

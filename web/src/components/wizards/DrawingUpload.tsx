@@ -53,6 +53,10 @@ export function DrawingUpload({ onContinue, onBack }: Props) {
       onContinue(null);
       return;
     }
+    if (files.reduce((total, file) => total + file.size, 0) > 20 * 1024 * 1024) {
+      setError(t("Filene er større enn 20 MB til sammen. Fjern eller komprimer noen filer.", "Files exceed 20 MB in total. Remove or compress some files."));
+      return;
+    }
     setUploading(true);
     setError("");
     try {
@@ -79,7 +83,7 @@ export function DrawingUpload({ onContinue, onBack }: Props) {
         <div>
           <h2 className="text-[22px] font-bold tracking-tight">{t("Last opp tegninger", "Upload drawings")}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            {t("Du kan hoppe over dette for en foreløpig vurdering. Kommunen kan kreve tegninger før innsending. Bildeanalyse støtter PNG og JPG; PDF lagres, men analyseres ikke visuelt.", "You can skip this for a preliminary assessment. The municipality may require drawings before submission. Image analysis supports PNG and JPG; PDFs are stored but are not visually analyzed.")}
+            {t("Du kan hoppe over dette for en foreløpig vurdering. Kommunen kan kreve tegninger før innsending. Begge AI-rollene kan lese PDF, PNG og JPG. Maks 6 filer, 10 MB per fil og 20 MB totalt. PDF-er må være uten passord.", "You can skip this for a preliminary assessment. The municipality may require drawings before submission. Both AI roles can read PDF, PNG and JPG. Maximum 6 files, 10 MB each and 20 MB total. PDFs must not be password protected.")}
           </p>
         </div>
 
