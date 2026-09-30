@@ -42,7 +42,7 @@ export function AiAnalyse({ architect, engineer, onContinue, onRetry }: Props) {
           </div>
           <div>
             <p className="font-bold text-[15px]">{t("Arkitekt-vurdering", "Architect assessment")}</p>
-            <p className="text-xs text-gray-400">{t("Gjennomførbarhet og regulering", "Feasibility and zoning")}</p>
+            <p className="text-xs text-gray-400">{t("Tegninger og manglende grunnlag", "Drawings and missing information")}</p>
           </div>
         </div>
 

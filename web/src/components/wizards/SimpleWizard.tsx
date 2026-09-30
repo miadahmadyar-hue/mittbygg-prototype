@@ -187,7 +187,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
           <div className="spinner spinner-lg" />
           <h3 className="text-base font-semibold">{aiPhase.stage === "architect" ? t("AI-arkitekt analyserer…", "AI architect analyzing…") : t("AI-ingeniør gjennomgår…", "AI engineer reviewing…")}</h3>
-          <p className="text-sm text-gray-500">{t("Vurderer tegninger og regelverk", "Assessing drawings and regulations")}</p>
+          <p className="text-sm text-gray-500">{t("Gjennomgår tegninger og prosjektopplysninger", "Reviewing drawings and project information")}</p>
         </div>
       </>
     );
