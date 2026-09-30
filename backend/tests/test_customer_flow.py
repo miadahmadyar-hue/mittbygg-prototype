@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 # Test runs must never call a paid provider, even when a developer has a .env.
-os.environ["ANTHROPIC_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = ""
 
 from fastapi.testclient import TestClient
 from main import app
@@ -93,14 +93,14 @@ class CustomerFlowTests(unittest.TestCase):
 
     def test_project_answers_reach_architect(self):
         expected = ai_architect._fallback_assessment([], "test")
-        with patch.object(ai_architect, "ANTHROPIC_API_KEY", "test"), patch.object(ai_architect, "_call_claude", return_value=expected) as call:
+        with patch.object(ai_architect, "OPENAI_API_KEY", "test"), patch.object(ai_architect, "_call_openai", return_value=expected) as call:
             response = self.client.post("/api/ai/architect", headers=self.headers,
                 json={"slug": "garasje", "project": GARAGE})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(call.call_args.args[-1], GARAGE)
 
     def test_missing_ai_returns_explicit_unavailable_assessment(self):
-        with patch.object(ai_engineer, "ANTHROPIC_API_KEY", ""):
+        with patch.object(ai_engineer, "OPENAI_API_KEY", ""):
             response = self.client.post("/api/ai/engineer", headers=self.headers,
                 json={"slug": "garasje", "project": GARAGE})
         self.assertEqual(response.json()["meta"]["source"], "fallback")

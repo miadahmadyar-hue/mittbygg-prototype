@@ -3,10 +3,10 @@ import json
 import os
 import tempfile
 import unittest
-from types import SimpleNamespace
+import httpx
 from unittest.mock import patch
 
-os.environ["ANTHROPIC_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = ""
 from fastapi.testclient import TestClient
 from main import app
 from api import access, ai_architect, ai_engineer, drawings
@@ -43,14 +43,22 @@ class AIReviewTests(unittest.TestCase):
             "engineer": {"tittel": "Review", "konklusjon": "Measure span", "notater": [], "beregninger": [{"verdi": "unsafe invented value"}]},
         }
         for role, module in (("architect", ai_architect), ("engineer", ai_engineer)):
-            with self.subTest(role=role), patch.object(module, "ANTHROPIC_API_KEY", "test"), patch("anthropic.Anthropic") as provider:
-                provider.return_value.messages.create.return_value = SimpleNamespace(content=[SimpleNamespace(text=json.dumps(responses[role]))])
+            with self.subTest(role=role), patch.object(module, "OPENAI_API_KEY", "test"), patch("api.openai_review.httpx.Client") as provider:
+                provider.return_value.__enter__.return_value.post.return_value = httpx.Response(200,
+                    request=httpx.Request("POST", "https://api.openai.com/v1/responses"),
+                    json={"status": "completed", "output": [{"type": "message", "content": [{"type": "output_text", "text": json.dumps(responses[role])}]}]})
                 response = self.client.post(f"/api/ai/{role}", headers=self.headers, json={"session_id": session, "project": {"areal": 60}, "architect_summary": "Span unknown"})
                 self.assertEqual(response.status_code, 200)
-                content = provider.return_value.messages.create.call_args.kwargs["messages"][0]["content"]
+                request = provider.return_value.__enter__.return_value.post.call_args.kwargs["json"]
+                self.assertEqual(request["model"], "gpt-6-astra")
+                self.assertFalse(request["store"])
+                self.assertTrue(request["text"]["format"]["strict"])
+                content = request["input"][0]["content"]
                 self.assertEqual(len(content), 7)
-                self.assertEqual(content[0]["type"], "document")
-                self.assertEqual(base64.b64decode(content[0]["source"]["data"]), b"%PDF-test-evidence")
+                self.assertEqual(content[1]["type"], "input_image")
+                self.assertTrue(content[1]["image_url"].startswith("data:image/png;base64,"))
+                self.assertEqual(content[0]["type"], "input_file")
+                self.assertEqual(base64.b64decode(content[0]["file_data"].split(",", 1)[1]), b"%PDF-test-evidence")
                 self.assertIn('"areal": 60', content[-1]["text"])
                 self.assertEqual(response.json()["meta"]["drawings_reviewed"], 6)
                 if role == "engineer":
@@ -70,7 +78,7 @@ class AIReviewTests(unittest.TestCase):
 
     def test_provider_failure_never_becomes_successful_assessment(self):
         for role, module in (("architect", ai_architect), ("engineer", ai_engineer)):
-            with patch.object(module, "ANTHROPIC_API_KEY", "test"), patch("anthropic.Anthropic", side_effect=RuntimeError("provider offline")):
+            with patch.object(module, "OPENAI_API_KEY", "test"), patch("api.openai_review.httpx.Client", side_effect=RuntimeError("provider offline")):
                 response = self.client.post(f"/api/ai/{role}", headers=self.headers, json={})
                 self.assertEqual(response.json()["meta"], {"source": "fallback", "reason": "ai_error"})
 

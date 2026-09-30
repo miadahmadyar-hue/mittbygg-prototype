@@ -1,5 +1,5 @@
 """
-AI Architect agent — analyses uploaded drawings + property data with Claude.
+AI Architect agent — analyses uploaded drawings + property data with GPT-6 Astra.
 Returns an explicit unavailable assessment when the provider cannot be used.
 """
 import os
@@ -10,7 +10,7 @@ import base64
 import logging
 import re
 
-from .json_extract import parse_model_json
+from .openai_review import review
 from copy import deepcopy
 from pathlib import Path
 
@@ -22,11 +22,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/mittbygg_drawings")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-ANTHROPIC_ARCHITECT_MODEL = os.getenv(
-    "ANTHROPIC_ARCHITECT_MODEL",
-    os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
-)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_ARCHITECT_MODEL = os.getenv("OPENAI_ARCHITECT_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
 
 SLUG_LABELS: dict[str, str] = {
     "kjeller":      "kjeller / underetasje",
@@ -130,15 +127,7 @@ def _load_drawings(session_id: str, owner: str) -> list[dict]:
     return drawings
 
 
-def drawing_blocks(drawings: list[dict]) -> list[dict]:
-    return [{"type": "document" if drawing["media"] == "application/pdf" else "image",
-             "source": {"type": "base64", "media_type": drawing["media"], "data": drawing["data"]}}
-            for drawing in drawings]
-
-
-
-def _call_claude(slug: str, address: str, gnr: int, bnr: int, bygg: dict, images: list[dict], project: dict) -> dict:
-    import anthropic  # lazy import — only needed when key is present
+def _call_openai(slug: str, address: str, gnr: int, bnr: int, bygg: dict, images: list[dict], project: dict) -> dict:
 
     label = SLUG_LABELS.get(slug, slug)
     bygg_summary = (
@@ -175,17 +164,9 @@ Gi en kort gjennomgang av tegningsgrunnlaget. Svar KUN med gyldig JSON i dette f
 }}
 Bruk norsk. Maks 3 items og 2 anbefalinger. Svar kun med JSON, ingen annen tekst."""
 
-    content = drawing_blocks(images)
-    content.append({"type": "text", "text": prompt})
-
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=60.0, max_retries=0)
-    msg = client.messages.create(
-        model=ANTHROPIC_ARCHITECT_MODEL,
-        max_tokens=2048,
-        messages=[{"role": "user", "content": content}],
-    )
-    result = ArchitectAssessment.model_validate(parse_model_json(msg.content[0].text)).model_dump()
-    result["meta"] = {"source": "claude", "model": ANTHROPIC_ARCHITECT_MODEL, "drawings_reviewed": len(images)}
+    result = review(api_key=OPENAI_API_KEY, model=OPENAI_ARCHITECT_MODEL,
+                    prompt=prompt, drawings=images, schema=ArchitectAssessment)
+    result["meta"] = {"source": "openai", "model": OPENAI_ARCHITECT_MODEL, "drawings_reviewed": len(images)}
     return result
 
 
@@ -193,11 +174,11 @@ Bruk norsk. Maks 3 items og 2 anbefalinger. Svar kun med JSON, ingen annen tekst
 def architect_analyse(req: ArchitectRequest, owner: str = Depends(require_session)) -> dict:
     images = _load_drawings(req.session_id or "", owner)
 
-    if not ANTHROPIC_API_KEY:
+    if not OPENAI_API_KEY:
         return _fallback_assessment(images, "missing_api_key")
 
     try:
-        return _call_claude(req.slug, req.address, req.gnr, req.bnr, req.bygg, images, req.project)
+        return _call_openai(req.slug, req.address, req.gnr, req.bnr, req.bygg, images, req.project)
     except Exception:
         logger.exception("Architect AI analysis failed for slug=%s session_id=%s", req.slug, req.session_id)
         return _fallback_assessment(images, "ai_error")

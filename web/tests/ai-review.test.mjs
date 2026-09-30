@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { runAiReview } from "../src/lib/ai/review.ts";
 
-const architect = { meta: { source: "claude" }, summary: "Check roof", items: [{ type: "missing", text: "Span unknown" }], anbefalinger: ["Measure span"] };
+const architect = { meta: { source: "openai" }, summary: "Check roof", items: [{ type: "missing", text: "Span unknown" }], anbefalinger: ["Measure span"] };
 const engineer = { konklusjon: "Needs review", beregninger: [] };
 const fallback = { architect: { meta: { source: "fallback" } }, engineer: { meta: { source: "fallback" } } };
 

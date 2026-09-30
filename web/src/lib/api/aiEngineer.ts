@@ -14,7 +14,7 @@ export interface EngineerAssessment {
   konklusjon: string;
   notater: string[];
   meta?: {
-    source?: "claude" | "fallback";
+    source?: "openai" | "claude" | "fallback";
     reason?: string;
     model?: string;
   };

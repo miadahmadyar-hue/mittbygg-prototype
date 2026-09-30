@@ -25,7 +25,7 @@ Mobile-first, Norwegian-first (with an EN toggle for demos).
                                             │
                   ┌─────────────────────────┼───────────────────────┐
                   ▼                         ▼                        ▼
-            Kartverket API          Anthropic Claude          DiBK forms
+            Kartverket API          OpenAI GPT-6 Astra          DiBK forms
           (address/matrikkel)    (architect + engineer       (PDF via fpdf2)
                                    agents, with rule-
                                    based fallbacks)
@@ -35,10 +35,10 @@ Mobile-first, Norwegian-first (with an EN toggle for demos).
   components; property data flows via `localStorage` + backend fallback.
 - **Backend** — FastAPI (Python 3.12). Thin routers per domain under `backend/api/`.
   The regulation logic and PDF generation live here.
-- **AI agents** — Claude reviews uploaded PDF/PNG/JPG drawings and project answers.
+- **AI agents** — GPT-6 Astra reviews uploaded PDF/PNG/JPG drawings and project answers.
   The architect runs first; the engineer receives its findings and the original drawings
   for a preliminary document review, not structural calculations. Provider failures or
-  a missing `ANTHROPIC_API_KEY` produce explicit unavailable results with a retry path.
+  a missing `OPENAI_API_KEY` produce explicit unavailable results with a retry path.
   Uploads allow 6 files, 10 MB per file and 20 MB total. Password-protected or oversized
   PDF documents may be rejected by the provider; the UI asks the user to retry.
 
@@ -82,7 +82,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate        # Windows (PowerShell): .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-cp .env.example .env             # then edit .env (see below) — ANTHROPIC_API_KEY is optional
+cp .env.example .env             # then edit .env (see below) — OPENAI_API_KEY is optional
 uvicorn main:app --reload --port 8000
 ```
 
@@ -113,10 +113,10 @@ result → upload → AI analysis → payment → PDF**.
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | no* | — | Enables real Claude analysis. Without it, agents use rule-based fallbacks. |
-| `ANTHROPIC_MODEL` | no | `claude-sonnet-4-6` | Model for both AI agents. |
-| `ANTHROPIC_ARCHITECT_MODEL` | no | falls back to `ANTHROPIC_MODEL` | Override architect agent only. |
-| `ANTHROPIC_ENGINEER_MODEL` | no | falls back to `ANTHROPIC_MODEL` | Override engineer agent only. |
+| `OPENAI_API_KEY` | no* | — | Enables real GPT-6 Astra analysis. Without it, both AI reviews report unavailable. |
+| `OPENAI_MODEL` | no | `gpt-6-astra` | Model for both AI agents. |
+| `OPENAI_ARCHITECT_MODEL` | no | falls back to `OPENAI_MODEL` | Override architect agent only. |
+| `OPENAI_ENGINEER_MODEL` | no | falls back to `OPENAI_MODEL` | Override engineer agent only. |
 | `CORS_ORIGINS` | no | localhost + Netlify URL | Comma-separated allowed origins. |
 | `KARTVERKET_BASE_URL` | no | `https://ws.geonorge.no` | Address/matrikkel data source. |
 | `UPLOAD_DIR` | no | `/tmp/mittbygg_drawings` | Where uploaded drawings are stored. |
@@ -140,8 +140,8 @@ result → upload → AI analysis → payment → PDF**.
 | `GET` | `/api/property/{id}` | Full property data for a matrikkel id |
 | `POST` | `/api/evaluate/{tiltak}` | Regulation check per tiltak (kjeller, tilbygg, …) |
 | `POST` | `/api/drawings/upload` | Upload drawings → returns a `session_id` |
-| `POST` | `/api/ai/architect` | Claude vision assessment of drawings + property |
-| `POST` | `/api/ai/engineer` | Claude technical/structural assessment |
+| `POST` | `/api/ai/architect` | GPT-6 Astra vision assessment of drawings + property |
+| `POST` | `/api/ai/engineer` | GPT-6 Astra preliminary technical document review |
 | `POST` | `/api/soknad/tiltak` | Generate the application-package PDF |
 | `GET` | `/health` | Liveness probe |
 
@@ -168,7 +168,7 @@ Full schema at `/docs` (Swagger) when the backend is running.
 
 - **Frontend → Netlify** — auto-deploys from `main`. Build: `npm ci && npm run build`
   (config in `netlify.toml`). Set `NEXT_PUBLIC_API_URL` in the Netlify dashboard.
-- **Backend → Render** — Docker service (`backend/Dockerfile`). Set `ANTHROPIC_API_KEY`,
+- **Backend → Render** — Docker service (`backend/Dockerfile`). Set `OPENAI_API_KEY`,
   `CORS_ORIGINS`, etc. in the Render dashboard.
 
 > ⚠️ **Two known deploy gotchas** (June 2026):
@@ -201,7 +201,7 @@ See the issue tracker / team notes for the prioritized backlog.
 
 **Frontend:** Next.js 16, React 19, TypeScript (strict), Tailwind CSS 4
 **Backend:** FastAPI, Python 3.12, Pydantic 2, httpx, fpdf2, Anthropic SDK
-**Infra:** Netlify (web), Render (api), Anthropic Claude, Kartverket/Geonorge APIs
+**Infra:** Netlify (web), Render (api), OpenAI GPT-6 Astra, Kartverket/Geonorge APIs
 
 
 ## Customer-flow reliability
@@ -228,3 +228,18 @@ Deploy the backend and frontend together: the frontend expects the session endpo
 - Backend: `cd backend`, then `python -m unittest discover -s tests -v`.
 - PDF generation uses DejaVu fonts on Linux or Arial on Windows. Set `PDF_FONT_DIR` to a directory containing DejaVuSans.ttf and DejaVuSans-Bold.ttf if needed.
 - Browser regression: create a garage draft, reload on step two, use header Back, retry an unavailable backend, simulate a failed PDF request, generate a PDF, return to the dashboard and download it again.
+
+### GPT-6 Astra provider setup
+
+Set `OPENAI_API_KEY` on the Render backend service before deploying this migration.
+Both roles default to `gpt-6-astra`; blank role overrides inherit `OPENAI_MODEL`.
+The OpenAI project must have model access and API billing available. Credentials stay
+on the backend. The Responses API sends PDFs/images directly, requests strict JSON,
+uses low reasoning effort with an 8,192-token output cap, and sets `store: false`.
+A refusal, incomplete response, timeout, or provider error produces an explicit
+unavailable assessment. No automatic switch to another provider occurs.
+
+After deployment, test session creation, upload a synthetic PDF, and verify that both
+reviews return `meta.source: openai`, `meta.model: gpt-6-astra`, and the expected drawing
+count. Verify the engineer reports `architect_context_received: true` and returns an
+empty `beregninger` list. Automated tests mock OpenAI; they do not prove account access.

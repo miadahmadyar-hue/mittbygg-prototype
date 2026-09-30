@@ -14,7 +14,7 @@ export interface ArchitectAssessment {
   items: AssessmentItem[];
   anbefalinger: string[];
   meta?: {
-    source?: "claude" | "fallback";
+    source?: "openai" | "claude" | "fallback";
     reason?: string;
     model?: string;
   };

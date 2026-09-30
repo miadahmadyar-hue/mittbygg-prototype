@@ -11,7 +11,7 @@ export async function runAiReview(
 ) {
   const architect = await architectCall().catch(() => fallback.architect);
   onEngineer();
-  const context = architect.meta?.source === "claude"
+  const context = (architect.meta?.source === "openai" || architect.meta?.source === "claude")
     ? JSON.stringify({ summary: architect.summary, items: architect.items, anbefalinger: architect.anbefalinger })
     : "Arkitektvurderingen er ikke tilgjengelig. Gjør en selvstendig foreløpig gjennomgang.";
   const engineer = await engineerCall(context).catch(() => fallback.engineer);
