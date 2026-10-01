@@ -94,6 +94,9 @@ export function KjellerWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
+  if ("result" in phase && !("rental_use" in (phase.result.input as Record<string, unknown>))) {
+    return <><Topbar title="Oppdatert kjellervurdering" /><main className="view"><h1 className="text-xl font-semibold">Kontroller de lagrede svarene</h1><p>Veiviseren er oppdatert. Svarene dine er beholdt, men den tidligere vurderingen må kjøres på nytt.</p><Button full onClick={() => setPhase({ kind: "wizard", step: 0 })}>Se svar og oppdater vurderingen</Button></main></>;
+  }
   if (phase.kind !== "wizard") {
     return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="kjeller" loadingText="Vurderer rommet mot kravene…" />;
   }
