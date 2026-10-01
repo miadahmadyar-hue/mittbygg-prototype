@@ -1,8 +1,6 @@
 import { apiPost } from "./client";
 import {
-  evaluateKjeller as evaluateKjellerLocal,
   type KjellerInput,
-  type KjellerResult,
 } from "@/lib/regulations/kjeller";
 import {
   evaluateVegg as evaluateVeggLocal,
@@ -43,12 +41,8 @@ export interface TiltakResult {
 
 // ── Existing wizards ──────────────────────────────────────────────────────────
 
-export async function evaluateKjellerApi(input: KjellerInput): Promise<KjellerResult> {
-  try {
-    return await apiPost<KjellerResult>("/api/evaluate/kjeller", input);
-  } catch {
-    return evaluateKjellerLocal(input);
-  }
+export async function evaluateKjellerApi(input: KjellerInput): Promise<TiltakResult> {
+  return evalTiltak("kjeller", input);
 }
 
 export async function evaluateVeggApi(input: VeggInput): Promise<VeggResult> {

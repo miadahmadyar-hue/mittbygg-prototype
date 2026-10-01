@@ -16,6 +16,7 @@ from api.drawings import router as drawings_router
 from api.ai_architect import router as ai_architect_router
 from api.ai_engineer import router as ai_engineer_router
 from api.wall_case import router as wall_case_router
+from api.cellar_case import router as cellar_case_router
 
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
@@ -42,6 +43,7 @@ app.include_router(drawings_router, prefix="/api")
 app.include_router(ai_architect_router, prefix="/api")
 app.include_router(ai_engineer_router, prefix="/api")
 app.include_router(wall_case_router, prefix="/api")
+app.include_router(cellar_case_router, prefix="/api")
 
 
 @app.get("/health")

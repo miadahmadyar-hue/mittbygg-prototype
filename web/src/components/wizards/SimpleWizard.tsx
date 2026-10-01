@@ -17,6 +17,7 @@ import { SoknadSent } from "./SoknadFlow";
 import { BetalingModal } from "./BetalingModal";
 import { DrawingUpload } from "./DrawingUpload";
 import { AiAnalyse } from "./AiAnalyse";
+import { CellarPreparation } from "./CellarPreparation";
 import { WallPreparation } from "./WallPreparation";
 import { useDraftState } from "@/lib/projects";
 import { downloadTiltakSoknad } from "@/lib/api/soknad";
@@ -164,6 +165,9 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
     );
   }
 
+  if (phase.kind === "result" && slug === "kjeller" && wallPreparation.open && phase.result.availability !== "unavailable") {
+    return <CellarPreparation p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
+  }
   if (phase.kind === "result" && slug === "vegg" && wallPreparation.open && phase.result.availability !== "unavailable" && ["professional", "clarify"].includes(phase.result.outcome ?? "clarify")) {
     return <WallPreparation p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
   }
@@ -171,7 +175,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
     return (
       <ResultView
         r={phase.result}
-        onPrepareProfessional={slug === "vegg" ? () => setWallPreparation({ open: true }) : undefined}
+        onPrepareProfessional={slug === "vegg" || slug === "kjeller" ? () => setWallPreparation({ open: true }) : undefined}
         onEdit={onEdit}
         onRetry={async () => {
           const input = phase.result.input;

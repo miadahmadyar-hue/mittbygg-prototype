@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { ToggleRow } from "@/components/ui/Toggle";
+
 import { NumberField, ResultPhases } from "./SimpleWizard";
 import { KJELLER_BRUK, type KjellerBrukId } from "@/lib/data/kjellerBruk";
 import { evaluateKjellerApi, type TiltakResult } from "@/lib/api/evaluate";
@@ -21,11 +21,14 @@ type Phase =
   | { kind: "sending"; result: TiltakResult }
   | { kind: "sent"; result: TiltakResult };
 
-type CurrentUse = "bod" | "vaskerom" | "teknisk" | "annet";
+type CurrentUse = "bod" | "vaskerom" | "teknisk" | "annet" | "usikker";
 type Condition = "ja" | "nei" | "usikker";
 
 interface WizardData {
   room: CurrentUse | null;
+  rental?: "same" | "separate" | "unknown";
+  unknownMeasurements?: boolean;
+  unknownWindow?: boolean;
   ny_bruk: KjellerBrukId | null;
   godkjent_bruk_bekreftet: boolean;
   rom_areal: number;
@@ -56,7 +59,8 @@ const CURRENT_USE: Record<CurrentUse, [string, string]> = {
   bod: ["Bod eller lager", "Ikke godkjent for varig opphold"],
   vaskerom: ["Vaskerom", "Våtrom eller vaskesone"],
   teknisk: ["Teknisk rom", "Rom for tekniske installasjoner"],
-  annet: ["Annet eller usikker", "Vi markerer dette for nærmere avklaring"],
+  annet: ["Annen godkjent bruk", "Beskriv bruken i saksunderlaget etter vurderingen"],
+  usikker: ["Vet ikke", "Jeg har ikke funnet godkjent bruk ennå"],
 };
 
 export function KjellerWizard({ p }: { p: Address }) {
@@ -65,24 +69,25 @@ export function KjellerWizard({ p }: { p: Address }) {
   const [data, setData] = useDraftState<WizardData>("data", INITIAL);
 
   const evaluate = async () => {
-    if (!data.room || !data.ny_bruk || !data.rom_areal || !data.takhoyde) return;
+    if (!data.room || !data.ny_bruk) return;
     setPhase({ kind: "loading" });
     const result = await evaluateKjellerApi({
       propId: p.id,
       byggeAar: p.bygg.byggeAar,
       room: data.room,
       ny_bruk: data.ny_bruk,
+      rental_use: data.ny_bruk === "hybel" ? (data.rental ?? "unknown") : "same",
       radon: data.radon,
       drenering: data.drenering_status === "ja",
       balansert_vent: data.ventilasjon_status === "ja",
       bra: p.bygg.BRA ?? null,
       etasjer: p.bygg.etasjer ?? null,
-      rom_areal: data.rom_areal,
-      takhoyde: data.takhoyde,
-      vindu_bredde: data.vindu_bredde || null,
-      vindu_hoyde: data.vindu_hoyde || null,
-      vindu_brystning: data.vindu_brystning || null,
-      godkjent_bruk_bekreftet: data.godkjent_bruk_bekreftet,
+      rom_areal: data.unknownMeasurements ? null : data.rom_areal,
+      takhoyde: data.unknownMeasurements ? null : data.takhoyde,
+      vindu_bredde: data.unknownWindow ? null : (data.vindu_bredde || null),
+      vindu_hoyde: data.unknownWindow ? null : (data.vindu_hoyde || null),
+      vindu_brystning: data.unknownWindow ? null : (data.vindu_brystning || null),
+      godkjent_bruk_bekreftet: data.room !== "usikker" && data.godkjent_bruk_bekreftet,
       drenering_status: data.drenering_status,
       ventilasjon_status: data.ventilasjon_status,
     });
@@ -112,16 +117,11 @@ export function KjellerWizard({ p }: { p: Address }) {
             </div>
             <div className="space-y-2">
               {(Object.entries(CURRENT_USE) as [CurrentUse, [string, string]][]).map(([value, label]) => (
-                <RadioCard key={value} selected={data.room === value} onClick={() => setData({ ...data, room: value })} title={label[0]} desc={label[1]} />
+                <RadioCard key={value} selected={data.room === value} onClick={() => setData({ ...data, room: value, godkjent_bruk_bekreftet: false })} title={label[0]} desc={label[1]} />
               ))}
             </div>
-            <ToggleRow
-              on={data.godkjent_bruk_bekreftet}
-              onChange={() => setData({ ...data, godkjent_bruk_bekreftet: !data.godkjent_bruk_bekreftet })}
-              title="Bekreftet i godkjent tegning"
-              desc="Jeg har kontrollert siste godkjente plantegning"
-            />
-            <Alert variant="amber">Har du ikke tegningene, kan kommunen vanligvis gi innsyn i byggesaksarkivet.</Alert>
+            <label className="flex gap-3 items-start text-sm"><input type="checkbox" disabled={data.room === "usikker" || !data.room} checked={data.godkjent_bruk_bekreftet && data.room !== "usikker"} onChange={(e) => setData({ ...data, godkjent_bruk_bekreftet: e.target.checked })} />Jeg har kontrollert bruken i siste godkjente plantegning</label>
+            <Alert variant="amber">Mangler du tegninger? Be kommunens byggesaksarkiv om siste godkjente plantegning og vedtak. Oppgi adresse og gårds-/bruksnummer. Du kan fortsette med «Vet ikke» og laste opp dokumentene etter vurderingen.</Alert>
             <Navigation canProceed={Boolean(data.room)} onNext={() => setPhase({ kind: "wizard", step: 1 })} onBack={back} />
           </>
         )}
@@ -134,10 +134,16 @@ export function KjellerWizard({ p }: { p: Address }) {
             </div>
             <div className="space-y-2">
               {(Object.entries(KJELLER_BRUK) as [KjellerBrukId, typeof KJELLER_BRUK[KjellerBrukId]][]).map(([key, value]) => (
-                <RadioCard key={key} selected={data.ny_bruk === key} onClick={() => setData({ ...data, ny_bruk: key })} title={value.label} desc={value.desc} />
+                <RadioCard key={key} selected={data.ny_bruk === key} onClick={() => setData({ ...data, ny_bruk: key })} title={key === "hybel" ? "Utleie / mulig egen boenhet" : value.label} desc={key === "hybel" ? "Avklar om dette er del av boligen eller en separat enhet" : value.desc} />
               ))}
             </div>
-            <Navigation canProceed={Boolean(data.ny_bruk)} onNext={() => setPhase({ kind: "wizard", step: 2 })} onBack={back} />
+            {data.ny_bruk === "hybel" && <div className="panel p-4 space-y-2"><h3 className="font-semibold">Hvordan skal utleiedelen fungere?</h3>
+              <RadioCard selected={data.rental === "same"} onClick={() => setData({ ...data, rental: "same" })} title="Rom i eksisterende bolig" desc="Delte funksjoner eller intern forbindelse til resten av boligen" />
+              <RadioCard selected={data.rental === "separate"} onClick={() => setData({ ...data, rental: "separate" })} title="Planlegger en separat boenhet" desc="Egen inngang, alle boligfunksjoner og fysisk atskilt fra resten" />
+              <RadioCard selected={data.rental === "unknown"} onClick={() => setData({ ...data, rental: "unknown" })} title="Usikker på oppdelingen" />
+              <p className="text-sm">Utleie alene avgjør ikke om det er en ny boenhet. Den faktiske løsningen må kontrolleres.</p>
+            </div>}
+            <Navigation canProceed={Boolean(data.ny_bruk) && (data.ny_bruk !== "hybel" || Boolean(data.rental))} onNext={() => setPhase({ kind: "wizard", step: 2 })} onBack={back} />
           </>
         )}
 
@@ -147,14 +153,21 @@ export function KjellerWizard({ p }: { p: Address }) {
               <h2 className="text-[22px] font-bold tracking-tight">Mål rommet</h2>
               <p className="text-sm text-gray-500 mt-2">Oppgi faktiske mål. Vindu måles som fri åpning når det er helt åpent.</p>
             </div>
+            <label className="flex gap-3"><input type="checkbox" checked={data.unknownMeasurements ?? false} onChange={(e) => setData({ ...data, unknownMeasurements: e.target.checked })} />Areal og takhøyde er ikke målt ennå</label>
+            {!data.unknownMeasurements && <>
             <Measurement label="Gulvareal" value={data.rom_areal} onChange={(value) => setData({ ...data, rom_areal: value })} unit="m²" step={0.5} />
-            <Measurement label="Takhøyde" value={data.takhoyde} onChange={(value) => setData({ ...data, takhoyde: value })} unit="mm" />
+            <Measurement label="Takhøyde" value={data.takhoyde / 1000} onChange={(value) => setData({ ...data, takhoyde: Math.round(value * 1000) })} unit="m" step={0.01} />
+            </>}
+            {data.ny_bruk !== "bad" && <>
+            <label className="flex gap-3"><input type="checkbox" checked={data.unknownWindow ?? false} onChange={(e) => setData({ ...data, unknownWindow: e.target.checked })} />Vindu mangler eller er ikke målt ennå</label>
+            {!data.unknownWindow && <>
             <div className="grid grid-cols-2 gap-3">
               <Measurement label="Vindu, fri bredde" value={data.vindu_bredde} onChange={(value) => setData({ ...data, vindu_bredde: value })} unit="m" step={0.05} />
               <Measurement label="Vindu, fri høyde" value={data.vindu_hoyde} onChange={(value) => setData({ ...data, vindu_hoyde: value })} unit="m" step={0.05} />
             </div>
             <Measurement label="Høyde fra gulv til vindusåpning" value={data.vindu_brystning} onChange={(value) => setData({ ...data, vindu_brystning: value })} unit="m" step={0.05} />
-            <Navigation canProceed={data.rom_areal > 0 && data.takhoyde > 0} onNext={() => setPhase({ kind: "wizard", step: 3 })} onBack={back} />
+            </>}</>}
+            <Navigation canProceed={Boolean(data.unknownMeasurements) || (data.rom_areal > 0 && data.takhoyde > 0)} onNext={() => setPhase({ kind: "wizard", step: 3 })} onBack={back} />
           </>
         )}
 
@@ -168,8 +181,9 @@ export function KjellerWizard({ p }: { p: Address }) {
             <ConditionGroup label="Finnes dokumentert ventilasjon for ny bruk?" value={data.ventilasjon_status} onChange={(value) => setData({ ...data, ventilasjon_status: value })} />
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Radonmåling, hvis tilgjengelig</label>
-              <NumberField label="Radon" value={data.radon ?? 0} onChange={(value) => setData({ ...data, radon: value || null })} unit="Bq/m³" />
-              <p className="text-xs text-gray-500 mt-2">La feltet stå på 0 hvis radon ikke er målt.</p>
+              <label className="flex gap-3 mb-3"><input type="checkbox" checked={data.radon === null} onChange={(e) => setData({ ...data, radon: e.target.checked ? null : 0 })} />Ikke målt / målerapport mangler</label>
+              {data.radon !== null && <NumberField label="Radon" value={data.radon} onChange={(value) => setData({ ...data, radon: value })} unit="Bq/m³" />}
+              <p className="text-xs text-gray-500 mt-2">Oppgi resultatet fra målerapporten. Rapporten kan lastes opp etter vurderingen.</p>
             </div>
             <Alert>Resultatet er en tidlig regelsjekk. Tegninger og teknisk dokumentasjon må fortsatt kontrolleres før innsending.</Alert>
             <Navigation canProceed onNext={evaluate} onBack={back} final />

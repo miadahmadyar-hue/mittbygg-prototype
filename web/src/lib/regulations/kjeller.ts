@@ -31,6 +31,7 @@ export interface Lempning {
 }
 
 export interface KjellerInput {
+  rental_use?: "same" | "separate" | "unknown";
   propId: string;
   byggeAar: number | null;
   room: string;

@@ -1,5 +1,5 @@
 from typing import Literal, Optional, List
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, Field, computed_field
 
 
 class Finding(BaseModel):
@@ -40,20 +40,21 @@ class AssessmentResult(BaseModel):
 # ── Kjeller ──────────────────────────────────────────────────────────────────
 
 class KjellerInput(BaseModel):
+    rental_use: Literal["same", "separate", "unknown"] = "unknown"
     propId: str
     byggeAar: Optional[int] = None
     room: str
     ny_bruk: Literal["soverom", "hybel", "stue", "kontor", "bad"]
-    radon: Optional[float] = None
-    drenering: bool = True
+    radon: Optional[float] = Field(default=None, ge=0)
+    drenering: bool = False
     balansert_vent: bool = False
     bra: Optional[int] = None      # gross floor area — used for room derivation
     etasjer: Optional[int] = None  # floor count — used for room derivation
-    rom_areal: Optional[float] = None
-    takhoyde: Optional[float] = None  # mm, measured by the customer
-    vindu_bredde: Optional[float] = None  # m
-    vindu_hoyde: Optional[float] = None   # m
-    vindu_brystning: Optional[float] = None  # m above floor
+    rom_areal: Optional[float] = Field(default=None, ge=0)
+    takhoyde: Optional[float] = Field(default=None, ge=0)  # mm, measured by the customer
+    vindu_bredde: Optional[float] = Field(default=None, ge=0)  # m
+    vindu_hoyde: Optional[float] = Field(default=None, ge=0)   # m
+    vindu_brystning: Optional[float] = Field(default=None, ge=0)  # m above floor
     godkjent_bruk_bekreftet: bool = False
     drenering_status: Literal["ja", "nei", "usikker"] = "usikker"
     ventilasjon_status: Literal["ja", "nei", "usikker"] = "usikker"
