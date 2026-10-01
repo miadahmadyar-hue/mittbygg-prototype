@@ -41,15 +41,21 @@ export function CellarPreparation({ p, result, onBack, slug = "kjeller" }: { p: 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const input = result.input as Record<string, unknown>;
-  const fingerprint = JSON.stringify({ input, details: draft.details, address: p.street, bygg: p.bygg });
+  const fingerprint = JSON.stringify({ input, details: draft.details, address: p.street, bygg: p.bygg, reviewVersion: 2 });
   const review = draft.review?.fingerprint === fingerprint ? draft.review : null;
   const screen = draft.screen === "summary" && !review ? "details" : draft.screen;
   const changeScreen = (screen: Case["screen"]) => { setError(""); setSaved(false); setDraft({ ...draft, screen }); };
 
   async function analyse(session: string | null) {
     setError(""); setBusy("AI-arkitekt gjennomgår tegningene…");
+    const project = { ...input, apartment: draft.details } as Record<string, unknown>;
+    if (slug === "bruksendring") {
+      // The explicit three-way answers supersede legacy false defaults.
+      delete project.inngrep_baerende;
+      delete project.verneverdig;
+    }
     const base = { slug, address: p.street, gnr: Number(p.matrikkel.gnr), bnr: Number(p.matrikkel.bnr), kommune: p.matrikkel.kommune,
-      bygg: p.bygg as Record<string, unknown>, project: { ...input, apartment: draft.details }, session_id: session };
+      bygg: p.bygg as Record<string, unknown>, project, session_id: session };
     try {
       const reviewed = await runAiReview(() => callArchitectAgent(base), (architect_summary) => callEngineerAgent({ ...base, architect_summary }),
         { architect: FALLBACK_ARCHITECT, engineer: FALLBACK_ENGINEER }, () => setBusy("AI-ingeniør gjennomgår arkitektens funn og originalvedlegg…"));
