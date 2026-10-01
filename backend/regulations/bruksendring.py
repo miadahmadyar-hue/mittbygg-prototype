@@ -1,103 +1,48 @@
-from models import BruksendringInput, TiltakResult, TiltakFinding, TiltakTiltak
+"""Preliminary change-of-use assessment; document review is still required.
+Sources: dibk.no/bygge-eller-endre/hva-er-en-bruksendring and
+ dibk.no/regelverk/sak/2/3/3-1/ (reviewed 2026-10-01).
+"""
+from models import BruksendringInput, TiltakResult, TiltakFinding
 
 
 def evaluate_bruksendring(inp: BruksendringInput) -> TiltakResult:
-    findings: list[TiltakFinding] = []
-    tiltak: list[TiltakTiltak] = []
+    findings = []
+    def add(title, description, kind="warn", ref="Dokumentasjonsgrunnlag"):
+        findings.append(TiltakFinding(type=kind, t=title, d=description, ref=ref))
 
-    if not inp.godkjent_bruk_bekreftet:
-        findings.append(TiltakFinding(
-            type="warn",
-            t="Dagens godkjente bruk må bekreftes",
-            d="Kontroller siste godkjente tegninger i kommunens byggesaksarkiv. Faktisk bruk i dag er ikke alltid den lovlig godkjente bruken.",
-            ref="PBL § 20-1 d",
-        ))
-
-    findings.append(TiltakFinding(
-        type="warn",
-        t="Bruksendringen må omsøkes",
-        d="Den oppgitte overgangen mellom brukskategorier behandles som bruksendring etter PBL § 20-1 d.",
-        ref="PBL § 20-1 d",
-    ))
-
-    if inp.til in ("bolig", "hybel"):
-        findings.append(TiltakFinding(
-            type="warn",
-            t="TEK17-krav til ny boligbruk",
-            d="Rommet må tilfredsstille krav til takhøyde (min. 2,2 m), dagslys, ventilasjon og brannsikring etter TEK17.",
-            ref="TEK17 §§ 8-2, 13-2, 14-2",
-        ))
-
-    if inp.verneverdig:
-        findings.append(TiltakFinding(
-            type="fail",
-            t="Verneverdig bygning — kulturminnevurdering kreves",
-            d="Endring av bruk i verneverdig bygg krever uttalelse fra kulturminnemyndigheten.",
-            ref="Kulturminneloven § 25",
-        ))
-
+    if not inp.godkjent_bruk_bekreftet or inp.fra in ("annet", "usikker"):
+        add("Godkjent bruk må bekreftes", "Innhent siste godkjente tegninger og vedtak. Faktisk bruk er ikke nødvendigvis godkjent bruk.")
+    if inp.areal is None:
+        add("Areal er ikke målt", "Oppgi arealet som omfattes av endringen og vis avgrensningen på tegning.")
+    if inp.fra == inp.til:
+        add("Beskriv endringen innenfor samme brukskategori", "Like kategorier avklarer ikke søknadsplikten. Beskriv aktivitet, belastning, rombruk og eventuelle fysiske endringer.", ref="SAK10 § 2-1")
+    else:
+        add("Søknadsomfang må avklares", "Overgangen må vurderes ut fra godkjent bruk og den konkrete nye bruken. Avklar søknadsform og behov for ansvarlig foretak.", ref="SAK10 § 2-1 og § 3-1")
+    housing = inp.til in ("rom", "bolig", "hybel")
+    if housing:
+        add("Ny boligbruk må dokumenteres", "Dokumenter blant annet romhøyde, dagslys, ventilasjon, brann, fukt og tilgjengelighet etter reglene som gjelder for tiltaket. Ingen universell takhøyde eller teknisk godkjenning er lagt til grunn.", ref="TEK17 og regler for eksisterende bygg")
+        if inp.bolig_scope == "unknown":
+            add("Boligens avgrensning er ukjent", "Avklar om arealet blir del av samme bolig eller en fysisk separat boenhet. Utleie alene avgjør ikke dette.", ref="SAK10 § 2-2")
     if inp.plan_status == "ikke_tillatt":
-        findings.append(TiltakFinding(
-            type="fail",
-            t="Ny bruk er ikke i samsvar med planen",
-            d="Det må vurderes dispensasjon før bruksendringen kan godkjennes.",
-            ref="PBL § 19-2",
-        ))
+        add("Planavvik må avklares", "Avklar med kommunen om dispensasjon eller planendring er nødvendig. Ingen godkjenning er forutsatt.", "fail", "PBL kap. 19")
     elif inp.plan_status == "usikker":
-        findings.append(TiltakFinding(
-            type="warn",
-            t="Planformålet må kontrolleres",
-            d="Sjekk at reguleringsplan eller kommuneplan tillater den nye bruken.",
-            ref="PBL § 12-7",
-        ))
-
-    if inp.fra in ("naring", "kontor") and inp.til in ("bolig", "hybel"):
-        findings.append(TiltakFinding(
-            type="warn",
-            t="Reguleringsplan må tillate boligbruk",
-            d="Sjekk at eiendommens reguleringsformål tillater bolig. Næringslokaler kan ha krav om opprettholdt næringsandel.",
-            ref="PBL § 12-7",
-        ))
-
-    findings.append(TiltakFinding(
-        type="warn",
-        t="Behov for nabovarsel må avklares",
-        d="Kommunen eller ansvarlig søker vurderer om saken skal nabovarsles og om et unntak kan brukes.",
-        ref="PBL § 21-3",
-    ))
-
-    if inp.inngrep_baerende:
-        findings.append(TiltakFinding(
-            type="fail",
-            t="Inngrep i bærekonstruksjon krever faglig prosjektering",
-            d="En konstruksjonsingeniør må avklare lastvei, stabilitet og nødvendig ansvarsrett.",
-            ref="PBL § 20-3 og TEK17 kap. 10",
-        ))
-
-    tiltak.append(TiltakTiltak(
-        name="Søknad om bruksendring",
-        desc="Utarbeidelse og innlevering av søknad med situasjonsplan, tegninger og teknisk dokumentasjon.",
-        kostnad=12000,
-    ))
-    tiltak.append(TiltakTiltak(
-        name="Teknisk dokumentasjon (TEK17)",
-        desc="Dokumentasjon av at ny bruk oppfyller krav til lys, luft, brann og tilgjengelighet.",
-        kostnad=8000,
-    ))
-
-    needs_professional = inp.verneverdig or inp.inngrep_baerende
-    has_failure = needs_professional or inp.plan_status == "ikke_tillatt"
-    status = "red" if has_failure else "amber"
-    return TiltakResult(
-        status=status,
-        statusText="Krever faglig avklaring" if has_failure else "Søknadspliktig bruksendring",
-        statusDesc="Søknadsgrunnlaget må dokumentere dagens godkjente bruk, planstatus og tekniske krav.",
-        findings=findings,
-        tiltak=tiltak,
-        lempninger=[],
-        soknadstype="Søknad med nabovarsel (SAK10 kap. 5)",
-        ansvarsrett=needs_professional,
-        tiltaksklasse=1,
-        totalKostnad=sum(t.kostnad for t in tiltak),
-        input=inp.model_dump(),
-    )
+        add("Planstatus er ukjent", "Innhent gjeldende plankart og bestemmelser for adressen. Appen har ikke kontrollert disse automatisk.")
+    else:
+        add("Planstatus må dokumenteres", "Du oppgir at planen tillater bruken. Legg ved aktuelle bestemmelser og planreferanse for kontroll.")
+    structural = inp.baerende_status == "ja" or inp.inngrep_baerende
+    if structural:
+        add("Bærende inngrep må prosjekteres", "Avklar lastvei, stabilitet og ansvar med konstruksjonsingeniør før utførelse.", ref="TEK17 kap. 10")
+    elif inp.baerende_status == "usikker":
+        add("Bærende inngrep er uavklart", "Avklar om vegger, dekker eller søyler berøres. Usikker er ikke behandlet som nei.")
+    if inp.vern_status == "ja" or inp.verneverdig:
+        add("Vernestatus må undersøkes nærmere", "Innhent registrering og eventuelle vedtak eller planbestemmelser. Registrering alene avgjør ikke hvilke begrensninger som gjelder.")
+    elif inp.vern_status == "usikker":
+        add("Vernestatus er ukjent", "Kontroller kommunens kart, planbestemmelser og eventuelle vernevedtak.")
+    add("Tegninger og øvrige vedlegg", "Samle eksisterende og foreslåtte planer og snitt. Avklar fasadeendringer, eierforhold, nabovarsel og nødvendige fagrapporter før innsending.")
+    professional = structural or (housing and (inp.fra in ("naring", "kontor", "fritidsbolig") or inp.bolig_scope == "separate"))
+    return TiltakResult(status="red" if structural or inp.plan_status == "ikke_tillatt" else "amber",
+        statusText="Krever faglig avklaring" if professional else "Forhold må avklares",
+        statusDesc="Samle dokumentasjon og forbered saken. Ingen søknad er bekreftet klar til innsending.",
+        findings=findings, tiltak=[], lempninger=[],
+        soknadstype="Må avklares - bruksendring", ansvarsrett=professional, tiltaksklasse=1,
+        totalKostnad=0, input=inp.model_dump())

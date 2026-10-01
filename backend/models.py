@@ -254,13 +254,16 @@ class GeolograpportInput(BaseModel):
 
 
 class BruksendringInput(BaseModel):
-    fra: Literal["naring", "kontor", "garasje", "bod", "fritidsbolig", "annet"]
-    til: Literal["bolig", "hybel", "kontor", "naring"]
-    areal: float
-    verneverdig: bool
+    fra: Literal["naring", "kontor", "garasje", "bod", "fritidsbolig", "annet", "usikker"]
+    til: Literal["bolig", "hybel", "rom", "kontor", "naring"]
+    areal: Optional[float] = Field(default=None, gt=0)
+    verneverdig: bool = False  # retained for older clients; false does not mean verified
     godkjent_bruk_bekreftet: bool = False
     plan_status: Literal["tillatt", "ikke_tillatt", "usikker"] = "usikker"
     inngrep_baerende: bool = False
+    vern_status: Literal["ja", "nei", "usikker"] = "usikker"
+    baerende_status: Literal["ja", "nei", "usikker"] = "usikker"
+    bolig_scope: Literal["same", "separate", "unknown"] = "unknown"
 
 
 class TilleggsdelInput(BaseModel):

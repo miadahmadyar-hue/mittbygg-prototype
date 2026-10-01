@@ -13,9 +13,9 @@ import { sessionFetch } from "@/lib/api/session";
 import { saveDocument, downloadBlob } from "@/lib/documents";
 import type { Address } from "@/lib/data/addresses";
 import type { TiltakResult } from "@/lib/api/evaluate";
-import type { KjellerInput } from "@/lib/regulations/kjeller";
+import { ChangeUsePrice } from "./ChangeUsePrice";
 
-const checks = {
+const cellarChecks = {
   plans: "Godkjente tegninger og vedtak",
   measures: "Målsatt plan og snitt for eksisterende og ny bruk",
   window: "Vinduer, dagslys og rømning dokumentert eller avklart",
@@ -23,7 +23,7 @@ const checks = {
   radon: "Radonrapport / relevans for bruken avklart",
   scope: "Eierforhold, omfang og eventuell oppdeling avklart",
 };
-const fields = {
+const cellarFields = {
   position: "Hvor ligger rommet? Er det inne i boligen eller via fellesareal?",
   notes: "Beskriv endringen, annen godkjent bruk og spørsmål du trenger hjelp med",
   applicantFirm: "Ønsket rådgiver eller ansvarlig søker (valgfritt)",
@@ -32,12 +32,15 @@ const fields = {
 type Review = { architect: ArchitectAssessment; engineer: EngineerAssessment; fingerprint: string; session: string | null };
 type Case = { details: Record<string, string>; checklist: Record<string, boolean>; review: Review | null; screen: "details" | "upload" | "summary" };
 
-export function CellarPreparation({ p, result, onBack }: { p: Address; result: TiltakResult; onBack: () => void }) {
+export function CellarPreparation({ p, result, onBack, slug = "kjeller" }: { p: Address; result: TiltakResult; onBack: () => void; slug?: "kjeller" | "bruksendring" }) {
+  const changeUse = slug === "bruksendring";
+  const checks = changeUse ? { plans: "Godkjente tegninger og vedtak", measures: "Eksisterende og foreslåtte planer og snitt", window: "Tekniske krav for ny bruk dokumentert", moisture: "Plan og vernestatus avklart", radon: "Nødvendige fagrapporter avklart", scope: "Eierforhold, søknadsomfang og ansvar avklart" } : cellarChecks;
+  const fields = changeUse ? { position: "Hvor ligger arealet og hvordan henger det sammen med resten av bygget?", notes: "Beskriv ny aktivitet, annen godkjent bruk og fysiske endringer", applicantFirm: "Ønsket rådgiver eller ansvarlig søker (valgfritt)" } : cellarFields;
   const [draft, setDraft] = useDraftState<Case>("professionalCase", { details: {}, checklist: {}, review: null, screen: "details" });
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-  const input = result.input as KjellerInput;
+  const input = result.input as Record<string, unknown>;
   const fingerprint = JSON.stringify({ input, details: draft.details, address: p.street, bygg: p.bygg });
   const review = draft.review?.fingerprint === fingerprint ? draft.review : null;
   const screen = draft.screen === "summary" && !review ? "details" : draft.screen;
@@ -45,7 +48,7 @@ export function CellarPreparation({ p, result, onBack }: { p: Address; result: T
 
   async function analyse(session: string | null) {
     setError(""); setBusy("AI-arkitekt gjennomgår tegningene…");
-    const base = { slug: "kjeller", address: p.street, gnr: Number(p.matrikkel.gnr), bnr: Number(p.matrikkel.bnr), kommune: p.matrikkel.kommune,
+    const base = { slug, address: p.street, gnr: Number(p.matrikkel.gnr), bnr: Number(p.matrikkel.bnr), kommune: p.matrikkel.kommune,
       bygg: p.bygg as Record<string, unknown>, project: { ...input, apartment: draft.details }, session_id: session };
     try {
       const reviewed = await runAiReview(() => callArchitectAgent(base), (architect_summary) => callEngineerAgent({ ...base, architect_summary }),
@@ -58,7 +61,7 @@ export function CellarPreparation({ p, result, onBack }: { p: Address; result: T
     if (!review) return;
     setBusy("Lager saksunderlag med vedlegg…"); setError(""); setSaved(false);
     try {
-      const response = await sessionFetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/kjeller/handover`, {
+      const response = await sessionFetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/${slug}/handover`, {
         method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(60_000),
         body: JSON.stringify({ address: `${p.street}, ${p.matrikkel.kommune}`, input, details: draft.details, checklist: draft.checklist,
           architect: review.architect, engineer: review.engineer, session_id: review.session }),
@@ -67,8 +70,8 @@ export function CellarPreparation({ p, result, onBack }: { p: Address; result: T
       if (!response.ok) throw new Error("Saksunderlaget kunne ikke lages. Prøv igjen.");
       const blob = await response.blob();
       if (new Uint8Array(await blob.slice(0, 2).arrayBuffer()).join(",") !== "80,75") throw new Error("Ugyldig dokumentpakke mottatt. Prøv igjen.");
-      await saveDocument(blob, "kjeller-saksunderlag.zip");
-      downloadBlob(blob, "kjeller-saksunderlag.zip"); setSaved(true);
+      await saveDocument(blob, `${slug}-saksunderlag.zip`);
+      downloadBlob(blob, `${slug}-saksunderlag.zip`); setSaved(true);
     } catch (e) { setError(e instanceof Error ? e.message : "Kunne ikke lagre pakken på denne enheten. Prøv igjen."); }
     finally { setBusy(""); }
   }
@@ -77,12 +80,13 @@ export function CellarPreparation({ p, result, onBack }: { p: Address; result: T
   if (screen === "upload") return <DrawingUpload onBack={() => changeScreen("details")} onContinue={analyse} />;
   const missing = Object.entries(checks).filter(([key]) => !draft.checklist[key]);
   const degraded = review && (review.architect.meta?.source === "fallback" || review.engineer.meta?.source === "fallback");
-  return <><Topbar title="Forbered kjellersaken" onBack={screen === "details" ? onBack : () => changeScreen("details")} />
+  return <><Topbar title={changeUse ? "Forbered bruksendringen" : "Forbered kjellersaken"} onBack={screen === "details" ? onBack : () => changeScreen("details")} />
     <main className="view">
       <div className="panel p-4 bg-amber-50"><h1 className="text-xl font-semibold">{screen === "details" ? "Suppler saksopplysningene" : "Saksunderlag til fagperson"}</h1>
         <p className="text-sm mt-2">Samle dokumenter og få en foreløpig AI-gjennomgang. Ingen fagperson engasjeres automatisk, og ingen søknad sendes.</p></div>
-      <p className="text-sm">{p.street} · Bruksendring kjeller · {input.ny_bruk}</p>
+      <p className="text-sm">{p.street} · {changeUse ? "Bruksendring" : "Bruksendring kjeller"}</p>
       <section className="panel p-4"><h2 className="font-semibold">Dette må avklares</h2><ul className="space-y-3 mt-3">{result.findings.filter(f => f.type !== "ok").map((f, i) => <li key={i}><strong>{f.t}</strong><p className="text-sm">{f.d}</p></li>)}</ul></section>
+      {changeUse && <ChangeUsePrice />}
       {error && <p role="alert" className="panel p-4 border-red-300">{error}</p>}
       {screen === "details" ? <>
         <p>La felt stå tomme hvis du ikke vet. Ta med plantegninger, snitt, bilder og eventuelle tidligere beregninger i neste steg.</p>

@@ -4,7 +4,8 @@ import { ReactNode } from "react";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
-import { getPricing, formatKr } from "@/lib/data/pricing";
+import { ChangeUsePrice } from "./ChangeUsePrice";
+import { getPricing, formatServicePrice } from "@/lib/data/pricing";
 import { useT } from "@/lib/i18n/context";
 
 
@@ -94,7 +95,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
           </div>
         </div>
 
-        {slug === "kjeller" && <section className="panel p-4"><h2 className="font-semibold">Dette må avklares</h2><ul className="mt-3 space-y-3">{r.findings.filter(f => f.type !== "ok").map((f, i) => <li key={i}><strong>{f.t}</strong><p className="text-sm">{f.d}</p></li>)}</ul></section>}
+        {(slug === "kjeller" || slug === "bruksendring") && <section className="panel p-4"><h2 className="font-semibold">Dette må avklares</h2><ul className="mt-3 space-y-3">{r.findings.filter(f => f.type !== "ok").map((f, i) => <li key={i}><strong>{f.t}</strong><p className="text-sm">{f.d}</p></li>)}</ul></section>}
         {r.lempninger.length > 0 && (
           <div className="bg-green-50 border border-[#c5dccd] rounded-xl p-5">
             <h4 className="text-green-700 font-semibold mb-2 flex items-center gap-2">
@@ -146,13 +147,13 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
 
         </details>
 
-        {canBuildPackage && <PricingCard slug={slug} />}
+        {slug === "bruksendring" ? <ChangeUsePrice /> : canBuildPackage && <PricingCard slug={slug} />}
 
         <SectionHead>{t("Anbefalt vei videre", "Recommended next steps")}</SectionHead>
         <Timeline outcome={outcome} />
 
         <div className="mt-2 flex flex-col gap-2">
-          {onPrepareProfessional && (needsProfessional || needsClarification) && <Button full onClick={onPrepareProfessional}>{slug === "kjeller" ? "Forbered kjellersaken" : "Forbered saken til ingeniør"}</Button>}
+          {onPrepareProfessional && (needsProfessional || needsClarification) && <Button full onClick={onPrepareProfessional}>{slug === "bruksendring" ? "Forbered bruksendringen" : slug === "kjeller" ? "Forbered kjellersaken" : "Forbered saken til ingeniør"}</Button>}
           {onEdit && <Button full variant="ghost" onClick={onEdit}>{t("Se eller endre svar", "Review or edit answers")}</Button>}
           {isExempt ? (
             <>
@@ -354,7 +355,7 @@ function PricingCard({ slug }: { slug?: string }) {
         <div>
           <div className="text-xs font-semibold uppercase text-gray-500 mb-1">{t("Demo", "Demo")}</div>
           <div className="text-xs text-gray-500 mb-1">{t("Eksempelpris for søknadspakke", "Example price for an application package")}</div>
-          <div className="text-3xl font-extrabold tracking-tight">{formatKr(p.mittbygg)} <span className="text-sm font-normal">{t("eks. mva", "excl. VAT")}</span></div>
+          <div className="text-3xl font-extrabold tracking-tight">{formatServicePrice(p)} <span className="text-sm font-normal">{t("eks. mva", "excl. VAT")}</span></div>
         </div>
         {p.note && <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">{p.note}</div>}
         <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">

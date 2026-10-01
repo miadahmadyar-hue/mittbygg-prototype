@@ -165,8 +165,8 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
     );
   }
 
-  if (phase.kind === "result" && slug === "kjeller" && wallPreparation.open && phase.result.availability !== "unavailable") {
-    return <CellarPreparation p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
+  if (phase.kind === "result" && (slug === "kjeller" || slug === "bruksendring") && wallPreparation.open && phase.result.availability !== "unavailable") {
+    return <CellarPreparation slug={slug} p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
   }
   if (phase.kind === "result" && slug === "vegg" && wallPreparation.open && phase.result.availability !== "unavailable" && ["professional", "clarify"].includes(phase.result.outcome ?? "clarify")) {
     return <WallPreparation p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
@@ -175,7 +175,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
     return (
       <ResultView
         r={phase.result}
-        onPrepareProfessional={slug === "vegg" || slug === "kjeller" ? () => setWallPreparation({ open: true }) : undefined}
+        onPrepareProfessional={slug === "vegg" || slug === "kjeller" || slug === "bruksendring" ? () => setWallPreparation({ open: true }) : undefined}
         onEdit={onEdit}
         onRetry={async () => {
           const input = phase.result.input;

@@ -1,6 +1,7 @@
 export interface TiltakPricing {
   market: number;
   mittbygg: number;
+  priceKind?: "above";
   note?: string;
 }
 
@@ -14,7 +15,7 @@ export const PRICING: Record<string, TiltakPricing> = {
   anneks:       { market: 22000,  mittbygg: 10900  },
   levegg:       { market: 22000,  mittbygg: 10900  },
   brygge:       { market: 38000,  mittbygg: 11900,  note: "Inkl. havne- og farvannslov" },
-  bruksendring: { market: 28000,  mittbygg: 10900  },
+  bruksendring: { market: 28000, mittbygg: 25000, priceKind: "above", note: "Endelig omfang og pris avtales særskilt." },
   tilleggsdel:  { market: 28000,  mittbygg: 10900  },
   boenhet:      { market: 65000,  mittbygg: 21900,  note: "Inkl. koordinering med ansvarlig søker" },
   geolograpport:{ market: 35000,  mittbygg: 19900,  note: "Inkl. innhenting og kvalitetssikring av rapport" },
@@ -27,6 +28,10 @@ export function getPricing(slug: string): TiltakPricing {
 
 export function formatKr(n: number) {
   return n.toLocaleString("nb-NO") + " kr";
+}
+
+export function formatServicePrice(p: TiltakPricing) {
+  return (p.priceKind === "above" ? "Over " : "") + formatKr(p.mittbygg);
 }
 
 export function discountPct(p: TiltakPricing) {
