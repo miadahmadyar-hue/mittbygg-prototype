@@ -27,14 +27,14 @@ export function GeolograpportWizard({ p }: { p: Address }) {
     setPhase({ kind: "result", result });
   };
 
-  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="geolograpport" loadingText="Kobler til geotekniker…" />;
+  if (phase.kind !== "wizard") return <ResultPhases onEdit={() => setPhase({ kind: "wizard", step: 0 })} phase={phase} setPhase={setPhase} p={p} slug="geolograpport" loadingText="Forbereder avklaring av grunnforhold…" />;
 
   const step = phase.step;
   const back = () => step === 0 ? router.push(`/property/${p.id}/tiltak`) : setPhase({ kind: "wizard", step: 0 });
 
   return (
     <>
-      <Topbar onBack={back} title="Geolograpport" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
+      <Topbar onBack={back} title="Grunnforhold og fagrapport" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
         {step === 0 && (
@@ -55,10 +55,10 @@ export function GeolograpportWizard({ p }: { p: Address }) {
         )}
         {step === 1 && (
           <>
-            <div><h2 className="text-[22px] font-bold tracking-tight">Når trenger du rapporten?</h2></div>
+            <div><h2 className="text-[22px] font-bold tracking-tight">Når ønsker du oppfølging?</h2></div>
             <div className="space-y-2">
-              <RadioCard selected={data.timing === "asap"}        onClick={() => setData({ ...data, timing: "asap" })}        title="Så snart som mulig"    desc="Innen 1–2 uker" />
-              <RadioCard selected={data.timing === "planlegging"} onClick={() => setData({ ...data, timing: "planlegging" })} title="I planleggingsfasen"   desc="2–4 uker" />
+              <RadioCard selected={data.timing === "asap"}        onClick={() => setData({ ...data, timing: "asap" })}        title="Så snart som mulig"    desc="Ønsket prioritet; levering avtales etter gjennomgang" />
+              <RadioCard selected={data.timing === "planlegging"} onClick={() => setData({ ...data, timing: "planlegging" })} title="I planleggingsfasen"   desc="Jeg ønsker å avklare behovet før byggestart" />
               <RadioCard selected={data.timing === "usikker"}     onClick={() => setData({ ...data, timing: "usikker" })}     title="Vet ikke ennå"         desc="Ønsker prisoversikt" />
             </div>
             <Alert>Avklar først hvilket dokumentasjonsnivå kommunen eller ansvarlig prosjekterende trenger.</Alert>
@@ -67,7 +67,7 @@ export function GeolograpportWizard({ p }: { p: Address }) {
               <KV k="Prosjekttype" v={data.type === "nybygg" ? "Nybygg / bolig" : data.type === "tilbygg" ? "Tilbygg" : data.type === "kjeller" ? "Kjellerarbeid" : data.type === "brygge" ? "Brygge" : "Annet / usikker"} last />
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={!data.timing} onClick={evaluate}>⚡ Se pris og bestill</Button>
+              <Button size="lg" full disabled={!data.timing} onClick={evaluate}>Avklar behov og neste steg</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

@@ -37,15 +37,15 @@ export function AndreWizard({ p }: { p: Address }) {
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Prosjektbeskrivelse</label>
-          <textarea
+          <textarea aria-label="Prosjektbeskrivelse"
             className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={7}
-            maxLength={500}
+            maxLength={2000}
             placeholder="Eksempel: Jeg vil bygge en 25 m² carport 2 meter fra nabogrensen. Eiendommen ligger i et boligområde."
             value={data.beskrivelse}
             onChange={(e) => setData({ ...data, beskrivelse: e.target.value })}
           />
-          <p className="text-xs text-gray-500 mt-1">{data.beskrivelse.length}/500 tegn</p>
+          <p className="text-xs text-gray-500 mt-1">{data.beskrivelse.length}/2000 tegn · minst 20 tegn</p>
         </div>
         <Alert>Du får en foreløpig avklaring og forslag til hva som må undersøkes videre.</Alert>
         <div className="mt-auto pt-4 flex flex-col gap-2">

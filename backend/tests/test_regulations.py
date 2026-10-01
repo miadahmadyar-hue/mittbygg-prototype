@@ -82,6 +82,7 @@ class RegulationBoundaryTests(unittest.TestCase):
     def test_small_storage_extension_can_be_exempt(self):
         result = evaluate_tilbygg(TilbyggInput(
             type="tilbygg_1etasje", areal=15, avstand=4, bruk="bod",
+            understottet=True, en_etasje=True, egen_boenhet=False, samme_formaal=True,
             plan_ok=True, bya_ok=True,
         ))
         self.assertEqual(result.status, "green")

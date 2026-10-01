@@ -3,6 +3,7 @@
 import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
+import { BooleanQuestion } from "@/components/ui/BooleanQuestion";
 import { ToggleRow } from "@/components/ui/Toggle";
 import { Alert } from "@/components/ui/Alert";
 import { ResultPhases, NumberField } from "./SimpleWizard";
@@ -24,6 +25,7 @@ export function TilbyggWizard({ p }: { p: Address }) {
     type: null as TType | null, bruk: null as Use | null,
     areal: 0, avstand: 0, plan: "usikker" as TriState,
     bya: "usikker" as TriState, pipe: false,
+    understottet: null as boolean | null, en_etasje: null as boolean | null, egen_boenhet: null as boolean | null, samme_formaal: null as boolean | null,
   });
 
   const evaluate = async () => {
@@ -33,7 +35,7 @@ export function TilbyggWizard({ p }: { p: Address }) {
       type: data.type, bruk: data.bruk, areal: data.areal, avstand: data.avstand,
       plan_ok: data.plan === "usikker" ? null : data.plan === "ja",
       bya_ok: data.bya === "usikker" ? null : data.bya === "ja",
-      pipe: data.pipe,
+      pipe: data.pipe, understottet: data.understottet, en_etasje: data.en_etasje, egen_boenhet: data.egen_boenhet, samme_formaal: data.samme_formaal,
     });
     setPhase({ kind: "result", result });
   };
@@ -79,15 +81,21 @@ export function TilbyggWizard({ p }: { p: Address }) {
           <>
             <div><h2 className="text-[22px] font-bold tracking-tight">Størrelse og eiendomsplan</h2></div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Areal" value={data.areal} unit="m²" onChange={(areal) => setData({ ...data, areal })} />
+              <Field label="Størst av BRA og BYA" value={data.areal} unit="m²" onChange={(areal) => setData({ ...data, areal })} />
               <Field label="Til nabogrense" value={data.avstand} unit="m" step={0.1} onChange={(avstand) => setData({ ...data, avstand })} />
             </div>
+            {data.type !== "ny_etasje" && <>
+              <BooleanQuestion title="Har tilbygget egen understøtting og bæresystem?" value={data.understottet} onChange={(understottet) => setData({ ...data, understottet })} />
+              <BooleanQuestion title="Bygges tilbygget i ett plan uten kjeller?" value={data.en_etasje} onChange={(en_etasje) => setData({ ...data, en_etasje })} description="Andre løsninger trenger konkret avklaring i denne veiviseren." />
+              <BooleanQuestion title="Skal det opprettes en egen boenhet?" value={data.egen_boenhet} onChange={(egen_boenhet) => setData({ ...data, egen_boenhet })} />
+              <BooleanQuestion title="Er rombruken innenfor bygningens godkjente formål?" value={data.samme_formaal} onChange={(samme_formaal) => setData({ ...data, samme_formaal })} description="For eksempel rom i en bolig. En bod eller garasje kan ikke utvides med boligrom etter småtilbygg-unntaket." />
+            </>}
             <ToggleRow on={data.pipe} onChange={() => setData({ ...data, pipe: !data.pipe })} title="Tilbygget skal ha pipe eller skorstein" desc="Dette krever ansvarlige foretak" />
             <TriStateQuestion title="Er tiltaket innenfor byggegrense og reguleringsplan?" value={data.plan} onChange={(plan) => setData({ ...data, plan })} />
             <TriStateQuestion title="Er det ledig utnyttelsesgrad (BYA/BRA)?" value={data.bya} onChange={(bya) => setData({ ...data, bya })} />
             <Alert>Et lite areal er bare ett vilkår. Bruk, plan, utnyttelsesgrad, avstand og eventuell pipe påvirker resultatet.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={data.areal <= 0 || data.avstand <= 0} onClick={evaluate}>Sjekk prosjektet</Button>
+              <Button size="lg" full disabled={data.areal <= 0 || data.avstand < 0} onClick={evaluate}>Sjekk prosjektet</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

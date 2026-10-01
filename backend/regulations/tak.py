@@ -7,7 +7,10 @@ def evaluate_tak(inp: TakInput) -> TiltakResult:
     if inp.verneverdig:
         status, text = "red", "Krever kulturminnefaglig avklaring"
         desc, soknadstype, ansvarsrett = "Takarbeidet må vurderes mot vern og kommunale planer.", "Søknad og kulturminnefaglig vurdering", True
-    elif inp.type == "bytte_materiale" and inp.samme_utseende:
+    elif inp.type == "bytte_materiale" and inp.verneverdig is None:
+        status, text = "amber", "Vernestatus må avklares"
+        desc, soknadstype, ansvarsrett = "Kontroller vern og lokale bestemmelser før taket endres.", "Må avklares - vern og takarbeid", False
+    elif inp.type == "bytte_materiale" and inp.samme_utseende and not inp.etterisolere:
         status, text = "green", "Vedlikehold - normalt uten søknad"
         desc, soknadstype, ansvarsrett = "Lik taktekking med uendret utseende regnes normalt som vedlikehold.", "Unntatt - vedlikehold", False
     elif inp.type == "bytte_materiale":

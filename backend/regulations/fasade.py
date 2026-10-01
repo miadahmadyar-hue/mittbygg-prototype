@@ -21,6 +21,7 @@ def evaluate_fasade(inp: FasadeInput) -> TiltakResult:
         exempt = (
             complete and inp.terrasse_hoyde <= 1.0 and inp.terrasse_dybde <= 4.0
             and inp.terrasse_avstand >= 1.0 and not inp.terrasse_overbygd
+            and inp.plan_ok is True and inp.terrasse_rekkverk is not None and inp.terrasse_rekkverk <= 1.2
         )
         if exempt:
             status, text, desc = "green", "Unntatt søknad", "Terrassen er registrert innenfor høyde-, dybde- og avstandsvilkårene."
@@ -30,7 +31,7 @@ def evaluate_fasade(inp: FasadeInput) -> TiltakResult:
             soknadstype = "Må avklares mot PBL og kommunal plan"
         findings.append(Finding(
             type="ok" if exempt else "warn", t="Terrassevilkår kontrollert",
-            d="Unntaket krever høyde inntil 1,0 m, dybde inntil 4,0 m, minst 1,0 m til grensen og ingen overbygging.",
+            d="For terrasse tilknyttet huset må også plan og rekkverk avklares. Veiviseren kontrollerer høyde inntil 1,0 m, dybde inntil 4,0 m, minst 1,0 m til grensen og rekkverk inntil 1,2 m, uten overbygging. En platting høyst 0,5 m over terreng vurderes særskilt; planbestemmelser gjelder fortsatt.",
             ref="SAK10 § 4-1 d",
         ))
     else:
@@ -41,7 +42,7 @@ def evaluate_fasade(inp: FasadeInput) -> TiltakResult:
         if inp.verneverdig:
             status, text, desc = "red", "Krever kulturminnefaglig avklaring", "Vernestatus og kommunale bestemmelser må kontrolleres før fasaden endres."
             soknadstype, ansvarsrett = "Søknad og kulturminnefaglig vurdering", True
-        elif clearly_maintenance or clearly_unchanged:
+        elif inp.verneverdig is False and not structural_opening and (clearly_maintenance or clearly_unchanged):
             status, text, desc = "green", "Trolig unntatt søknad", "Arbeidet er oppgitt som utskifting uten endring av bygningens karakter."
             soknadstype = "Trolig unntatt - PBL § 20-5 f"
         else:

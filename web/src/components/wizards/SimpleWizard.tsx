@@ -2,8 +2,8 @@
 
 /**
  * Shared shell for the simple tiltak wizards.
- * `ResultPhases` owns every post-result phase (result → drawing upload →
- * AI analysis → payment → PDF → sent) so the 13 simple wizards don't repeat it.
+ * `ResultPhases` owns every post-result phase (result →
+ * project details → attachments → AI review → quote request) so the 13 simple wizards don't repeat it.
  * Each wizard provides its own step content via children.
  */
 
@@ -13,22 +13,12 @@ import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
-import { SoknadSent } from "./SoknadFlow";
-import { CaseSubmission } from "./CaseSubmission";
-import { DrawingUpload } from "./DrawingUpload";
-import { AiAnalyse } from "./AiAnalyse";
 import { CellarPreparation } from "./CellarPreparation";
 import { WallPreparation } from "./WallPreparation";
 import { useDraftState } from "@/lib/projects";
-import { downloadTiltakSoknad } from "@/lib/api/soknad";
-import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
-import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
-import { runAiReview } from "@/lib/ai/review";
-import { FALLBACK_ARCHITECT, FALLBACK_ENGINEER } from "@/lib/ai/fallbacks";
 import { useT } from "@/lib/i18n/context";
 import type { TiltakResult } from "@/lib/api/evaluate";
 import { evalTiltak } from "@/lib/api/evaluate";
-import { listDocuments, downloadBlob } from "@/lib/documents";
 import type { Address } from "@/lib/data/addresses";
 
 type Phase =
@@ -106,190 +96,31 @@ interface ResultPhasesProps {
   slug?: string;
 }
 
-type AiPhase =
-  | { kind: "loading"; result: TiltakResult; stage: "architect" | "engineer" }
-  | { kind: "done"; result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment };
-
-export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: ResultPhasesProps) {
+export function ResultPhases({ phase, setPhase, p, loadingText, slug = "andre", onEdit }: ResultPhasesProps) {
   const router = useRouter();
   const t = useT();
-  const [downloadError, setDownloadError] = useState(false);
-  const [uploadSession, setUploadSession] = useState<string | null>(null);
-  const [wallPreparation, setWallPreparation] = useDraftState("wallPreparation", { open: false });
-  const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
-  const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
-  const [pendingAiResults, setPendingAiResults] = useState<{
-    result: TiltakResult; architect: ArchitectAssessment; engineer: EngineerAssessment;
-  } | null>(null);
-
-  const download = async () => {
-    if (!("result" in phase)) return;
-    setDownloadError(false);
-    setPhase({ kind: "sending", result: phase.result });
-    try {
-      await downloadTiltakSoknad(slug ?? "andre", phase.result, p.street,
-        Number(p.matrikkel.gnr), Number(p.matrikkel.bnr), p.matrikkel.kommune,
-        pendingAiResults?.architect as unknown as Record<string, unknown>,
-        pendingAiResults?.engineer as unknown as Record<string, unknown>);
-      setPhase({ kind: "sent", result: phase.result });
-    } catch {
-      setDownloadError(true);
-      setPhase({ kind: "betaling", result: phase.result });
+  const [preparation, setPreparation] = useDraftState("wallPreparation", { open: false });
+  if (phase.kind === "wizard") return null;
+  if (phase.kind === "loading") return <><Topbar back={false} /><main className="view items-center justify-center text-center"><div className="spinner spinner-lg" /><h2 role="status">{loadingText ?? t("Sjekker svarene dine…", "Checking your answers…")}</h2><p className="text-sm text-gray-500">Foreløpig vurdering basert på svarene dine. Ingen søknad sendes.</p></main></>;
+  const result = phase.result;
+  if (result.availability !== "unavailable" && result.ruleVersion !== 20261001) return <><Topbar title="Oppdater vurderingen" onBack={onEdit} /><main className="view"><h1 className="text-xl font-semibold">Veiviseren er oppdatert</h1><p>Svarene dine er beholdt. Se gjennom dem, inkludert nye spørsmål, før du får en ny vurdering.</p><Button full onClick={() => { setPreparation({ open: false }); onEdit(); }}>Se gjennom svarene</Button></main></>;
+  if (result.availability !== "unavailable" && (preparation.open || phase.kind !== "result")) {
+    const back = () => { setPreparation({ open: false }); setPhase({ kind: "result", result }); };
+    if (slug === "vegg" && ["professional", "clarify"].includes(result.outcome ?? "clarify")) {
+      return <WallPreparation p={p} result={result} onBack={back} />;
     }
-  };
-
-  if (downloadError) return <><Topbar title={t("Dokumentet ble ikke generert", "Document generation failed")} onBack={onEdit} /><main className="view"><p role="alert">{t("Vi kunne ikke lage eller lagre PDF-en. Ingen pakke er bekreftet klar. Svarene dine er beholdt.", "We could not generate or save the PDF. No package is confirmed ready. Your answers have been kept.")}</p><Button full onClick={download}>{t("Prøv igjen", "Retry")}</Button><Button full variant="ghost" onClick={() => { setDownloadError(false); onEdit(); }}>{t("Tilbake til svarene", "Back to answers")}</Button></main></>;
-
-  if (phase.kind === "loading") {
-    return (
-      <>
-        <Topbar back={false} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
-          <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">{loadingText ?? t("Sjekker regelverk…", "Checking regulations…")}</h3>
-          <p className="text-sm text-gray-500">{t("Vurderer svarene dine mot lagrede regler og vilkår…", "Checking your answers against stored rules and conditions…")}</p>
-        </div>
-      </>
-    );
+    return <CellarPreparation slug={slug} p={p} result={result} onBack={back} />;
   }
-
-  if (phase.kind === "sending") {
-    return (
-      <>
-        <Topbar back={false} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
-          <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">{t("Genererer søknadspakke…", "Generating application package…")}</h3>
-          <p className="text-sm text-gray-500">{t("Laster ned PDF…", "Downloading PDF…")}</p>
-        </div>
-      </>
-    );
-  }
-
-  if (phase.kind === "result" && (slug === "kjeller" || slug === "bruksendring") && wallPreparation.open && phase.result.availability !== "unavailable") {
-    return <CellarPreparation slug={slug} p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
-  }
-  if (phase.kind === "result" && slug === "vegg" && wallPreparation.open && phase.result.availability !== "unavailable" && ["professional", "clarify"].includes(phase.result.outcome ?? "clarify")) {
-    return <WallPreparation p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
-  }
-  if (phase.kind === "result") {
-    return (
-      <ResultView
-        r={phase.result}
-        onPrepareProfessional={() => { if ((slug === "vegg" && ["professional", "clarify"].includes(phase.result.outcome ?? "clarify")) || slug === "kjeller" || slug === "bruksendring") setWallPreparation({ open: true }); else { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); } }}
-        onEdit={onEdit}
-        onRetry={async () => {
-          const input = phase.result.input;
-          setPhase({ kind: "loading" });
-          const result = await evalTiltak(slug ?? "andre", input);
-          setPhase({ kind: "result", result });
-        }}
-        slug={slug}
-        onGenerateSoknad={() => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
-        onDownloadPdf={async () => { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); }}
-        onRestart={() => router.push(`/property/${p.id}/tiltak`)}
-      />
-    );
-  }
-
-  if (aiPhase?.kind === "loading") {
-    return (
-      <>
-        <Topbar back={false} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-10">
-          <div className="spinner spinner-lg" />
-          <h3 className="text-base font-semibold">{aiPhase.stage === "architect" ? t("AI-arkitekt analyserer…", "AI architect analyzing…") : t("AI-ingeniør gjennomgår…", "AI engineer reviewing…")}</h3>
-          <p className="text-sm text-gray-500">{t("Gjennomgår tegninger og prosjektopplysninger", "Reviewing drawings and project information")}</p>
-        </div>
-      </>
-    );
-  }
-
-  if (aiPhase?.kind === "done") {
-    const { result, architect, engineer } = aiPhase;
-    return (
-      <AiAnalyse
-        architect={architect}
-        engineer={engineer}
-        onRetry={() => { setAiPhase(null); setUploadPending(result); }}
-        onContinue={() => {
-          setPendingAiResults({ result, architect, engineer });
-          setAiPhase(null);
-          // phase is already "betaling" — BetalingModal renders next
-        }}
-      />
-    );
-  }
-
-  if (uploadPending) {
-    return (
-      <DrawingUpload
-        onBack={() => { setUploadPending(null); onEdit(); }}
-        onContinue={async (sessionId) => {
-          const result = uploadPending;
-          setUploadSession(sessionId);
-          setUploadPending(null);
-          setAiPhase({ kind: "loading", result, stage: "architect" });
-          const reqBase = {
-            slug: slug ?? "andre",
-            address: p.street,
-            gnr: Number(p.matrikkel.gnr),
-            bnr: Number(p.matrikkel.bnr),
-            kommune: p.matrikkel.kommune,
-            bygg: p.bygg as Record<string, unknown>,
-            project: result.input as Record<string, unknown>,
-          };
-          const { architect, engineer } = await runAiReview(
-            () => callArchitectAgent({ ...reqBase, session_id: sessionId }),
-            (architect_summary) => callEngineerAgent({ ...reqBase, session_id: sessionId, architect_summary }),
-            { architect: FALLBACK_ARCHITECT, engineer: FALLBACK_ENGINEER },
-            () => setAiPhase({ kind: "loading", result, stage: "engineer" }),
-          );
-          setAiPhase({
-            kind: "done",
-            result,
-            architect: architect ?? FALLBACK_ARCHITECT,
-            engineer:  engineer  ?? FALLBACK_ENGINEER,
-          });
-        }}
-      />
-    );
-  }
-
-  if (phase.kind === "betaling") {
-    return (
-      <><Topbar title="Tilbudsforespørsel" onBack={() => setPhase({ kind: "result", result: phase.result })} />
-        <main className="view">
-          <CaseSubmission slug={slug ?? "andre"} address={`${p.street}, ${p.matrikkel.kommune}`} sessionId={uploadSession}
-            data={{ result: phase.result, property: p, architect: pendingAiResults?.architect, engineer: pendingAiResults?.engineer }} />
-          <Button full variant="secondary" onClick={() => {
-            const copy = { result: phase.result, property: p, architect: pendingAiResults?.architect, engineer: pendingAiResults?.engineer };
-            downloadBlob(new Blob([JSON.stringify(copy, null, 2)], { type: "application/json" }), `${slug ?? "tiltak"}-saksopplysninger.json`);
-          }}>Last ned en kopi av opplysningene (JSON)</Button>
-          {phase.result.outcome === "application" && <Button full variant="secondary" onClick={download}>Last ned PDF-utkast</Button>}
-          <p className="text-sm">Kopien inneholder svar og AI-vurderinger, ikke opplastede vedlegg. Nedlasting sender ikke saken.</p>
-          <Button full variant="ghost" onClick={() => setUploadPending(phase.result)}>Endre vedlegg / prøv AI igjen</Button>
-        </main></>
-    );
-  }
-
-  if (phase.kind === "sent") {
-    return (
-      <SoknadSent
-        onDownload={async () => {
-          try {
-            const documents = await listDocuments(p.id);
-            const saved = documents.find((document) => document.id === window.location.pathname);
-            if (saved) { downloadBlob(saved.blob, saved.filename); return; }
-          } catch { /* Regenerate when local storage cannot be read. */ }
-          await download();
-        }}
-        onDone={() => router.push(`/property/${p.id}`)}
-      />
-    );
-  }
-
-  return null;
+  return <ResultView r={result} slug={slug}
+    onEdit={() => { setPreparation({ open: false }); onEdit(); }}
+    onPrepareProfessional={() => setPreparation({ open: true })}
+    onGenerateSoknad={() => setPreparation({ open: true })}
+    onRetry={async () => {
+      setPhase({ kind: "loading" });
+      const updated = await evalTiltak(slug, result.input);
+      setPhase({ kind: "result", result: updated });
+    }}
+    onRestart={() => router.push(`/property/${p.id}/tiltak`)} />;
 }
 
 // ── Shared UI primitives ──────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
-import { ToggleRow } from "@/components/ui/Toggle";
+import { BooleanQuestion } from "@/components/ui/BooleanQuestion";
 import { Alert } from "@/components/ui/Alert";
 import { ResultPhases, NumberField } from "./SimpleWizard";
 import { evaluateBoenhetApi, type TiltakResult } from "@/lib/api/evaluate";
@@ -20,7 +20,7 @@ export function BoenhetWizard({ p }: { p: Address }) {
   const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
   const [data, setData] = useDraftState("data", {
     type: null as BType | null, antall: 1, areal: 0,
-    hovedfunksjoner: false, egen_inngang: false, fysisk_adskilt: false,
+    hovedfunksjoner: null as boolean | null, egen_inngang: null as boolean | null, fysisk_adskilt: null as boolean | null,
   });
 
   const evaluate = async () => {
@@ -67,14 +67,14 @@ export function BoenhetWizard({ p }: { p: Address }) {
               <p className="text-sm text-gray-500 mt-2">Søknadspliktig oppdeling oppstår først når alle tre er oppfylt.</p>
             </div>
             <div className="space-y-2">
-              <ToggleRow on={data.hovedfunksjoner} onChange={() => setData({ ...data, hovedfunksjoner: !data.hovedfunksjoner })} title="Har alle hovedfunksjoner" desc="Mulighet for stue, kjøkken, soveplass, bad og toalett" />
-              <ToggleRow on={data.egen_inngang} onChange={() => setData({ ...data, egen_inngang: !data.egen_inngang })} title="Har egen separat inngang" />
-              <ToggleRow on={data.fysisk_adskilt} onChange={() => setData({ ...data, fysisk_adskilt: !data.fysisk_adskilt })} title="Er fysisk adskilt" desc="Ingen intern dør, trapp eller annen forbindelse til resten av boligen" />
+              <BooleanQuestion value={data.hovedfunksjoner} onChange={(hovedfunksjoner) => setData({ ...data, hovedfunksjoner })} title="Har alle hovedfunksjoner" description="Mulighet for stue, kjøkken, soveplass, bad og toalett" />
+              <BooleanQuestion value={data.egen_inngang} onChange={(egen_inngang) => setData({ ...data, egen_inngang })} title="Har egen separat inngang" />
+              <BooleanQuestion value={data.fysisk_adskilt} onChange={(fysisk_adskilt) => setData({ ...data, fysisk_adskilt })} title="Er fysisk adskilt" description="Ingen intern dør, trapp eller annen forbindelse til resten av boligen" />
             </div>
             <Alert variant={allCriteria ? "amber" : undefined}>
               {allCriteria
                 ? "Alle tre kriteriene er valgt. Dette er søknadspliktig oppdeling og må videre til ansvarlig søker."
-                : "Når ett eller flere kriterier mangler, er dette ikke en ny boenhet etter SAK10 § 2-2. Bruksendring eller andre arbeider kan fortsatt være søknadspliktige."}
+                : [data.hovedfunksjoner, data.egen_inngang, data.fysisk_adskilt].some(v => v == null) ? "Ett eller flere svar er ukjente. Vi må avklare disse før oppdelingen kan klassifiseres." : "Når ett eller flere kriterier mangler, er dette ikke en ny boenhet etter SAK10 § 2-2. Bruksendring eller andre arbeider kan fortsatt være søknadspliktige."}
             </Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
               <Button size="lg" full onClick={evaluate}>Klassifiser tiltaket</Button>

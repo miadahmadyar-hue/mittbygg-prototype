@@ -22,7 +22,7 @@ export function SavedProjects({ propertyId }: { propertyId: string }) {
     {projects.length === 0 && <p className="mt-4">{t("Ingen lagrede tiltak ennå.", "No saved projects yet.")}</p>}
     <ul className="mt-4 space-y-3">{projects.map((project) => {
       const item = TILTAK.find((entry) => entry.slug === project.slug);
-      return <li key={project.path}><Link className="text-link" href={project.path}>{item ? t(item.name, item.name_en) : project.slug} →</Link><p className="text-xs text-gray-500">{project.ready ? t("Dokument generert", "Document generated") : t("Fortsett utkast", "Resume draft")}</p></li>;
+      return <li key={project.path}><Link className="text-link" href={project.path}>{item ? t(item.name, item.name_en) : project.slug} →</Link><p className="text-xs text-gray-500">{project.caseId ? `${t("Tilbudsforespørsel sendt", "Quote request sent")} · ${project.caseId}` : project.ready ? t("Dokument generert", "Document generated") : t("Fortsett utkast", "Resume draft")}</p></li>;
     })}</ul>
     {documents.length > 0 && <><h3 className="mt-6 font-semibold">{t("Dokumenter", "Documents")}</h3><ul>{documents.map((doc) => <li key={doc.id} className="mt-3"><button className="text-link" onClick={() => downloadBlob(doc.blob, doc.filename)}>{t("Last ned", "Download")} {doc.filename}</button><p className="text-xs text-gray-500">{new Date(doc.created).toLocaleDateString("nb-NO")}</p></li>)}</ul></>}
     <Link href={`/property/${propertyId}/tiltak`} className="secondary-link mt-6">{t("Velg tiltak", "Choose project")}</Link>

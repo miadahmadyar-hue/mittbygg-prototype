@@ -3,7 +3,6 @@ import {
   type KjellerInput,
 } from "@/lib/regulations/kjeller";
 import {
-  evaluateVegg as evaluateVeggLocal,
   type VeggInput,
   type VeggResult,
 } from "@/lib/regulations/vegg";
@@ -24,6 +23,7 @@ export interface TiltakTiltak {
 }
 
 export interface TiltakResult {
+  ruleVersion?: number;
   availability?: "available" | "unavailable";
   outcome?: "exempt" | "professional" | "clarify" | "application";
   status: "green" | "amber" | "red";
@@ -45,12 +45,8 @@ export async function evaluateKjellerApi(input: KjellerInput): Promise<TiltakRes
   return evalTiltak("kjeller", input);
 }
 
-export async function evaluateVeggApi(input: VeggInput): Promise<VeggResult> {
-  try {
-    return await apiPost<VeggResult>("/api/evaluate/vegg", input);
-  } catch {
-    return evaluateVeggLocal(input);
-  }
+export async function evaluateVeggApi(input: VeggInput): Promise<TiltakResult | VeggResult> {
+  return evalTiltak("vegg", input);
 }
 
 // ── New tiltak evaluate functions (backend-only, no client fallback needed) ───

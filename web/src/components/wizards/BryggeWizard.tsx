@@ -29,7 +29,7 @@ export function BryggeWizard({ p }: { p: Address }) {
   });
 
   const evaluate = async () => {
-    if (!data.type || !data.arbeid || !data.lengde || !data.bredde) return;
+    if (!data.type || !data.arbeid || data.lengde <= 0 || data.bredde <= 0) return;
     setPhase({ kind: "loading" });
     const result = await evaluateBryggeApi(data);
     setPhase({ kind: "result", result });
@@ -97,7 +97,7 @@ export function BryggeWizard({ p }: { p: Address }) {
             </div>
             <Alert variant="amber">Ikke bestill konstruksjonen før kommunen har avklart planstatus og eventuelle tillatelser.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={!data.lengde || !data.bredde || data.eier_strandgrunn === null} onClick={evaluate}>Se hva du må avklare</Button>
+              <Button size="lg" full disabled={data.lengde <= 0 || data.bredde <= 0 || data.eier_strandgrunn === null} onClick={evaluate}>Se hva du må avklare</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

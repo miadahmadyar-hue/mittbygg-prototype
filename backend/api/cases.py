@@ -31,14 +31,18 @@ SLUGS = {"kjeller", "bruksendring", "vegg", "garasje", "tilbygg", "fasade", "tak
 
 
 def ready():
-    return (os.getenv("CASE_STORAGE_READY") == "true" and bool(os.getenv("CASE_STORAGE_DIR"))
+    return (storage_ready()
             and len(os.getenv("STAFF_API_KEY", "")) >= 32
             and all(os.getenv(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "CASE_EMAIL_FROM", "CASE_NOTIFY_EMAIL")))
 
 
+def storage_ready():
+    return os.getenv("CASE_STORAGE_READY") == "true" and bool(os.getenv("CASE_STORAGE_DIR"))
+
+
 @contextmanager
 def database():
-    if not ready():
+    if not storage_ready():
         raise HTTPException(503, "Saksmottak er ikke aktivert. Ingenting er sendt. Prøv igjen senere.")
     root = Path(os.environ["CASE_STORAGE_DIR"])
     root.mkdir(parents=True, exist_ok=True)
@@ -67,9 +71,11 @@ class Contact(BaseModel):
     email: str = Field(max_length=254)
     phone: str = Field(min_length=5, max_length=40)
 
-    @field_validator("name", "email", "phone")
+    @field_validator("name", "email", "phone", mode="before")
     @classmethod
     def clean(cls, value):
+        if not isinstance(value, str):
+            raise ValueError("Invalid contact information")
         value = value.strip()
         if not value or any(ord(c) < 32 for c in value):
             raise ValueError("Invalid contact information")
@@ -118,8 +124,8 @@ def notify(case_id):
         if not row or row["notification"] == "sent":
             return
         message = EmailMessage()
-        message["From"] = os.environ["CASE_EMAIL_FROM"]
-        message["To"] = os.environ["CASE_NOTIFY_EMAIL"]
+        message["From"] = os.getenv("CASE_EMAIL_FROM", "")
+        message["To"] = os.getenv("CASE_NOTIFY_EMAIL", "")
         message["Subject"] = f"Ny tilbudsforespørsel {case_id}"
         message.set_content(f"En ny sak er lagret: {case_id}.\nÅpne den private saksoversikten på https://app.soknadsklar.no/staff/cases.\nIngen kundeopplysninger eller vedlegg sendes i denne e-posten.")
         try:
@@ -140,6 +146,8 @@ def availability():
 
 @router.post("/cases", status_code=201)
 async def submit(request: Request, background: BackgroundTasks, owner: str = Depends(require_session)):
+    if not ready():
+        raise HTTPException(503, "Saksmottaket er midlertidig utilgjengelig.")
     # Bound JSON before parsing; attachments are loaded from the owned upload session.
     body = bytearray()
     async for chunk in request.stream():

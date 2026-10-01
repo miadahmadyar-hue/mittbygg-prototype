@@ -3,6 +3,7 @@
 import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
+import { BooleanQuestion } from "@/components/ui/BooleanQuestion";
 import { ToggleRow } from "@/components/ui/Toggle";
 import { Alert } from "@/components/ui/Alert";
 import { ResultPhases } from "./SimpleWizard";
@@ -18,7 +19,7 @@ type TakType = "bytte_materiale" | "endre_form" | "bygge_loft";
 export function TakWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
-  const [data, setData] = useDraftState("data", { type: null as TakType | null, samme_utseende: false, verneverdig: false, etterisolere: false });
+  const [data, setData] = useDraftState("data", { type: null as TakType | null, samme_utseende: false, verneverdig: null as boolean | null, etterisolere: false });
 
   const evaluate = async () => {
     if (!data.type) return;
@@ -58,7 +59,7 @@ export function TakWizard({ p }: { p: Address }) {
             {data.type === "bytte_materiale" && (
               <ToggleRow on={data.samme_utseende} onChange={() => setData({ ...data, samme_utseende: !data.samme_utseende })} title="Samme materiale og visuelt uttrykk" desc="Lik utskifting regnes normalt som vedlikehold" />
             )}
-            <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Bygningen er vernet eller bevaringsverdig" desc="Velg bare ja hvis dette er bekreftet" />
+            <BooleanQuestion value={data.verneverdig} onChange={(verneverdig) => setData({ ...data, verneverdig })} title="Bygningen er vernet eller bevaringsverdig" description="Velg «Vet ikke» hvis vernestatus ikke er kontrollert." />
             {data.type !== "bygge_loft" && <ToggleRow on={data.etterisolere} onChange={() => setData({ ...data, etterisolere: !data.etterisolere })} title="Etterisolere taket samtidig" />}
             {data.type === "endre_form" && <Alert variant="amber">Endret takform berører normalt bærekonstruksjon og kan endre tillatt høyde.</Alert>}
             {data.type === "bygge_loft" && <Alert>Loftsutbygging skal videre til bruksendringsløpet med målt takhøyde, dagslys, rømning, trapp og godkjent eksisterende bruk.</Alert>}

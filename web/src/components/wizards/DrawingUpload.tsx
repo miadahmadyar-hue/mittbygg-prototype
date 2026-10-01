@@ -14,11 +14,12 @@ const DRAWING_HINTS: [string, string][] = [
 ];
 
 interface Props {
+  hints?: string[];
   onContinue: (sessionId: string | null) => void;
   onBack: () => void;
 }
 
-export function DrawingUpload({ onContinue, onBack }: Props) {
+export function DrawingUpload({ onContinue, onBack, hints }: Props) {
   const t = useT();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -88,7 +89,7 @@ export function DrawingUpload({ onContinue, onBack }: Props) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {DRAWING_HINTS.map(([no, en]) => (
+          {(hints ? hints.map(text => [text, text]) : DRAWING_HINTS).map(([no, en]) => (
             <span
               key={no}
               className="text-xs bg-gray-100 text-gray-600 rounded-full px-3 py-1.5 font-medium"

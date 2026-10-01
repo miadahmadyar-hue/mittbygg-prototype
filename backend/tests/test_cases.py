@@ -79,3 +79,12 @@ class CasesTests(unittest.TestCase):
             cases.CaseRequest.model_validate({**self.body, "slug": slug})
         self.assertEqual(self.client.post("/api/cases", content=b"x" * 300001, headers=self.headers).status_code, 413)
         self.assertEqual(self.client.post("/api/cases", json={**self.body, "contact": {**self.body["contact"], "email": "bad"}}, headers=self.headers).status_code, 422)
+
+    def test_existing_cases_remain_accessible_if_mail_configuration_is_missing(self):
+        response = self.client.post("/api/cases", json=self.body, headers=self.headers)
+        self.assertEqual(response.status_code, 201)
+        with patch.dict(os.environ, {"SMTP_PASSWORD": ""}):
+            self.assertFalse(self.client.get("/api/cases/availability").json()["available"])
+            rows = self.client.get("/api/staff/cases", headers=self.staff)
+            self.assertEqual(rows.status_code, 200)
+            self.assertEqual(rows.json()[0]["id"], response.json()["case_id"])

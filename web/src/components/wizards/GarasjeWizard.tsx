@@ -3,6 +3,7 @@
 import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
+import { BooleanQuestion } from "@/components/ui/BooleanQuestion";
 import { ToggleRow } from "@/components/ui/Toggle";
 import { Alert } from "@/components/ui/Alert";
 import { ResultPhases, NumberField } from "./SimpleWizard";
@@ -29,7 +30,7 @@ export function GarasjeWizard({ p }: { p: Address }) {
     etasjer: 1,
     monehoyde: 0,
     gesimshoyde: 0,
-    over_ledninger: false,
+    over_ledninger: null as boolean | null,
     plan: "usikker" as TriState,
   });
 
@@ -86,7 +87,7 @@ export function GarasjeWizard({ p }: { p: Address }) {
             </div>
             <div className="space-y-2">
               <ToggleRow on={data.kjeller} onChange={() => setData({ ...data, kjeller: !data.kjeller })} title="Bygget skal ha kjeller" />
-              <ToggleRow on={data.over_ledninger} onChange={() => setData({ ...data, over_ledninger: !data.over_ledninger })} title="Plasseres over vann- eller avløpsledninger" />
+              <BooleanQuestion value={data.over_ledninger} onChange={(over_ledninger) => setData({ ...data, over_ledninger })} title="Plasseres over vann- eller avløpsledninger" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Er plassering og BYA kontrollert mot planen?</h3>
@@ -98,7 +99,7 @@ export function GarasjeWizard({ p }: { p: Address }) {
             </div>
             <Alert>Et areal under 50 m² er ikke alene nok. Bruk, høyde, etasjer, kjeller, avstander, ledninger og plan må også være innenfor.</Alert>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={data.avstand <= 0 || data.avstand_bygg <= 0 || data.monehoyde <= 0 || data.gesimshoyde <= 0} onClick={evaluate}>Sjekk prosjektet</Button>
+              <Button size="lg" full disabled={data.avstand < 0 || data.avstand_bygg < 0 || data.monehoyde <= 0 || data.gesimshoyde <= 0} onClick={evaluate}>Sjekk prosjektet</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

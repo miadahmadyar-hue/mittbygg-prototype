@@ -17,12 +17,12 @@ def evaluate_garasje(inp: GarasjeInput) -> TiltakResult:
         (inp.gesimshoyde <= 3.0, "Gesimshøyden er høyst 3,0 m"),
         (inp.avstand >= 1.0, "Avstanden til nabogrensen er minst 1,0 m"),
         (inp.avstand_bygg >= 1.0, "Avstanden til andre bygg er minst 1,0 m"),
-        (not inp.over_ledninger, "Bygget plasseres ikke over vann- eller avløpsledninger"),
+        (None if inp.over_ledninger is None else not inp.over_ledninger, "Bygget plasseres ikke over vann- eller avløpsledninger"),
     ]
     for ok, label in conditions:
         findings.append(Finding(
-            type="ok" if ok else "fail",
-            t=label if ok else f"Ikke oppfylt: {label.lower()}",
+            type="ok" if ok else "warn" if ok is None else "fail",
+            t=label if ok else f"Uavklart: {label.lower()}" if ok is None else f"Ikke oppfylt: {label.lower()}",
             d="Dette er et vilkår i unntaksregelen for frittliggende bygninger.",
             ref="SAK10 § 4-1 a",
         ))
@@ -43,21 +43,21 @@ def evaluate_garasje(inp: GarasjeInput) -> TiltakResult:
         ))
 
     exempt = inp.areal <= 50 and not blockers and inp.plan_ok is True
-    self_apply = inp.areal <= 70 and not inp.overnatting
+    self_apply = inp.areal <= 70 and inp.etasjer == 1 and not inp.overnatting
 
     if exempt:
         status, text, desc = "green", "Unntatt søknad", "Alle registrerte vilkår for unntaket er oppfylt. Meld bygget til kommunen etter ferdigstillelse."
         soknadstype, ansvarsrett = "Unntatt (SAK10 § 4-1 a)", False
-    elif inp.plan_ok is not True:
+    elif inp.plan_ok is not True or inp.over_ledninger is None:
         status = "red" if inp.plan_ok is False else "amber"
         text = "Dispensasjon må avklares" if inp.plan_ok is False else "Plan og BYA må avklares"
-        desc = "Søknadsløpet kan ikke avgjøres før byggegrense, planformål og utnyttelsesgrad er kontrollert."
+        desc = "Søknadsløpet kan ikke avgjøres før byggegrense, planformål, ledninger og utnyttelsesgrad er kontrollert."
         soknadstype, ansvarsrett = "Må avklares mot kommunal plan", False
     elif self_apply:
         status, text, desc = "amber", "Søknad kan sendes av tiltakshaver", "Prosjektet er ikke dokumentert som unntatt, men en frittliggende bygning inntil 70 m² kan normalt søkes av eieren selv."
         soknadstype, ansvarsrett = "PBL § 20-4 / SAK10 § 3-1 b", False
     else:
-        status, text, desc = "red", "Krever ansvarlig foretak", "Bruk til beboelse/overnatting eller areal over 70 m² faller utenfor ordningen for egen søknad."
+        status, text, desc = "red", "Avklar ansvarlig foretak", "Areal, etasjer og eventuell overnatting må vurderes mot reglene for egen søknad og ansvarsrett."
         soknadstype, ansvarsrett = "PBL § 20-3 (med ansvarsrett)", True
 
     tiltak = [Tiltak(

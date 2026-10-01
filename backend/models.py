@@ -24,6 +24,11 @@ class Lempning(BaseModel):
 class AssessmentResult(BaseModel):
     @computed_field
     @property
+    def ruleVersion(self) -> int:
+        return 20261001
+
+    @computed_field
+    @property
     def outcome(self) -> Literal["exempt", "professional", "clarify", "application"]:
         # Legacy rule engines retain their display wording; only this adapter
         # translates it. Clients consume a stable, language-independent outcome.
@@ -169,83 +174,91 @@ class TiltakResult(AssessmentResult):
 
 class GarasjeInput(BaseModel):
     type: Literal["garasje", "carport", "bod"]
-    areal: float
-    avstand: float
-    avstand_bygg: float = 1.0
+    areal: float = Field(gt=0, allow_inf_nan=False)
+    avstand: float = Field(ge=0, allow_inf_nan=False)
+    avstand_bygg: float = Field(default=1.0, ge=0, allow_inf_nan=False)
     overnatting: bool = False
     kjeller: bool = False
-    etasjer: int = 1
-    monehoyde: float = 4.0
-    gesimshoyde: float = 3.0
-    over_ledninger: bool = False
+    etasjer: int = Field(default=1, ge=1, le=20)
+    monehoyde: float = Field(default=4.0, gt=0, allow_inf_nan=False)
+    gesimshoyde: float = Field(default=3.0, gt=0, allow_inf_nan=False)
+    over_ledninger: Optional[bool] = None
     plan_ok: Optional[bool] = None
 
 
 class TilbyggInput(BaseModel):
     type: Literal["tilbygg_1etasje", "ny_etasje", "innglasset_terrasse"]
-    areal: float
-    avstand: float
+    areal: float = Field(gt=0, allow_inf_nan=False)
+    avstand: float = Field(ge=0, allow_inf_nan=False)
     bruk: Literal["bod", "terrasse", "veranda", "oppholdsrom", "bad", "annet"] = "oppholdsrom"
     plan_ok: Optional[bool] = None
     bya_ok: Optional[bool] = None
     pipe: bool = False
+    samme_formaal: Optional[bool] = None
+    understottet: Optional[bool] = None
+    en_etasje: Optional[bool] = None
+    egen_boenhet: Optional[bool] = None
 
 
 class FasadeInput(BaseModel):
     type: Literal["skifte_vindu", "nytt_hull", "kledning", "farge", "vindu_storre", "terrasse", "dor"]
-    verneverdig: bool
+    verneverdig: Optional[bool] = None
     samme_utseende: bool = False
     karakterendring: Literal["nei", "ja", "usikker"] = "usikker"
-    terrasse_hoyde: Optional[float] = None
-    terrasse_dybde: Optional[float] = None
-    terrasse_avstand: Optional[float] = None
+    terrasse_hoyde: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    terrasse_dybde: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    terrasse_avstand: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
     terrasse_overbygd: bool = False
+    plan_ok: Optional[bool] = None
+    terrasse_rekkverk: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
 
 
 class TakInput(BaseModel):
     type: Literal["bytte_materiale", "endre_form", "bygge_loft"]
-    verneverdig: bool
+    verneverdig: Optional[bool] = None
     etterisolere: bool
     samme_utseende: bool = False
 
 
 class AnneksInput(BaseModel):
     type: Literal["anneks", "uthus", "hagebod"]
-    areal: float
-    avstand: float
+    areal: float = Field(gt=0, allow_inf_nan=False)
+    avstand: float = Field(ge=0, allow_inf_nan=False)
     overnatting: bool = False
-    avstand_bygg: float = 1.0
+    avstand_bygg: float = Field(default=1.0, ge=0, allow_inf_nan=False)
     kjeller: bool = False
-    etasjer: int = 1
-    monehoyde: float = 4.0
-    gesimshoyde: float = 3.0
-    over_ledninger: bool = False
+    etasjer: int = Field(default=1, ge=1, le=20)
+    monehoyde: float = Field(default=4.0, gt=0, allow_inf_nan=False)
+    gesimshoyde: float = Field(default=3.0, gt=0, allow_inf_nan=False)
+    over_ledninger: Optional[bool] = None
     plan_ok: Optional[bool] = None
 
 
 class LevegInput(BaseModel):
-    hoyde: float
-    lengde: float
-    avstand: float
+    hoyde: float = Field(gt=0, allow_inf_nan=False)
+    lengde: float = Field(gt=0, allow_inf_nan=False)
+    avstand: float = Field(ge=0, allow_inf_nan=False)
     plan_ok: Optional[bool] = None
 
 
 class VinduInput(BaseModel):
     type: Literal["skifte", "nytt_hull", "storre_apning"]
-    brannvegg: bool
+    brannvegg: Optional[bool] = None
+    verneverdig: Optional[bool] = None
+    samme_utseende: Optional[bool] = None
 
 
 class BryggeInput(BaseModel):
     type: Literal["fast", "flytende", "stupebrett"]
-    lengde: float
-    bredde: float
+    lengde: float = Field(gt=0, allow_inf_nan=False)
+    bredde: float = Field(gt=0, allow_inf_nan=False)
     arbeid: Literal["ny", "utvide", "erstatte", "vedlikehold"] = "ny"
     eier_strandgrunn: Optional[bool] = None
     plan_status: Literal["tillatt", "ikke_tillatt", "usikker"] = "usikker"
 
 
 class AndreInput(BaseModel):
-    beskrivelse: str
+    beskrivelse: str = Field(min_length=20, max_length=2000)
 
 
 class GeolograpportInput(BaseModel):
@@ -267,15 +280,16 @@ class BruksendringInput(BaseModel):
 
 
 class TilleggsdelInput(BaseModel):
-    romtype: Literal["bod", "gang", "vaskerom", "garasje", "teknisk"]
-    areal: float
+    godkjent_bruk_bekreftet: bool = False
+    romtype: Literal["bod", "gang", "vaskerom", "garasje", "teknisk", "usikker"]
+    areal: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
     formaal: Literal["soverom", "stue", "kontor", "bad"]
 
 
 class BoenhetInput(BaseModel):
     type: Literal["hybel", "sokkelleilighet", "tomannsbolig"]
-    antall: int
-    areal: float
-    hovedfunksjoner: bool = False
-    egen_inngang: bool = False
-    fysisk_adskilt: bool = False
+    antall: int = Field(ge=1, le=100)
+    areal: float = Field(gt=0, allow_inf_nan=False)
+    hovedfunksjoner: Optional[bool] = None
+    egen_inngang: Optional[bool] = None
+    fysisk_adskilt: Optional[bool] = None

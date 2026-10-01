@@ -22,24 +22,24 @@ def evaluate_anneks(inp: AnneksInput) -> TiltakResult:
         conditions = [
             inp.areal <= 50, inp.avstand >= 1.0, inp.avstand_bygg >= 1.0,
             not inp.kjeller, inp.etasjer == 1, inp.monehoyde <= 4.0,
-            inp.gesimshoyde <= 3.0, not inp.over_ledninger, inp.plan_ok is True,
+            inp.gesimshoyde <= 3.0, inp.over_ledninger is False, inp.plan_ok is True,
         ]
         if all(conditions):
             status, text = "green", "Unntatt søknad"
             desc = "Vilkårene for frittliggende uthus er registrert som oppfylt. Meld bygget til kommunen etter ferdigstillelse."
             soknadstype, ansvarsrett = "Unntatt (SAK10 § 4-1 a)", False
-        elif inp.plan_ok is not True:
+        elif inp.plan_ok is not True or inp.over_ledninger is None:
             status = "red" if inp.plan_ok is False else "amber"
             text = "Dispensasjon må avklares" if inp.plan_ok is False else "Plan og BYA må avklares"
             desc = "Byggegrense, planformål og utnyttelsesgrad må kontrolleres før søknadsløpet kan bestemmes."
             soknadstype, ansvarsrett = "Må avklares mot kommunal plan", False
-        elif inp.areal <= 70:
+        elif inp.areal <= 70 and inp.etasjer == 1:
             status, text = "amber", "Søknad kan sendes av tiltakshaver"
             desc = "Prosjektet er ikke dokumentert som unntatt, men kan normalt søkes av eieren selv når det ikke brukes til beboelse."
             soknadstype, ansvarsrett = "PBL § 20-4 / SAK10 § 3-1 b", False
         else:
             status, text = "red", "Krever ansvarlig foretak"
-            desc = "Frittliggende bygg over 70 m² krever ansvarlig søker."
+            desc = "Areal over 70 m² eller flere etasjer faller utenfor denne ordningen for egen søknad."
             soknadstype, ansvarsrett = "PBL § 20-3", True
 
         findings.append(Finding(

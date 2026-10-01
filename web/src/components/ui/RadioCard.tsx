@@ -12,6 +12,7 @@ export function RadioCard({ selected, onClick, title, desc, leadIcon }: Props) {
   return (
     <button
       type="button"
+      aria-pressed={selected}
       onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-[6px] bg-white p-4 text-left transition-all ${
         selected

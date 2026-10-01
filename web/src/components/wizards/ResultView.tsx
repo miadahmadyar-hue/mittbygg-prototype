@@ -5,7 +5,6 @@ import type { TiltakResult } from "@/lib/api/evaluate";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { ChangeUsePrice } from "./ChangeUsePrice";
-import { getPricing, formatServicePrice } from "@/lib/data/pricing";
 import { useT } from "@/lib/i18n/context";
 
 
@@ -62,7 +61,7 @@ interface Props {
   onPrepareProfessional?: () => void;
 }
 
-export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEdit, onPrepareProfessional }: Props) {
+export function ResultView({ r, slug, onRestart, onRetry, onEdit, onPrepareProfessional }: Props) {
   const t = useT();
   const sCard = STATUS_CARDS[r.status];
   const outcome = r.outcome ?? "clarify";
@@ -83,6 +82,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
     <>
       <Topbar title={t("Resultat", "Result")} onBack={onEdit} />
       <div className="view">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Foreløpig vurdering · basert på dine svar</p>
         <div
           className={`flex items-center gap-3 p-5 rounded-2xl border ${sCard.bg} ${sCard.border}`}
         >
@@ -142,12 +142,12 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
               ? t("Ja - ansvarlig foretak må vurderes", "Yes - a responsible firm must be considered")
               : t("Ikke identifisert som krav", "Not identified as required")}
           />
-          <KV k={t("Tiltaksklasse", "Work class")} v={`TK${r.tiltaksklasse}`} last />
+          <KV k={t("Tiltaksklasse", "Work class")} v={t("Fastsettes ved prosjektering", "Determined during professional design")} last />
         </div>
 
         </details>
 
-        {slug === "bruksendring" ? <ChangeUsePrice /> : canBuildPackage && <PricingCard slug={slug} />}
+        {slug === "bruksendring" ? <ChangeUsePrice /> : <section className="panel p-5"><h2 className="font-semibold">Avklar saken før du betaler</h2><p className="text-sm mt-2">Foreløpig vurdering og tilbudsforespørsel er gratis. Vi avtaler omfang og pris med deg før betalt arbeid starter.</p></section>}
 
         <SectionHead>{t("Anbefalt vei videre", "Recommended next steps")}</SectionHead>
         <Timeline outcome={outcome} />
@@ -184,23 +184,16 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
                 <p className="text-sm">{t("Bruk forberedelsen over for å samle dokumenter og be oss om tilbud.", "Use the preparation above to gather documents and request a quote.")}</p>
               </div>
               <Button variant="ghost" full onClick={onRestart}>
-                {t("Start på nytt", "Start over")}
+                {t("Tilbake til tiltak", "Back to projects")}
               </Button>
             </>
           ) : canBuildPackage ? (
             <>
-              <Button size="lg" full onClick={onGenerateSoknad}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <path d="M14 2v6h6" />
-                </svg>
-                {t("Fortsett med søknadsgrunnlaget", "Continue with the application documents")}
-              </Button>
               <Button variant="ghost" full onClick={onRestart}>
-                {t("Start på nytt", "Start over")}
+                {t("Tilbake til tiltak", "Back to projects")}
               </Button>
               <a
-                href="mailto:hei@soknadsklar.no?subject=Trenger hjelp med søknad"
+                href="mailto:post@soknadsklar.no?subject=Trenger hjelp med søknad"
                 className="flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -337,26 +330,5 @@ function KV({ k, v, last, mono }: { k: string; v: string; last?: boolean; mono?:
       <span className="text-gray-500 shrink-0">{k}</span>
       <span className={`font-semibold ${mono ? "font-mono text-xs" : ""}`}>{v}</span>
     </div>
-  );
-}
-
-function PricingCard({ slug }: { slug?: string }) {
-  const t = useT();
-  const p = getPricing(slug ?? "");
-  return (
-    <>
-      <SectionHead>{t("Søknadsprosess — hva koster det?", "The application process — what does it cost?")}</SectionHead>
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col gap-4">
-        <div>
-          <div className="text-xs font-semibold uppercase text-gray-500 mb-1">{t("Demo", "Demo")}</div>
-          <div className="text-xs text-gray-500 mb-1">{t("Eksempelpris for søknadspakke", "Example price for an application package")}</div>
-          <div className="text-3xl font-extrabold tracking-tight">{formatServicePrice(p)} <span className="text-sm font-normal">{t("eks. mva", "excl. VAT")}</span></div>
-        </div>
-        {p.note && <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">{p.note}</div>}
-        <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-          {t("Dette er en demonstrasjon. Ingen betaling gjennomføres. Kommunalt gebyr og eventuell fagbistand kommer i tillegg.", "This is a demonstration. No payment is processed. Municipal fees and professional services are additional.")}
-        </div>
-      </div>
-    </>
   );
 }

@@ -3,7 +3,8 @@ from models import BoenhetInput, TiltakResult, TiltakFinding, TiltakTiltak
 
 def evaluate_boenhet(inp: BoenhetInput) -> TiltakResult:
     criteria = [inp.hovedfunksjoner, inp.egen_inngang, inp.fysisk_adskilt]
-    is_new_unit = all(criteria)
+    is_new_unit = all(value is True for value in criteria)
+    unknown = any(value is None for value in criteria)
 
     findings = [
         TiltakFinding(
@@ -23,7 +24,12 @@ def evaluate_boenhet(inp: BoenhetInput) -> TiltakResult:
         ),
     ]
 
-    if is_new_unit:
+    if unknown:
+        findings = [TiltakFinding(type="warn", t="Oppdelingskriteriene er ikke avklart", d="Alle hovedfunksjoner, egen inngang og fysisk adskillelse må besvares. Et ukjent svar er ikke et nei.", ref="SAK10 § 2-2")]
+        status, text = "amber", "Oppdelingen må avklares"
+        desc = "Finn godkjente tegninger og beskriv forbindelsen mellom boligdelene. Utleie kan også innebære bruksendring."
+        soknadstype, ansvarsrett, tiltak = "Må avklares - mulig oppdeling", False, []
+    elif is_new_unit:
         status, text = "red", "Søknadspliktig oppdeling"
         desc = "Alle tre kriteriene for en ny boenhet er oppfylt. Ansvarlig søker må vurdere plan, brann, lyd, tilgjengelighet og parkering."
         soknadstype, ansvarsrett = "PBL § 20-3 / SAK10 § 2-2", True

@@ -3,6 +3,7 @@
 import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
+import { BooleanQuestion } from "@/components/ui/BooleanQuestion";
 import { ToggleRow } from "@/components/ui/Toggle";
 import { Alert } from "@/components/ui/Alert";
 import { ResultPhases, NumberField } from "./SimpleWizard";
@@ -30,9 +31,9 @@ export function FasadeWizard({ p }: { p: Address }) {
   const router = useRouter();
   const [phase, setPhase] = useDraftState<Phase>("phase", { kind: "wizard", step: 0 });
   const [data, setData] = useDraftState("data", {
-    type: null as FType | null, verneverdig: false, samme_utseende: false,
+    type: null as FType | null, verneverdig: null as boolean | null, samme_utseende: false,
     karakterendring: "usikker" as Character,
-    terrasse_hoyde: 0, terrasse_dybde: 0, terrasse_avstand: 0, terrasse_overbygd: false,
+    terrasse_hoyde: 0, terrasse_dybde: 0, terrasse_avstand: 0, terrasse_overbygd: false, terrasse_rekkverk: 0, plan_ok: null as boolean | null,
   });
 
   const evaluate = async () => {
@@ -79,9 +80,11 @@ export function FasadeWizard({ p }: { p: Address }) {
             <Field label="Maks høyde over terreng" value={data.terrasse_hoyde} unit="m" onChange={(terrasse_hoyde) => setData({ ...data, terrasse_hoyde })} />
             <Field label="Hvor langt ut fra fasaden" value={data.terrasse_dybde} unit="m" onChange={(terrasse_dybde) => setData({ ...data, terrasse_dybde })} />
             <Field label="Avstand til nabogrense" value={data.terrasse_avstand} unit="m" onChange={(terrasse_avstand) => setData({ ...data, terrasse_avstand })} />
+            <Field label="Rekkverkshøyde fra terrassegulvet (0 uten rekkverk)" value={data.terrasse_rekkverk} unit="m" onChange={(terrasse_rekkverk) => setData({ ...data, terrasse_rekkverk })} />
+            <BooleanQuestion title="Er plan, byggegrenser og utnyttelsesgrad kontrollert?" value={data.plan_ok} onChange={(plan_ok) => setData({ ...data, plan_ok })} />
             <ToggleRow on={data.terrasse_overbygd} onChange={() => setData({ ...data, terrasse_overbygd: !data.terrasse_overbygd })} title="Terrassen skal være overbygd" />
             <Alert>For unntak må terrassen blant annet være høyst 1,0 m over terreng, gå høyst 4,0 m ut, være minst 1,0 m fra grensen og ikke være overbygd.</Alert>
-            <Actions disabled={data.terrasse_hoyde <= 0 || data.terrasse_dybde <= 0 || data.terrasse_avstand < 0} onEvaluate={evaluate} onBack={back} />
+            <Actions disabled={data.terrasse_hoyde < 0 || data.terrasse_dybde <= 0 || data.terrasse_avstand < 0} onEvaluate={evaluate} onBack={back} />
           </>
         ) : (
           <>
@@ -98,7 +101,7 @@ export function FasadeWizard({ p }: { p: Address }) {
                 <RadioCard selected={data.karakterendring === "usikker"} onClick={() => setData({ ...data, karakterendring: "usikker" })} title="Jeg er usikker" />
               </div>
             </div>
-            <ToggleRow on={data.verneverdig} onChange={() => setData({ ...data, verneverdig: !data.verneverdig })} title="Bygningen er vernet eller registrert som bevaringsverdig" desc="Velg bare ja hvis dette er bekreftet" />
+            <BooleanQuestion value={data.verneverdig} onChange={(verneverdig) => setData({ ...data, verneverdig })} title="Bygningen er vernet eller registrert som bevaringsverdig" description="Velg «Vet ikke» hvis vernestatus ikke er kontrollert." />
             <Alert>En ny eller større åpning kan også berøre bæring og brannskille. Det vurderes ikke ut fra fasaden alene.</Alert>
             <Actions disabled={false} onEvaluate={evaluate} onBack={back} />
           </>

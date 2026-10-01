@@ -3,6 +3,7 @@
 import { useDraftState } from "@/lib/projects";
 import { useRouter } from "next/navigation";
 import { RadioCard } from "@/components/ui/RadioCard";
+import { BooleanQuestion } from "@/components/ui/BooleanQuestion";
 import { ToggleRow } from "@/components/ui/Toggle";
 import { Alert } from "@/components/ui/Alert";
 import { ResultPhases, NumberField } from "./SimpleWizard";
@@ -22,11 +23,11 @@ export function AnneksWizard({ p }: { p: Address }) {
   const [data, setData] = useDraftState("data", {
     type: null as AType | null, areal: 0, avstand: 0, avstand_bygg: 0,
     overnatting: false, kjeller: false, etasjer: 1,
-    monehoyde: 0, gesimshoyde: 0, over_ledninger: false,
+    monehoyde: 0, gesimshoyde: 0, over_ledninger: null as boolean | null,
     plan: "usikker" as TriState,
   });
 
-  const chooseType = (type: AType) => setData({ ...data, type, overnatting: type === "anneks" ? true : data.overnatting });
+  const chooseType = (type: AType) => setData({ ...data, type, overnatting: type === "anneks" });
   const evaluate = async () => {
     if (!data.type) return;
     setPhase({ kind: "loading" });
@@ -76,7 +77,7 @@ export function AnneksWizard({ p }: { p: Address }) {
             </div>
             <div className="space-y-2">
               <ToggleRow on={data.kjeller} onChange={() => setData({ ...data, kjeller: !data.kjeller })} title="Bygget skal ha kjeller" />
-              <ToggleRow on={data.over_ledninger} onChange={() => setData({ ...data, over_ledninger: !data.over_ledninger })} title="Plasseres over vann- eller avløpsledninger" />
+              <BooleanQuestion value={data.over_ledninger} onChange={(over_ledninger) => setData({ ...data, over_ledninger })} title="Plasseres over vann- eller avløpsledninger" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Er plan, byggegrense og BYA kontrollert?</h3>
@@ -87,7 +88,7 @@ export function AnneksWizard({ p }: { p: Address }) {
               </div>
             </div>
             <div className="mt-auto pt-4 flex flex-col gap-2">
-              <Button size="lg" full disabled={data.avstand <= 0 || data.avstand_bygg <= 0 || data.monehoyde <= 0 || data.gesimshoyde <= 0} onClick={evaluate}>Sjekk prosjektet</Button>
+              <Button size="lg" full disabled={data.avstand < 0 || data.avstand_bygg < 0 || data.monehoyde <= 0 || data.gesimshoyde <= 0} onClick={evaluate}>Sjekk prosjektet</Button>
               <Button variant="ghost" full onClick={back}>Tilbake</Button>
             </div>
           </>

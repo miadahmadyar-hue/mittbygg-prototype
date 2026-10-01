@@ -11,7 +11,6 @@ LABEL = {
 def evaluate_tilbygg(inp: TilbyggInput) -> TiltakResult:
     findings: list[Finding] = []
     is_upper_storey = inp.type == "ny_etasje"
-    permanent_use = inp.bruk in ("oppholdsrom", "bad")
 
     if is_upper_storey:
         findings.append(Finding(
@@ -24,23 +23,23 @@ def evaluate_tilbygg(inp: TilbyggInput) -> TiltakResult:
         soknadstype, ansvarsrett = "PBL § 20-3 (påbygg)", True
     else:
         exempt_size = inp.areal <= 15
-        exempt_use = not permanent_use
+        scope_confirmed = inp.samme_formaal is True and inp.understottet is True and inp.en_etasje is True and inp.egen_boenhet is False
         plan_confirmed = inp.plan_ok is True and inp.bya_ok is True
         distance_ok = inp.avstand >= 4.0
-        exempt = exempt_size and exempt_use and plan_confirmed and distance_ok and not inp.pipe
+        exempt = exempt_size and scope_confirmed and plan_confirmed and distance_ok and not inp.pipe
 
         if exempt:
             status, text = "green", "Unntatt søknad"
             desc = "Det mindre tilbygget er registrert innenfor unntaksvilkårene. Meld arealendringen etter ferdigstillelse."
             soknadstype, ansvarsrett = "Unntatt (SAK10 § 4-1)", False
-        elif inp.areal > 50 or inp.pipe:
+        elif inp.areal > 50 or inp.pipe or inp.egen_boenhet is True:
             status, text = "red", "Krever ansvarlig foretak"
-            desc = "Tilbygg over 50 m² eller tilbygg med pipe krever ansvarlige foretak."
+            desc = "Areal, pipe eller etablering av egen boenhet gjør at ansvarlige foretak må vurderes."
             soknadstype, ansvarsrett = "PBL § 20-3", True
-        elif not plan_confirmed:
+        elif not plan_confirmed or not scope_confirmed:
             status = "red" if inp.plan_ok is False or inp.bya_ok is False else "amber"
             text = "Dispensasjon må avklares" if status == "red" else "Plan og BYA må avklares"
-            desc = "Søknadsløpet kan ikke avgjøres før byggegrense, planformål og utnyttelsesgrad er kontrollert."
+            desc = "Plan, utnyttelsesgrad, understøtting, etasjer og eventuell ny boenhet må avklares. Veiviseren dekker bare tilbygg i ett plan; andre løsninger vurderes konkret."
             soknadstype, ansvarsrett = "Må avklares mot kommunal plan", False
         elif inp.areal <= 50:
             status, text = "amber", "Søknad uten ansvarlig foretak"
@@ -61,11 +60,11 @@ def evaluate_tilbygg(inp: TilbyggInput) -> TiltakResult:
                 ref="PBL § 1-6",
             ),
         ])
-        if exempt_size and permanent_use:
+        if exempt_size:
             findings.append(Finding(
-                type="warn", t="Rom for varig opphold faller utenfor småtilbygg-unntaket",
-                d="Areal alene er ikke nok til å være unntatt når tilbygget skal brukes som oppholdsrom eller bad.",
-                ref="SAK10 § 4-1",
+                type="warn", t="Små tilbygg kan også inneholde oppholdsrom",
+                d="Rombruken må være tillatt i den eksisterende bygningen. Begge arealmål (BRA og BYA), understøtting, plan og øvrige vilkår må være oppfylt. En ny selvstendig boenhet er ikke omfattet.",
+                ref="SAK10 § 4-1 b",
             ))
 
     tiltak = [Tiltak(

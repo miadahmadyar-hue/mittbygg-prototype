@@ -8,7 +8,7 @@ def evaluate_geolograpport(inp: GeolograpportInput) -> TiltakResult:
         type="warn",
         t="Behovet må vurderes for det konkrete tiltaket",
         d="Dokumentasjonen skal være tilpasset risiko, grunnforhold og fundamentering. En geoteknisk rapport er ikke automatisk nødvendig i alle saker.",
-        ref="TEK17 § 9-2",
+        ref="TEK17 kap. 7 og 10",
     ))
 
     if inp.type in ("nybygg", "brygge"):

@@ -1,66 +1,22 @@
-from models import TilleggsdelInput, TiltakResult, TiltakFinding, TiltakTiltak
+from models import TilleggsdelInput, TiltakResult, Finding
 
 
 def evaluate_tilleggsdel(inp: TilleggsdelInput) -> TiltakResult:
-    findings: list[TiltakFinding] = []
-    tiltak: list[TiltakTiltak] = []
-
-    findings.append(TiltakFinding(
-        type="warn",
-        t="Søknadspliktig bruksendring",
-        d="Endring fra tilleggsdel (bod, lager, teknisk rom) til hoveddel (oppholdsrom) krever søknad etter PBL § 20-1 d.",
-        ref="PBL § 20-1 d",
-    ))
-    findings.append(TiltakFinding(
-        type="warn",
-        t=f"Takhøyde minimum 2,2 m i oppholdsrom",
-        d=f"Rommet på {inp.areal} m² må ha fri takhøyde ≥ 2,2 m i minimum 50 % av gulvarealet og ≥ 1,9 m i øvrig areal.",
-        ref="TEK17 § 8-2",
-    ))
-    findings.append(TiltakFinding(
-        type="warn",
-        t="Dagslys og ventilasjon",
-        d="Oppholdsrom krever vindu med dagslysflate ≥ 10 % av gulvareal og mekanisk eller naturlig ventilasjon.",
-        ref="TEK17 §§ 13-2, 14-2",
-    ))
-
+    findings = [Finding(
+        type="warn", t="Kontroller godkjent bruk først",
+        d="Godkjente tegninger og vedtak avgjør om rommet er hoveddel eller tilleggsdel. Gang og vaskerom kan allerede være hoveddel. Romnavnet alene avgjør ikke søknadsplikten.",
+        ref="DiBK: Hva er en bruksendring?; SAK10 § 2-1",
+    )]
+    if inp.godkjent_bruk_bekreftet and inp.romtype in ("bod", "garasje", "teknisk"):
+        findings.append(Finding(type="warn", t="Tilleggsdel til hoveddel krever søknad", d="Avklar om endringen skjer innenfor samme boenhet og hvilke tekniske krav som gjelder for den nye bruken.", ref="PBL § 20-1 d; SAK10 § 3-1 c"))
+    else:
+        findings.append(Finding(type="warn", t="Søknadsomfang er ikke fastsatt", d="Det må avklares om dette er bruksendring, endring innenfor hoveddel eller andre søknadspliktige arbeider.", ref="SAK10 § 2-1"))
+    findings.append(Finding(type="warn", t="Dokumenter relevante tekniske forhold", d="Romhøyde, dagslys, rømning, ventilasjon, fukt og energi vurderes ut fra ny bruk og byggets forutsetninger. For eldre boliger kan særregler være aktuelle. Ingen generell høyde- eller dagslysformel er brukt her.", ref="TEK17 § 1-2 og kap. 11–14"))
     if inp.romtype == "garasje":
-        findings.append(TiltakFinding(
-            type="fail",
-            t="Garasje til bolig — brannskille kreves",
-            d="Ombygging av garasje til oppholdsrom krever brannskille og særskilt vurdering av grunnforhold.",
-            ref="TEK17 § 11-9",
-        ))
-
-    findings.append(TiltakFinding(
-        type="ok",
-        t="Matrikkelføring av arealendring",
-        d="Etter godkjenning oppdateres matrikkelen med ny bruksareal (BRA) for hoveddelen.",
-        ref="Matrikkelloven § 26",
-    ))
-
-    tiltak.append(TiltakTiltak(
-        name="Søknad om bruksendring (tilleggsdel → hoveddel)",
-        desc="Søknad med plantegninger som viser eksisterende og ny bruk, samt dokumentasjon av TEK17-oppfyllelse.",
-        kostnad=10000,
-    ))
-    tiltak.append(TiltakTiltak(
-        name="Bygningsmessige tilpasninger",
-        desc="Vindusinnsetting, isolering, ventilasjon og evt. branntiltak for å nå TEK17-standard.",
-        kostnad=inp.areal * 3500,
-    ))
-
-    status = "red" if inp.romtype == "garasje" else "amber"
+        findings.append(Finding(type="warn", t="Tidligere garasjebruk må undersøkes", d="Avklar gulv, fukt, eventuell forurensning, brannforhold og parkering. Tiltak må prosjekteres etter funn, ikke automatisk bestilles.", ref="TEK17 kap. 11 og 13; gjeldende plan"))
     return TiltakResult(
-        status=status,
-        statusText="Søknadspliktig — krever teknisk oppgradering",
-        statusDesc="Rommet må tilfredsstille TEK17 før kommunen godkjenner ny bruk.",
-        findings=findings,
-        tiltak=tiltak,
-        lempninger=[],
-        soknadstype="Søknad med nabovarsel (SAK10 kap. 5)",
-        ansvarsrett=False,
-        tiltaksklasse=1,
-        totalKostnad=sum(t.kostnad for t in tiltak),
-        input=inp.model_dump(),
+        status="amber", statusText="Godkjent bruk og tekniske krav må avklares",
+        statusDesc="Samle tegninger, mål og beskrivelse før søknadsomfang og pris avtales.",
+        findings=findings, tiltak=[], lempninger=[], soknadstype="Må avklares - endret rombruk",
+        ansvarsrett=False, tiltaksklasse=1, totalKostnad=0, input=inp.model_dump(),
     )
