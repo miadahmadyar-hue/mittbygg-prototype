@@ -8,6 +8,7 @@ export function mapProperty(value: unknown): Address {
   const limits = record(b.byggegrenser);
   return {
     id: String(d.id), street: String(d.street ?? ""), postal: String(d.postal ?? ""), city: String(d.city ?? ""),
+    municipality: typeof d.municipality === "string" ? d.municipality : undefined,
     coords: [number(c.lat) ?? 0, number(c.lon) ?? 0],
     matrikkel: { gnr: String(m.gnr ?? ""), bnr: String(m.bnr ?? ""), kommune: String(m.kommune ?? "") },
     bygg: {

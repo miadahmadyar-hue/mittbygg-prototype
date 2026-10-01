@@ -3,80 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
-import { mapProperty } from "@/lib/data/property";
+import { searchAddresses } from "@/lib/api/address";
 import { ADDRESSES, type Address } from "@/lib/data/addresses";
 import { getUser, setUser, type User } from "@/lib/auth";
 import { useT } from "@/lib/i18n/context";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const KARTVERKET_URL = "https://ws.geonorge.no/adresser/v1/sok";
-
-async function searchBackend(q: string): Promise<Address[]> {
-  const res = await fetch(`${API_URL}/api/address/search?q=${encodeURIComponent(q)}`, {
-    signal: AbortSignal.timeout(4000),
-  });
-  if (!res.ok) throw new Error("search failed");
-  const data = await res.json();
-
-  return (data.results ?? []).map(mapProperty);
-}
-
-async function searchKartverket(q: string): Promise<Address[]> {
-  const url = new URL(KARTVERKET_URL);
-  url.searchParams.set("sok", q);
-  url.searchParams.set("fuzzy", "true");
-  url.searchParams.set("utkoordsys", "4258");
-  url.searchParams.set("treffPerSide", "8");
-  url.searchParams.set("sokemodus", "AND");
-
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(6000) });
-  if (!res.ok) throw new Error("kartverket failed");
-  const data = await res.json();
-
-  return (data.adresser ?? []).map((a: Record<string, unknown>) => {
-    const gnr = parseInt(String(a.gardsnummer ?? "0")) || 0;
-    const bnr = parseInt(String(a.bruksnummer ?? "0")) || 0;
-    const kommune = String(a.kommunenummer ?? "0000");
-    const nummer = String(a.nummer ?? "");
-    const bokstav = String(a.bokstav ?? "");
-    const punkt = (a.representasjonspunkt as Record<string, number>) ?? {};
-
-    return {
-      id: `k_${kommune}_${gnr}_${bnr}`,
-      street: `${a.adressenavn ?? ""} ${nummer}${bokstav}`.trim(),
-      postal: String(a.postnummer ?? ""),
-      city: String(a.kommunenavn ?? "").replace(/\b\w/g, (c) => c.toUpperCase()),
-      coords: [punkt.lat ?? 0, punkt.lon ?? 0] as [number, number],
-      matrikkel: { gnr: String(gnr), bnr: String(bnr), kommune },
-      bygg: {
-        byggeAar: null,
-        BRA: null,
-        etasjer: null,
-        kjeller: null,
-        garasje: null,
-        tomt: null,
-        regplan: null,
-        byggegrenser: { nord: null, sor: null, ost: null, vest: null },
-        tidligereSaker: [],
-        bygg_source: "default",
-      },
-    };
-  });
-}
-
-async function search(q: string): Promise<Address[]> {
-  try {
-    return await searchBackend(q);
-  } catch {
-    return searchKartverket(q);
-  }
-}
 
 export default function AddressPage() {
   const router = useRouter();
   const t = useT();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Address[]>([]);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [mode, setMode] = useState("exact");
+  const [retry, setRetry] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [user, setUserState] = useState<User | null>(() => getUser());
@@ -98,23 +39,32 @@ export default function AddressPage() {
     if (trimmed.length < 2) return;
 
     let active = true;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoading(true);
       setError(false);
       try {
-        const next = await search(trimmed);
-        if (active) setResults(next);
+        const next = await searchAddresses(trimmed, page, controller.signal);
+        if (active) {
+          setResults(next.results);
+          setTotal(next.total);
+          setHasMore(next.hasMore);
+          setMode(next.mode);
+        }
       } catch {
         if (active) { setError(true); setResults([]); }
       } finally {
         if (active) setLoading(false);
       }
     }, 350);
-    return () => { active = false; clearTimeout(timer); };
-  }, [query]);
+    return () => { active = false; controller.abort(); clearTimeout(timer); };
+  }, [query, page, retry]);
 
   const updateQuery = (value: string) => {
     setQuery(value);
+    setPage(0);
+    setTotal(0);
+    setHasMore(false);
     setLoading(value.trim().length >= 2);
     setResults([]);
     setError(false);
@@ -152,8 +102,8 @@ export default function AddressPage() {
           <h1 className="page-title mt-3">{t("Hvilken eiendom?", "Which property?")}</h1>
           <p className="mt-4 max-w-[620px] text-base leading-7 text-gray-600">
             {t(
-              "Søk etter adresse, postnummer eller gårds- og bruksnummer. Vi henter tilgjengelige eiendomsdata automatisk.",
-              "Search by address, postal code or property number. We retrieve available property data automatically.",
+              "Søk i hele Norge. Skriv gate og husnummer, gjerne med poststed eller postnummer. Du kan også søke med kommune/gnr/bnr, for eksempel 0301/208/619.",
+              "Search all of Norway. Enter street and house number, preferably with town or postcode. You can also use municipality/farm/property number, for example 0301/208/619.",
             )}
           </p>
         </header>
@@ -177,6 +127,9 @@ export default function AddressPage() {
           )}
         </div>
 
+        <p className="max-w-[900px] text-sm leading-6 text-gray-500">{t("Kilde: Kartverkets adresseregister. Byggeår, areal og godkjente tegninger følger ikke med adressesøket. Disse opplysningene kontrollerer du på eiendomssiden.", "Source: Kartverket’s address register. Year built, floor area and approved drawings are not included in address search. Check these details on the property page.")}</p>
+        {showResults && loading && <p role="status" className="text-sm text-gray-600">{t("Søker etter adresser…", "Searching addresses…")}</p>}
+        {showResults && !loading && !error && results.length > 0 && <p role="status" className="text-sm text-gray-600">{t("Viser", "Showing")} {page * 20 + 1}–{page * 20 + results.length} {t("av", "of")} {total} {t("treff", "matches")}{mode === "fuzzy" ? t(" · Omtrentlige treff — kontroller adressen.", " · Approximate matches — check the address.") : ""}</p>}
         {showResults && !loading && results.length > 0 && (
           <div className="panel max-w-[900px] overflow-hidden">
             {results.map((address, index) => (
@@ -192,22 +145,29 @@ export default function AddressPage() {
 
         {showResults && !loading && results.length === 0 && !error && (
           <p className="max-w-[900px] border-y border-gray-200 py-8 text-center text-sm text-gray-500">
-            {t("Ingen treff. Prøv en annen adresse.", "No matches. Try another address.")}
+            {t("Ingen treff. Prøv gatenavn og husnummer uten leilighetsnummer, og legg til poststed eller postnummer.", "No matches. Try the street and house number without the apartment number, adding town or postcode.")}
           </p>
         )}
 
         {showResults && error && (
-          <p className="max-w-[900px] border-y border-red-200 bg-red-50 py-8 text-center text-sm text-red-500">
-            {t("Kunne ikke koble til søketjenesten. Prøv igjen.", "Couldn't reach the search service. Try again.")}
-          </p>
+          <div role="alert" className="max-w-[900px] border-y border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
+            <p>{t("Kunne ikke koble til søketjenesten. Prøv igjen.", "Couldn't reach the search service. Try again.")}</p>
+            <button className="text-link mt-3" onClick={() => { setLoading(true); setError(false); setRetry((n) => n + 1); }}>{t("Prøv igjen", "Try again")}</button>
+          </div>
         )}
+
+        {showResults && !loading && !error && (page > 0 || hasMore) && <nav aria-label={t("Søkeresultatsider", "Search result pages")} className="flex max-w-[900px] items-center justify-between gap-4">
+          <button className="text-link disabled:opacity-40" disabled={page === 0} onClick={() => { setLoading(true); setPage((n) => n - 1); }}>{t("Forrige treff", "Previous matches")}</button>
+          <span className="text-sm">{t("Side", "Page")} {page + 1}</span>
+          <button className="text-link disabled:opacity-40" disabled={!hasMore} onClick={() => { setLoading(true); setPage((n) => n + 1); }}>{t("Flere treff", "More matches")}</button>
+        </nav>}
 
         {showQuickList && (
           <section className="max-w-[900px]">
             <div className="mb-3 flex items-end justify-between border-b border-gray-200 pb-3">
               <div>
                 <p className="page-kicker">{t("Eksempler", "Examples")}</p>
-                <h2 className="mt-1 text-lg font-semibold text-gray-900">{t("Nylig vurderte eiendommer", "Recently assessed properties")}</h2>
+                <h2 className="mt-1 text-lg font-semibold text-gray-900">{t("Prøv en eksempeladresse", "Try an example address")}</h2>
               </div>
               <span className="text-xs text-gray-500">{t("Demodata", "Demo data")}</span>
             </div>

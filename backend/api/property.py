@@ -1,10 +1,10 @@
 """
-Property endpoint — real data from Matrikkel enrichment + in-process cache.
+Property endpoint — exact official address lookup, including after restarts.
 Falls back to mock data for legacy numeric IDs used in test fixtures.
 """
 from fastapi import APIRouter, HTTPException
-from .address import get_cached_property
-from .matrikkel_enrichment import fetch_bygg
+from .address import get_cached_property, resolve_address
+from .matrikkel_enrichment import _default_bygg
 
 router = APIRouter()
 
@@ -51,12 +51,12 @@ _MOCK_PROPERTIES: dict = {
 
 @router.get("/property/{prop_id}")
 async def get_property(prop_id: str):
-    # 1. Cache hit — set by address search in same session
-    cached = get_cached_property(prop_id)
+    # 1. Resolve the exact address, from cache or the official address API.
+    cached = await resolve_address(prop_id)
     if cached:
         return cached
 
-    # 2. Parse Kartverket-style ID: k_{kommunenummer}_{gnr}_{bnr}
+    # 2. Preserve old parcel-only links. No verified building API is configured.
     if prop_id.startswith("k_"):
         parts = prop_id.split("_", 3)
         if len(parts) == 4:
@@ -66,7 +66,7 @@ async def get_property(prop_id: str):
             except ValueError:
                 pass
             else:
-                bygg = await fetch_bygg(kommunenummer, gnr, bnr)
+                bygg = _default_bygg()
                 return {
                     "id": prop_id,
                     "street": f"Gnr {gnr} / Bnr {bnr}",

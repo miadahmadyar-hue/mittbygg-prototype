@@ -64,6 +64,7 @@ export function PropertyDashboard({ p: initial }: { p: Address }) {
           </div>
         </section>
 
+        {!p.bygg.demo && !hasRegistryData && <Alert variant="amber"><strong>{t("Adressen er funnet. Husdetaljene må kontrolleres.", "Address found. Building details need checking.")}</strong><p className="mt-2">{t("Kartverkets åpne adressesøk gir adresse og eiendomsnummer, men ikke byggeår, BRA, etasjer eller godkjente tegninger. Fyll inn dokumenterte opplysninger nedenfor, eller fortsett med ukjente verdier. Du kan be kommunen om godkjente tegninger og byggesaksdokumenter.", "Kartverket’s open address search provides the address and property number, but not year built, floor area, floors or approved drawings. Enter documented facts below or continue with unknown values. Ask the municipality for approved drawings and building records.")}</p></Alert>}
         <PropertyFacts property={p} onSave={setProperty} />
 
         <div className="dashboard-grid">
@@ -79,8 +80,8 @@ export function PropertyDashboard({ p: initial }: { p: Address }) {
             />
             <dl className="divide-y divide-gray-100">
               <KV label="Gnr/Bnr" value={`${p.matrikkel.gnr}/${p.matrikkel.bnr}`} />
-              <KV label={t("Kommune", "Municipality")} value={p.matrikkel.kommune} />
-              <KV label={t("Tomteareal", "Plot area")} value={p.bygg.tomt ? `${p.bygg.tomt} m²` : t("Ikke registrert", "Not registered")} />
+              <KV label={t("Kommune", "Municipality")} value={p.municipality ? `${p.municipality} (${p.matrikkel.kommune})` : p.matrikkel.kommune} />
+              <KV label={t("Tomteareal", "Plot area")} value={p.bygg.tomt ? `${p.bygg.tomt} m²` : t("Ikke hentet", "Not retrieved")} />
               <KV label={t("Byggegrense", "Building limit")} value={p.bygg.byggegrenser.nord === null ? t("Ukjent — kontroller kommunal plan", "Unknown — check municipal plan") : `${p.bygg.byggegrenser.nord} ${t("meter", "metres")}`} />
               <KV label={t("Reguleringsplan", "Zoning plan")} value={p.bygg.regplan ?? t("Ikke hentet", "Not retrieved")} />
             </dl>
@@ -145,7 +146,7 @@ export function PropertyDashboard({ p: initial }: { p: Address }) {
         <dl className="mt-5 divide-y divide-gray-100 border-y border-gray-100">
           <KV label={t("Adresse", "Address")} value={`${p.street}, ${p.postal} ${p.city}`} />
           <KV label="Gnr/Bnr" value={`${p.matrikkel.gnr}/${p.matrikkel.bnr}`} />
-          <KV label={t("Kommune", "Municipality")} value={p.matrikkel.kommune} />
+          <KV label={t("Kommune", "Municipality")} value={p.municipality ? `${p.municipality} (${p.matrikkel.kommune})` : p.matrikkel.kommune} />
           <KV label={t("Tomt", "Plot")} value={p.bygg.tomt ? `${p.bygg.tomt} m²` : t("Ukjent", "Unknown")} />
           <KV label="BRA" value={p.bygg.BRA != null ? `${p.bygg.BRA} m²` : t("Ukjent", "Unknown")} />
           <KV label={t("Byggeår", "Year built")} value={String(p.bygg.byggeAar ?? "Ukjent")} />

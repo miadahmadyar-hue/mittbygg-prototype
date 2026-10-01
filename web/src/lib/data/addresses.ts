@@ -22,6 +22,7 @@ export interface Address {
   id: string;
   street: string;
   postal: string;
+  municipality?: string;
   city: string;
   coords: [number, number];
   matrikkel: { gnr: string; bnr: string; kommune: string };
