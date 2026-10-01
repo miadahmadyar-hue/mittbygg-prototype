@@ -17,6 +17,8 @@ import { SoknadSent } from "./SoknadFlow";
 import { BetalingModal } from "./BetalingModal";
 import { DrawingUpload } from "./DrawingUpload";
 import { AiAnalyse } from "./AiAnalyse";
+import { WallPreparation } from "./WallPreparation";
+import { useDraftState } from "@/lib/projects";
 import { downloadTiltakSoknad } from "@/lib/api/soknad";
 import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
 import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
@@ -111,6 +113,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
   const router = useRouter();
   const t = useT();
   const [downloadError, setDownloadError] = useState(false);
+  const [wallPreparation, setWallPreparation] = useDraftState("wallPreparation", { open: false });
   const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
   const [pendingAiResults, setPendingAiResults] = useState<{
@@ -161,10 +164,14 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
     );
   }
 
+  if (phase.kind === "result" && slug === "vegg" && wallPreparation.open && phase.result.availability !== "unavailable" && ["professional", "clarify"].includes(phase.result.outcome ?? "clarify")) {
+    return <WallPreparation p={p} result={phase.result} onBack={() => setWallPreparation({ open: false })} />;
+  }
   if (phase.kind === "result") {
     return (
       <ResultView
         r={phase.result}
+        onPrepareProfessional={slug === "vegg" ? () => setWallPreparation({ open: true }) : undefined}
         onEdit={onEdit}
         onRetry={async () => {
           const input = phase.result.input;

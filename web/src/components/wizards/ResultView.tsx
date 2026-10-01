@@ -58,9 +58,10 @@ interface Props {
   onRestart: () => void;
   onRetry?: () => void;
   onEdit?: () => void;
+  onPrepareProfessional?: () => void;
 }
 
-export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEdit }: Props) {
+export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEdit, onPrepareProfessional }: Props) {
   const t = useT();
   const sCard = STATUS_CARDS[r.status];
   const outcome = r.outcome ?? "clarify";
@@ -150,6 +151,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
         <Timeline outcome={outcome} />
 
         <div className="mt-2 flex flex-col gap-2">
+          {onPrepareProfessional && (needsProfessional || needsClarification) && <Button full onClick={onPrepareProfessional}>Forbered saken til ingeniør</Button>}
           {onEdit && <Button full variant="ghost" onClick={onEdit}>{t("Se eller endre svar", "Review or edit answers")}</Button>}
           {isExempt ? (
             <>
