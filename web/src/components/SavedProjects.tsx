@@ -18,7 +18,7 @@ export function SavedProjects({ propertyId }: { propertyId: string }) {
   }, [propertyId]);
   return <aside className="panel project-status">
     <h2 className="text-xl font-semibold">{t("Mine prosjekter", "My projects")}</h2>
-    <p className="mt-2 text-xs text-gray-500">{t("Utkast og PDF-er lagres i denne nettleseren på denne enheten. Ett utkast per tiltakstype. Unngå delte enheter.", "Drafts and PDFs are saved in this browser on this device. One draft per project type. Avoid shared devices.")}</p>
+    <p className="mt-2 text-xs text-gray-500">{t("Utkast og dokumentpakker lagres i denne nettleseren på denne enheten. Ett utkast per tiltakstype. Unngå delte enheter.", "Drafts and document packages are saved in this browser on this device. One draft per project type. Avoid shared devices.")}</p>
     {projects.length === 0 && <p className="mt-4">{t("Ingen lagrede tiltak ennå.", "No saved projects yet.")}</p>}
     <ul className="mt-4 space-y-3">{projects.map((project) => {
       const item = TILTAK.find((entry) => entry.slug === project.slug);

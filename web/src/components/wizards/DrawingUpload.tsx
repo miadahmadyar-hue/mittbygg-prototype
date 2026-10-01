@@ -149,7 +149,7 @@ export function DrawingUpload({ onContinue, onBack }: Props) {
             {uploading ? (
               t("Laster opp…", "Uploading…")
             ) : files.length > 0 ? (
-              <>{t("Legg til i søknadspakke", "Add to application package")} <ArrowRight /></>
+              <>{t("Fortsett til AI-gjennomgang", "Continue to AI review")} <ArrowRight /></>
             ) : (
               <>{t("Fortsett uten tegninger", "Continue without drawings")} <ArrowRight /></>
             )}
