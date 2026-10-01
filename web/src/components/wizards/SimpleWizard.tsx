@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ResultView } from "./ResultView";
 import { SoknadSent } from "./SoknadFlow";
-import { BetalingModal } from "./BetalingModal";
+import { CaseSubmission } from "./CaseSubmission";
 import { DrawingUpload } from "./DrawingUpload";
 import { AiAnalyse } from "./AiAnalyse";
 import { CellarPreparation } from "./CellarPreparation";
@@ -114,6 +114,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
   const router = useRouter();
   const t = useT();
   const [downloadError, setDownloadError] = useState(false);
+  const [uploadSession, setUploadSession] = useState<string | null>(null);
   const [wallPreparation, setWallPreparation] = useDraftState("wallPreparation", { open: false });
   const [uploadPending, setUploadPending] = useState<TiltakResult | null>(null);
   const [aiPhase, setAiPhase] = useState<AiPhase | null>(null);
@@ -175,7 +176,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
     return (
       <ResultView
         r={phase.result}
-        onPrepareProfessional={slug === "vegg" || slug === "kjeller" || slug === "bruksendring" ? () => setWallPreparation({ open: true }) : undefined}
+        onPrepareProfessional={() => { if ((slug === "vegg" && ["professional", "clarify"].includes(phase.result.outcome ?? "clarify")) || slug === "kjeller" || slug === "bruksendring") setWallPreparation({ open: true }); else { setPhase({ kind: "betaling", result: phase.result }); setUploadPending(phase.result); } }}
         onEdit={onEdit}
         onRetry={async () => {
           const input = phase.result.input;
@@ -226,6 +227,7 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
         onBack={() => { setUploadPending(null); onEdit(); }}
         onContinue={async (sessionId) => {
           const result = uploadPending;
+          setUploadSession(sessionId);
           setUploadPending(null);
           setAiPhase({ kind: "loading", result, stage: "architect" });
           const reqBase = {
@@ -256,18 +258,18 @@ export function ResultPhases({ phase, setPhase, p, loadingText, slug, onEdit }: 
 
   if (phase.kind === "betaling") {
     return (
-      <BetalingModal
-        totalKostnad={phase.result.totalKostnad}
-        slug={slug}
-        onBetal={download}
-        onBack={() => {
-          if (pendingAiResults) {
-            setAiPhase({ kind: "done", ...pendingAiResults });
-          } else {
-            setPhase({ kind: "result", result: phase.result });
-          }
-        }}
-      />
+      <><Topbar title="Tilbudsforespørsel" onBack={() => setPhase({ kind: "result", result: phase.result })} />
+        <main className="view">
+          <CaseSubmission slug={slug ?? "andre"} address={`${p.street}, ${p.matrikkel.kommune}`} sessionId={uploadSession}
+            data={{ result: phase.result, property: p, architect: pendingAiResults?.architect, engineer: pendingAiResults?.engineer }} />
+          <Button full variant="secondary" onClick={() => {
+            const copy = { result: phase.result, property: p, architect: pendingAiResults?.architect, engineer: pendingAiResults?.engineer };
+            downloadBlob(new Blob([JSON.stringify(copy, null, 2)], { type: "application/json" }), `${slug ?? "tiltak"}-saksopplysninger.json`);
+          }}>Last ned en kopi av opplysningene (JSON)</Button>
+          {phase.result.outcome === "application" && <Button full variant="secondary" onClick={download}>Last ned PDF-utkast</Button>}
+          <p className="text-sm">Kopien inneholder svar og AI-vurderinger, ikke opplastede vedlegg. Nedlasting sender ikke saken.</p>
+          <Button full variant="ghost" onClick={() => setUploadPending(phase.result)}>Endre vedlegg / prøv AI igjen</Button>
+        </main></>
     );
   }
 

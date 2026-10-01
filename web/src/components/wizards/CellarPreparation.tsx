@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useDraftState } from "@/lib/projects";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
+import { CaseSubmission } from "./CaseSubmission";
 import { DrawingUpload } from "./DrawingUpload";
 import { callArchitectAgent, type ArchitectAssessment } from "@/lib/api/aiArchitect";
 import { callEngineerAgent, type EngineerAssessment } from "@/lib/api/aiEngineer";
@@ -110,11 +111,11 @@ export function CellarPreparation({ p, result, onBack, slug = "kjeller" }: { p: 
         <section className="panel p-4"><h2 className="font-semibold">Hva gjenstår?</h2><p className="text-sm mt-2">{missing.length} av {Object.keys(checks).length} punkter er ikke markert tilgjengelige. Status oppgis av deg og er ikke faglig verifisert.</p>
           {Object.entries(checks).map(([key, label]) => <label key={key} className="flex gap-3 mt-4 text-sm"><input type="checkbox" checked={draft.checklist[key] ?? false} onChange={(e) => { setSaved(false); setDraft({ ...draft, checklist: { ...draft.checklist, [key]: e.target.checked } }); }} />{label}</label>)}
           <p className="mt-4 font-semibold">Ikke bekreftet klar til innsending. Den som skal søke må kontrollere dokumentene og avklare behovet for ansvarlig foretak.</p></section>
-        <section className="panel p-4"><h2 className="font-semibold">Neste steg: kontakt valgt fagperson</h2><p className="mt-2">Last ned pakken og bruk den til avklaring med kommunen eller valgt rådgiver. Avtal hvem som dokumenterer løsningen, og om du kan søke selv eller trenger ansvarlig foretak.</p>
-          <p className="mt-2 text-sm">Rådgiver / søker: {draft.details.applicantFirm || "Ikke valgt"}</p></section>
+        <CaseSubmission slug={slug} address={`${p.street}, ${p.matrikkel.kommune}`} sessionId={review.session}
+          data={{ result, property: p, details: draft.details, checklist: draft.checklist, architect: review.architect, engineer: review.engineer }} />
         <p className="text-sm">ZIP inneholder PDF-brief med regelsjekk, kundeopplysninger og filene lastet opp i denne økten. Last ned før du lukker siden; vedlegg må lastes opp igjen etter øktutløp.</p>
-        <Button full onClick={download}>Last ned saksunderlag med vedlegg (ZIP)</Button>
-        {saved && <p role="status">Pakken er lagret under Mine prosjekter på denne enheten. Nedlasting er startet. Ingenting er sendt.</p>}
+        <Button full variant="secondary" onClick={download}>Last ned en kopi med vedlegg (ZIP)</Button>
+        {saved && <p role="status">Pakken er lagret under Mine prosjekter på denne enheten. Nedlasting er startet. Denne nedlastingen sender ikke saken.</p>}
         <Button full variant="ghost" onClick={() => changeScreen("upload")}>Last opp på nytt / prøv AI igjen</Button>
         <Button full variant="ghost" onClick={() => changeScreen("details")}>Endre saksopplysninger</Button>
       </>}

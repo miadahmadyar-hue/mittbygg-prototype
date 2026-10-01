@@ -153,7 +153,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
         <Timeline outcome={outcome} />
 
         <div className="mt-2 flex flex-col gap-2">
-          {onPrepareProfessional && (needsProfessional || needsClarification) && <Button full onClick={onPrepareProfessional}>{slug === "bruksendring" ? "Forbered bruksendringen" : slug === "kjeller" ? "Forbered kjellersaken" : "Forbered saken til ingeniør"}</Button>}
+          {onPrepareProfessional && <Button full onClick={onPrepareProfessional}>{slug === "bruksendring" ? "Forbered bruksendringen" : slug === "kjeller" ? "Forbered kjellersaken" : slug === "vegg" ? "Forbered saken til ingeniør" : "Forbered saken for tilbud"}</Button>}
           {onEdit && <Button full variant="ghost" onClick={onEdit}>{t("Se eller endre svar", "Review or edit answers")}</Button>}
           {isExempt ? (
             <>
@@ -181,12 +181,7 @@ export function ResultView({ r, slug, onGenerateSoknad, onRestart, onRetry, onEd
                     <div className="text-xs text-amber-700 mt-0.5">{t("Vi lager ikke en søknadspakke før manglende forhold er dokumentert eller ansvarlig foretak er valgt.", "We do not create an application package until the missing facts are documented or a responsible firm is engaged.")}</div>
                   </div>
                 </div>
-                <a
-                  href="mailto:hei@soknadsklar.no?subject=Trenger hjelp med søknad"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm rounded-xl py-3 text-center transition-colors"
-                >
-                  {t("Be om faglig vurdering", "Request professional assessment")}
-                </a>
+                <p className="text-sm">{t("Bruk forberedelsen over for å samle dokumenter og be oss om tilbud.", "Use the preparation above to gather documents and request a quote.")}</p>
               </div>
               <Button variant="ghost" full onClick={onRestart}>
                 {t("Start på nytt", "Start over")}

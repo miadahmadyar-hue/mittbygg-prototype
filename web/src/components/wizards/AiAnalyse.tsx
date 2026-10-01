@@ -116,7 +116,7 @@ export function AiAnalyse({ architect, engineer, onContinue, onRetry }: Props) {
 
         <div className="mt-auto pt-2">
           <Button size="lg" full onClick={onContinue}>
-            {t("Se dokumentinnhold og eksempelpris", "Review document contents and example price")}
+            {t("Gå videre til tilbudsforespørsel", "Continue to request a quote")}
             <DownloadIcon />
           </Button>
         </div>
