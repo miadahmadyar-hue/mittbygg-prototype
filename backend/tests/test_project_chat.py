@@ -21,6 +21,18 @@ class ChatTests(unittest.TestCase):
     def test_requires_session(self):
         self.assertEqual(self.client.post("/api/ai/chat", json=self.body).status_code, 401)
 
+    def test_entry_chat_suggests_wizard_in_selected_language(self):
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}), patch("api.project_chat.review", return_value={"reply": "Start with wall changes.", "suggested_slug": "vegg"}) as provider:
+            response = self.client.post("/api/ai/chat", json={**self.body, "slug": "start", "language": "en"}, headers=self.headers)
+        self.assertEqual(response.json(), {"reply": "Start with wall changes.", "suggested_slug": "vegg"})
+        self.assertIn("engelsk", provider.call_args.kwargs["instructions"])
+
+    def test_entry_cannot_return_arbitrary_navigation_or_assume_a_choice(self):
+        for target, status in [("https://example.com", 503), (None, 200)]:
+            with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}), patch("api.project_chat.review", return_value={"reply": "What are you planning?", "suggested_slug": target}):
+                response = self.client.post("/api/ai/chat", json={**self.body, "slug": "start"}, headers=self.headers)
+            self.assertEqual(response.status_code, status)
+
     def test_no_key_is_explicitly_unavailable(self):
         with patch.dict(os.environ, {"OPENAI_API_KEY": ""}):
             self.assertEqual(self.client.post("/api/ai/chat", json=self.body, headers=self.headers).status_code, 503)

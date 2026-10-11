@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { TiltakIcon } from "@/components/ui/TiltakIcon";
 import { TILTAK, TAG_EN, type Tiltak } from "@/lib/data/tiltak";
 import { useT } from "@/lib/i18n/context";
+import { ProjectEntryChat } from "./ProjectEntryChat";
 
 const ICON_STYLES: Record<string, string> = {
   "": "bg-green-50 text-green-600",
@@ -42,6 +43,7 @@ export function TiltakGrid({ propertyId }: { propertyId: string }) {
             {t("Velg tiltaket som passer best. Du får en strukturert vurdering av søknadsplikt, dokumentkrav og neste steg.", "Choose the closest project type. You will get a structured assessment of permit requirements, documentation and next steps.")}
           </p>
         </header>
+        <ProjectEntryChat propertyId={propertyId} />
 
         <details className="panel p-5"><summary className="cursor-pointer font-semibold">{t("Usikker på forskjellen mellom tiltakene?", "Unsure which project to choose?")}</summary><p className="mt-3 text-sm leading-6">{t("Velg Bruksendring kjeller når et eksisterende kjellerrom skal få ny bruk. Velg Ny boenhet når du planlegger en separat bolig med egen inngang og alle boligfunksjoner. Bruksendring dekker andre arealer som bod, garasje eller næring. Er prosjektet sammensatt, velg Noe annet.", "Choose Basement conversion for a new use of an existing basement room. Choose New dwelling for a separate home with its own entrance and all residential functions. Change of use covers other areas such as storage, garages or commercial space. Choose Something else for a combined project.")}</p></details>
         {categories.map((category) => {

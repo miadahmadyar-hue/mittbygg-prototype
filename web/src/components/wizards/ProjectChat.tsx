@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/Button";
 type Draft = { messages: ChatMessage[]; facts: ChatFact[]; specialist: "architect" | "engineer"; input: string };
 
 export function ProjectChat({ slug, onApply }: { slug: ChatSlug; onApply: (patch: Record<string, unknown>) => void }) {
-  const [draft, setDraft] = useDraftState<Draft>("chat", { messages: [], facts: [], specialist: "architect", input: "" });
+  const [savedDraft, setDraft] = useDraftState<Draft>("chat", { messages: [], facts: [], specialist: "architect", input: "" });
+  const [entry] = useDraftState<{ messages: ChatMessage[] }>("entryChat", { messages: [] });
+  const draft = savedDraft.messages.length ? savedDraft : { ...savedDraft, messages: entry.messages };
   const [, setBrief] = useDraftState("chatBrief", { notes: "" });
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);

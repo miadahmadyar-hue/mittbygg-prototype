@@ -72,6 +72,14 @@ export function useDraftState<T>(slot: string, initial: T): [T, (value: SetState
 
 export function invalidateProjectCache() { cache.clear(); notify(); }
 
+// Transfer only intake context; preserve existing form answers, reviews and case notes.
+export function saveChatEntry(propertyId: string, slug: string, value: unknown) {
+  const key = `${PREFIX}/property/${propertyId}/tiltak/${slug}:entryChat`;
+  localStorage.setItem(key, JSON.stringify({ value, schemaVersion: 2, updated: new Date().toISOString() }));
+  cache.delete(key);
+  notify();
+}
+
 export function useStorageFailure() {
   return useSyncExternalStore(subscribe, () => storageFailed, () => false);
 }
