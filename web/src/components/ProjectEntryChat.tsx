@@ -64,7 +64,7 @@ export function ProjectEntryChat({ propertyId }: { propertyId: string }) {
     <div className="bg-green-50 p-5 sm:p-6 border-b border-green-100">
       <p className="page-kicker">{t("Start med en samtale", "Start with a conversation")}</p>
       <h2 id="entry-chat-title" className="text-xl sm:text-2xl font-semibold mt-2">{t("Snakk med AI-arkitekten og AI-ingeniøren", "Chat with the AI architect and AI engineer")}</h2>
-      <p className="text-sm text-gray-600 mt-2">{t("Beskriv hva du vil gjøre. Vi hjelper deg å finne riktig veiviser — du trenger ikke velge tiltak først.", "Describe what you want to do. We will help you find the right wizard—you do not need to choose a project type first.")}</p>
+      <p className="text-sm text-gray-600 mt-2">{t("Beskriv hva du vil gjøre. Vi finner riktig skjema og fyller det ut gjennom samtalen. Du kontrollerer én samlet oversikt før vurdering.", "Describe what you want to do. We find the right form and fill it through conversation. You check one review before the assessment.")}</p>
     </div>
     <div className="p-5 sm:p-6 space-y-4">
       <div role="group" aria-label={t("Velg AI-rolle", "Choose AI role")} className="flex flex-wrap gap-2">

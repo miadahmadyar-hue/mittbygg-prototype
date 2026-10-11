@@ -28,3 +28,14 @@ Browser drafts are scoped to the project/wizard path. Sending shares the convers
 ## Follow-up scope
 
 Extend specialist chat to other wizards only after customer feedback on these two. Future work may include translated specialist chat UI, cross-device conversation storage, and staff transcript access with appropriate consent and access control. Existing authentication and professional-review limitations continue to apply.
+# Conversational forms across all wizards — 12 October 2026
+
+Every one of the 15 wizard routes now offers conversational intake and a single editable review. The original step-by-step form remains available, with its existing draft retained separately. Main-page messages and attachments carry into the selected project's conversation; the first new message (or the explicit fill-from-history button) extracts earlier customer facts without asking the customer to repeat them.
+
+`backend/api/intake.py` derives the review fields and bounds from the existing evaluator input models, with bilingual labels and conditional questions. The UI fills draft answers as chat replies arrive, shows evidence from the customer's text, accepts corrections and explicit unknowns, and retains the draft locally. `/api/ai/intake` shares existing session ownership, attachment validation and AI rate limits. Only allowed, bounded values with a quote from customer messages are accepted. The first extraction can use customer history; subsequent turns use only the latest customer message so an old answer cannot silently undo a review edit.
+
+`POST /api/intake/{slug}/evaluate` requires explicit review confirmation and validates all active fields independently of the AI. Required values cannot silently fall back to evaluator defaults (including false booleans). Nullable facts can remain unknown. Required measurements with no unknown representation must be provided before assessment; the UI identifies these and preserves the draft for later clarification. Approved-drawing confirmation is a separate customer checkbox that the AI cannot set, and changing approved use resets it.
+
+The confirmed review calls the same evaluator used by the original wizard, then continues through the existing result, professional preparation, attachments and quote-request screens. It does not order work, pay, submit an application, or certify engineering. The chat is an intake aid, not an engineering design tool. The case description is editable and explicitly saved when the review is confirmed.
+
+Validation includes every wizard's configuration and evaluation against its existing engine; missing/defaulted fields; ranges and booleans; conditional branches; corrections; user-history handoff; protected fields; provider failures; and attachment expiry. Frontend tests cover required/unknown states, corrections, conditional fields and confirmation resets. Existing attachment session-expiry and local-draft limitations still apply.

@@ -20,6 +20,7 @@ from api.cellar_case import router as cellar_case_router
 from api.cases import router as cases_router
 from api.project_case import router as project_case_router
 from api.project_chat import router as project_chat_router
+from api.intake import router as intake_router
 
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
@@ -50,6 +51,7 @@ app.include_router(cellar_case_router, prefix="/api")
 app.include_router(cases_router, prefix="/api")
 app.include_router(project_case_router, prefix="/api")
 app.include_router(project_chat_router, prefix="/api")
+app.include_router(intake_router, prefix="/api")
 
 
 @app.get("/health")

@@ -21,7 +21,7 @@ import type { TiltakResult } from "@/lib/api/evaluate";
 import { evalTiltak } from "@/lib/api/evaluate";
 import type { Address } from "@/lib/data/addresses";
 
-type Phase =
+export type Phase =
   | { kind: "wizard"; step: number }
   | { kind: "loading" }
   | { kind: "result"; result: TiltakResult }

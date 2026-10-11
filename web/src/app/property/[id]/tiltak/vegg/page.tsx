@@ -1,4 +1,5 @@
 "use client";
+import { ConversationalWizard } from "@/components/wizards/ConversationalWizard";
 import { PropertyLoader } from "@/components/PropertyLoader";
 import { VeggWizard } from "@/components/wizards/VeggWizard";
-export default function Page() { return <PropertyLoader>{(p) => <VeggWizard p={p} />}</PropertyLoader>; }
+export default function Page() { return <PropertyLoader>{(p) => <ConversationalWizard p={p} slug="vegg"><VeggWizard p={p} /></ConversationalWizard>}</PropertyLoader>; }
