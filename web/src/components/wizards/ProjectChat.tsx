@@ -5,12 +5,15 @@ import { useDraftState } from "@/lib/projects";
 import { sessionFetch } from "@/lib/api/session";
 import { CHAT_FIELDS, chatPatch, displayFact, validFact, type ChatFact, type ChatMessage, type ChatSlug } from "@/lib/ai/chat";
 import { Button } from "@/components/ui/Button";
+import { ChatAttachmentPicker } from "@/components/ChatAttachmentPicker";
+import type { ChatAttachments } from "@/lib/ai/attachments";
 
 type Draft = { messages: ChatMessage[]; facts: ChatFact[]; specialist: "architect" | "engineer"; input: string };
 
 export function ProjectChat({ slug, onApply }: { slug: ChatSlug; onApply: (patch: Record<string, unknown>) => void }) {
   const [savedDraft, setDraft] = useDraftState<Draft>("chat", { messages: [], facts: [], specialist: "architect", input: "" });
-  const [entry] = useDraftState<{ messages: ChatMessage[] }>("entryChat", { messages: [] });
+  const [entry, setEntry] = useDraftState<{ messages: ChatMessage[]; attachments: ChatAttachments | null }>("entryChat", { messages: [], attachments: null });
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
   const draft = savedDraft.messages.length ? savedDraft : { ...savedDraft, messages: entry.messages };
   const [, setBrief] = useDraftState("chatBrief", { notes: "" });
   const [open, setOpen] = useState(false);
@@ -29,7 +32,7 @@ export function ProjectChat({ slug, onApply }: { slug: ChatSlug; onApply: (patch
 
   async function send() {
     const content = draft.input.trim();
-    if (!content || busy || active.current || atLimit) return;
+    if (!content || busy || attachmentBusy || active.current || atLimit) return;
     const controller = new AbortController();
     active.current = controller;
     setBusy(true); setError(""); setConfirmed(false);
@@ -38,8 +41,9 @@ export function ProjectChat({ slug, onApply }: { slug: ChatSlug; onApply: (patch
       const response = await sessionFetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/ai/chat`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         signal: AbortSignal.any([controller.signal, AbortSignal.timeout(90_000)]),
-        body: JSON.stringify({ slug, specialist: draft.specialist, messages: messages.map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({ slug, session_id: entry.attachments?.session_id ?? null, specialist: draft.specialist, messages: messages.map(({ role, content }) => ({ role, content })) }),
       });
+      if ([403, 409].includes(response.status)) throw new Error("Vedleggsøkten er utløpt. Bytt vedlegg for å laste opp på nytt, eller fjern dem for å fortsette uten.");
       if (!response.ok) throw new Error(response.status === 429
         ? "Chatgrensen er nådd. Prøv senere eller fortsett i skjemaet. Svarene dine er beholdt."
         : "AI-chatten er utilgjengelig akkurat nå. Prøv igjen eller bruk skjemaet. Meldingen din er beholdt.");
@@ -77,8 +81,9 @@ export function ProjectChat({ slug, onApply }: { slug: ChatSlug; onApply: (patch
     <form onSubmit={e => { e.preventDefault(); void send(); }} className="space-y-2">
       <label htmlFor="project-chat-message" className="block text-sm font-semibold">Fortell om prosjektet</label>
       <textarea id="project-chat-message" rows={3} maxLength={2000} disabled={busy} className="w-full rounded-lg border border-gray-300 p-3 text-sm" value={draft.input} onChange={e => setDraft({ ...draft, input: e.target.value })} placeholder="Jeg ønsker å …" />
-      <p className="text-xs text-gray-500">Samtalen lagres i denne nettleseren og sendes til AI-tjenesten når du trykker Send. Unngå sensitive personopplysninger. Tegninger lastes opp senere.</p>
-      <Button full type="submit" disabled={busy || !draft.input.trim() || atLimit}>{busy ? "AI svarer …" : "Send melding"}</Button>
+      <p className="text-xs text-gray-500">Samtalen lagres i denne nettleseren og sendes til AI-tjenesten når du trykker Send. Unngå sensitive personopplysninger.</p>
+      <ChatAttachmentPicker value={entry.attachments} disabled={busy} onBusy={setAttachmentBusy} onChange={attachments => setEntry(previous => ({ ...previous, attachments }))} />
+      <Button full type="submit" disabled={busy || attachmentBusy || !draft.input.trim() || atLimit}>{busy ? "AI svarer …" : "Send melding"}</Button>
     </form>
     {busy && <p role="status" className="text-sm">Samler opplysningene dine. Dette kan ta omtrent ett minutt.</p>}
     {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
@@ -96,8 +101,8 @@ export function ProjectChat({ slug, onApply }: { slug: ChatSlug; onApply: (patch
       {customerText.length > 2000 && notes === null && <p className="text-sm text-amber-800">Beskrivelsen er forkortet til 2000 tegn. Kontroller at viktige opplysninger og rettelser er med.</p>}
       <label className="flex gap-2 text-sm items-start"><input type="checkbox" disabled={busy} checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />Jeg har kontrollert forslagene og beskrivelsen. Jeg vil se gjennom skjemaet før vurdering.</label>
       {draft.input.trim() && <p className="text-sm text-amber-800">Meldingen i skrivefeltet er ikke behandlet og blir ikke overført. Ta eventuelle viktige opplysninger med i beskrivelsen.</p>}
-      <Button full disabled={!confirmed || busy} onClick={() => { setBrief({ notes: brief }); onApply(chatPatch(slug, facts)); setOpen(false); setConfirmed(false); }}>Bruk svarene og kontroller skjemaet</Button>
+      <Button full disabled={!confirmed || busy || attachmentBusy} onClick={() => { setBrief({ notes: brief }); onApply(chatPatch(slug, facts)); setOpen(false); setConfirmed(false); }}>Bruk svarene og kontroller skjemaet</Button>
     </div>}
-    <Button full variant="ghost" onClick={() => { active.current?.abort(); active.current = null; setBusy(false); setOpen(false); }}>Bruk skjemaet uten å overføre svar</Button>
+    <Button full variant="ghost" disabled={attachmentBusy} onClick={() => { active.current?.abort(); active.current = null; setBusy(false); setOpen(false); }}>Bruk skjemaet uten å overføre svar</Button>
   </section>;
 }

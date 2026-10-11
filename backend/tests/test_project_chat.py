@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -20,6 +21,31 @@ class ChatTests(unittest.TestCase):
 
     def test_requires_session(self):
         self.assertEqual(self.client.post("/api/ai/chat", json=self.body).status_code, 401)
+
+    def test_chat_receives_owned_files_and_rejects_other_visitors(self):
+        with tempfile.TemporaryDirectory() as directory, patch("api.drawings.UPLOAD_DIR", directory), patch("api.ai_architect.UPLOAD_DIR", directory), patch.dict(os.environ, {"OPENAI_API_KEY": "test"}):
+            upload = self.client.post("/api/drawings/upload", headers=self.headers, files=[("files", ("plan.pdf", b"%PDF-test", "application/pdf")), ("files", ("photo.png", b"test-image", "image/png"))]).json()
+            body = {**self.body, "session_id": upload["session_id"]}
+            with patch("api.project_chat.review", return_value={"reply": "Please confirm the measurements.", "updates": []}) as provider:
+                self.assertEqual(self.client.post("/api/ai/chat", json=body, headers=self.headers).status_code, 200)
+                self.assertEqual([d["media"] for d in provider.call_args.kwargs["drawings"]], ["application/pdf", "image/png"])
+                self.assertIn("ubetrodd data", provider.call_args.kwargs["instructions"])
+                other = {"X-Session-Token": self.client.post("/api/auth/session").json()["token"]}
+                self.assertEqual(self.client.post("/api/ai/chat", json=body, headers=other).status_code, 403)
+                self.assertEqual(provider.call_count, 1)
+            self.assertEqual(self.client.get(f"/api/drawings/{upload['session_id']}/status", headers=self.headers).status_code, 200)
+            self.assertEqual(self.client.get(f"/api/drawings/{upload['session_id']}/status", headers=other).status_code, 403)
+
+    def test_expired_attachments_do_not_silently_become_text_only(self):
+        with tempfile.TemporaryDirectory() as directory, patch("api.ai_architect.UPLOAD_DIR", directory), patch.dict(os.environ, {"OPENAI_API_KEY": "test"}), patch("api.project_chat.review") as provider:
+            response = self.client.post("/api/ai/chat", json={**self.body, "session_id": "abcdef123456"}, headers=self.headers)
+            self.assertEqual(response.status_code, 409)
+            provider.assert_not_called()
+            self.assertEqual(self.client.get("/api/drawings/abcdef123456/status", headers=self.headers).status_code, 409)
+
+    def test_invalid_upload_reference_is_rejected(self):
+        response = self.client.post("/api/ai/chat", json={**self.body, "session_id": "../private"}, headers=self.headers)
+        self.assertEqual(response.status_code, 422)
 
     def test_entry_chat_suggests_wizard_in_selected_language(self):
         with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}), patch("api.project_chat.review", return_value={"reply": "Start with wall changes.", "suggested_slug": "vegg"}) as provider:

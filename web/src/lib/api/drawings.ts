@@ -7,13 +7,13 @@ export interface DrawingUploadResult {
   rejected: { name: string; reason: string }[];
 }
 
-export async function uploadDrawings(files: File[]): Promise<DrawingUploadResult> {
+export async function uploadDrawings(files: File[], signal?: AbortSignal): Promise<DrawingUploadResult> {
   const form = new FormData();
   for (const f of files) form.append("files", f);
   const res = await sessionFetch(`${API_URL}/api/drawings/upload`, {
     method: "POST",
     body: form,
-    signal: AbortSignal.timeout(30_000),
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error("upload failed");
   return res.json();

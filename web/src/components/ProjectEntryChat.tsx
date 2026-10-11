@@ -8,14 +8,17 @@ import { sessionFetch } from "@/lib/api/session";
 import { TILTAK } from "@/lib/data/tiltak";
 import type { ChatMessage } from "@/lib/ai/chat";
 import { Button } from "./ui/Button";
+import { ChatAttachmentPicker } from "./ChatAttachmentPicker";
+import type { ChatAttachments } from "@/lib/ai/attachments";
 
-type Draft = { messages: ChatMessage[]; input: string; specialist: "architect" | "engineer"; suggested: string | null; notes: string | null };
+type Draft = { messages: ChatMessage[]; input: string; specialist: "architect" | "engineer"; suggested: string | null; notes: string | null; attachments: ChatAttachments | null };
 
 export function ProjectEntryChat({ propertyId }: { propertyId: string }) {
   const t = useT();
   const { lang } = useLang();
   const router = useRouter();
-  const [draft, setDraft] = useDraftState<Draft>("entry", { messages: [], input: "", specialist: "architect", suggested: null, notes: null });
+  const [draft, setDraft] = useDraftState<Draft>("entry", { messages: [], input: "", specialist: "architect", suggested: null, notes: null, attachments: null });
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -28,7 +31,7 @@ export function ProjectEntryChat({ propertyId }: { propertyId: string }) {
   const atLimit = draft.messages.length >= 12 || draft.messages.reduce((n, m) => n + m.content.length, 0) + draft.input.length > 20000;
 
   async function send() {
-    if (active.current || busy || atLimit || !draft.input.trim()) return;
+    if (active.current || busy || attachmentBusy || atLimit || !draft.input.trim()) return;
     const controller = new AbortController(); active.current = controller;
     setBusy(true); setError(""); setConfirmed(false);
     const messages: ChatMessage[] = [...draft.messages, { role: "user", content: draft.input.trim() }];
@@ -36,8 +39,9 @@ export function ProjectEntryChat({ propertyId }: { propertyId: string }) {
       const response = await sessionFetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/ai/chat`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         signal: AbortSignal.any([controller.signal, AbortSignal.timeout(90_000)]),
-        body: JSON.stringify({ slug: "start", language: lang, specialist: draft.specialist, messages: messages.map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({ slug: "start", language: lang, session_id: draft.attachments?.session_id ?? null, specialist: draft.specialist, messages: messages.map(({ role, content }) => ({ role, content })) }),
       });
+      if ([403, 409].includes(response.status)) throw new Error(t("Vedleggsøkten er utløpt. Velg «Bytt vedlegg» for å laste opp på nytt, eller fjern vedleggene for å fortsette uten.", "The attachment session has expired. Replace the attachments to upload again, or remove them to continue without files."));
       if (!response.ok) throw new Error(response.status === 429 ? t("Chatgrensen er nådd. Velg et tiltak nedenfor, eller prøv senere.", "The chat limit has been reached. Choose a project below or try later.") : t("Chatten er utilgjengelig. Prøv igjen eller velg et tiltak nedenfor. Meldingen er beholdt.", "Chat is unavailable. Retry or choose a project below. Your message is saved."));
       const answer = await response.json() as { reply: string; suggested_slug: string | null };
       if (typeof answer.reply !== "string" || !answer.reply.trim()) throw new Error(t("Ugyldig svar. Prøv igjen.", "Invalid response. Please retry."));
@@ -49,9 +53,9 @@ export function ProjectEntryChat({ propertyId }: { propertyId: string }) {
   }
 
   function continueToWizard() {
-    if (!suggestion?.slug || !confirmed || busy) return;
+    if (!suggestion?.slug || !confirmed || busy || attachmentBusy) return;
     try {
-      saveChatEntry(propertyId, suggestion.slug, { messages: draft.messages, notes });
+      saveChatEntry(propertyId, suggestion.slug, { messages: draft.messages, notes, attachments: draft.attachments });
       router.push(`/property/${propertyId}/tiltak/${suggestion.slug}`);
     } catch { setError(t("Nettleseren kunne ikke lagre samtalen. Kopier beskrivelsen før du velger tiltak nedenfor.", "Your browser could not save the conversation. Copy your description before choosing a project below.")); }
   }
@@ -76,7 +80,8 @@ export function ProjectEntryChat({ propertyId }: { propertyId: string }) {
       <form onSubmit={e => { e.preventDefault(); void send(); }} className="space-y-3">
         <label htmlFor="entry-message" className="block text-sm font-semibold">{t("Hva ønsker du å gjøre?", "What would you like to do?")}</label>
         <textarea id="entry-message" maxLength={2000} rows={3} disabled={busy} value={draft.input} onChange={e => { setDraft({ ...draft, input: e.target.value }); setConfirmed(false); }} className="w-full border border-gray-300 rounded-lg p-3 text-sm" placeholder={t("For eksempel: Jeg vil åpne veggen mellom kjøkken og stue …", "For example: I want to open the wall between my kitchen and living room …")} />
-        <div className="flex flex-wrap items-center gap-3"><Button type="submit" disabled={busy || atLimit || !draft.input.trim()}>{busy ? t("AI svarer …", "AI is replying …") : t("Send melding", "Send message")}</Button>
+        <ChatAttachmentPicker value={draft.attachments} disabled={busy} onBusy={setAttachmentBusy} onChange={attachments => { setDraft(previous => ({ ...previous, attachments })); setConfirmed(false); }} />
+        <div className="flex flex-wrap items-center gap-3"><Button type="submit" disabled={busy || attachmentBusy || atLimit || !draft.input.trim()}>{busy ? t("AI svarer …", "AI is replying …") : t("Send melding", "Send message")}</Button>
           {busy && <Button type="button" variant="ghost" onClick={() => { active.current?.abort(); active.current = null; setBusy(false); }}>{t("Avbryt", "Cancel")}</Button>}</div>
         <p className="text-xs text-gray-500">{t("Samtalen lagres i denne nettleseren og behandles av AI-tjenesten når du sender. Unngå sensitive personopplysninger. Ingen bestilling eller søknad sendes her.", "Your conversation is saved in this browser and processed by the AI service when you send. Avoid sensitive personal information. No order or application is submitted here.")}</p>
       </form>
@@ -89,7 +94,7 @@ export function ProjectEntryChat({ propertyId }: { propertyId: string }) {
         {description.length > 2000 && draft.notes === null && <p className="text-sm text-amber-800">{t("Beskrivelsen er forkortet. Kontroller at viktige opplysninger er med.", "The description was shortened. Check that important details are included.")}</p>}
         <label className="flex gap-2 text-sm"><input type="checkbox" checked={confirmed} disabled={busy} onChange={e => setConfirmed(e.target.checked)} />{t("Dette passer prosjektet mitt, og jeg har kontrollert beskrivelsen.", "This fits my project, and I have checked the description.")}</label>
         {draft.input.trim() && <p className="text-xs text-amber-800">{t("Usendt melding er ikke med i beskrivelsen.", "The unsent message is not included in the description.")}</p>}
-        <Button disabled={!confirmed || busy} onClick={continueToWizard}>{t("Fortsett til", "Continue to")} {t(suggestion.name, suggestion.name_en)}</Button>
+        <Button disabled={!confirmed || busy || attachmentBusy} onClick={continueToWizard}>{t("Fortsett til", "Continue to")} {t(suggestion.name, suggestion.name_en)}</Button>
       </div>}
       <p className="text-sm text-gray-600">{t("Foretrekker du å velge selv? Tiltakene ligger nedenfor.", "Prefer to choose yourself? Browse the projects below.")}</p>
     </div>

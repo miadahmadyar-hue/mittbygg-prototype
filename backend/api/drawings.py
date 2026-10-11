@@ -9,6 +9,15 @@ from typing import List
 
 router = APIRouter()
 
+
+@router.get("/drawings/{session_id}/status")
+def drawing_status(session_id: str, owner: str = Depends(require_session)):
+    from .ai_architect import _load_drawings
+    if not re.fullmatch(r"[0-9a-f]{12}", session_id):
+        raise HTTPException(404, "Drawing session not found")
+    _load_drawings(session_id, owner)
+    return {"available": True}
+
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/mittbygg_drawings")
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_FILES = 6

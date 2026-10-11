@@ -2,7 +2,9 @@
 
 The project selection page now presents an expanded architect/engineer chat above the project cards. It responds in the selected Norwegian/English language and recommends only visible, available wizard routes. Unclear requests get follow-up questions. Customers review the description and confirm before navigation; handoff stores intake context without changing existing form answers or case records. Wall/basement chats can pick up this conversation when they have no existing conversation; existing chats are preserved. Descriptions are also available in the preparation flow.
 
-Wall changes (`vegg`) and basement conversion (`kjeller`) have an optional Norwegian text chat on the first wizard step. Architect and engineer roles share the conversation. Customers review proposed fields and their supporting quotes, confirm, then review the normal form before assessment.
+Wall changes (`vegg`) and basement conversion (`kjeller`) have an optional Norwegian chat on the first wizard step. Architect and engineer roles share the conversation. Customers review proposed fields and their supporting quotes, confirm, then review the normal form before assessment.
+
+Main-page and specialist chats accept PDF, PNG and JPG attachments (six files, 10 MB each, 20 MB total). Selecting a batch uploads it; sending a message supplies those files to the AI. Replace/remove controls affect future messages. Attachments are session-owned and can be reused explicitly in the later drawing-upload step, so existing document-review, ZIP and case-submission flows receive the same session. An authenticated status check detects missing/expired files before reuse. Reload/session renewal can require reuploading. This does not add durable pre-submission storage or delete previously processed files when removed from chat.
 
 The chat does not size structural members, generate construction instructions, certify compliance, submit applications, or charge customers. Uploads and document review remain in the existing preparation flow. The confirmed, editable description is available there through “Ta med beskrivelsen i saken”; this explicitly merges it into case notes without overwriting existing notes. Those notes follow existing ZIP and quote-submission flows. Full chat transcripts are not automatically sent to staff.
 
@@ -18,11 +20,11 @@ Browser drafts are scoped to the project/wizard path. Sending shares the convers
 
 ## Validation
 
-- Backend: `python -m unittest discover -s tests` (85 tests).
-- Frontend: `npm test` (11 tests), `npm run lint`, `npm run build`.
+- Backend: `python -m unittest discover -s tests` (90 tests).
+- Frontend: `npm test` (12 tests), `npm run lint`, `npm run build`.
 - Local browser fixture checks: specialist switching, evidence review, unknown correction, AI outage with message preservation, confirmation before form transfer, case description handoff, basement unit display.
 - Deployment requires both frontend and backend. Verify live provider responses after Render deployment; simulated responses are not evidence of live model availability.
 
 ## Follow-up scope
 
-Extend to other wizards only after customer feedback on these two. Future work may include inline uploads, translated chat UI, cross-device conversation storage, and staff transcript access with appropriate consent and access control. Existing authentication and professional-review limitations continue to apply.
+Extend specialist chat to other wizards only after customer feedback on these two. Future work may include translated specialist chat UI, cross-device conversation storage, and staff transcript access with appropriate consent and access control. Existing authentication and professional-review limitations continue to apply.

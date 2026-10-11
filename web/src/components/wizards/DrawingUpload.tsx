@@ -5,6 +5,9 @@ import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
 import { uploadDrawings } from "@/lib/api/drawings";
 import { useT } from "@/lib/i18n/context";
+import { useDraftState } from "@/lib/projects";
+import { sessionFetch } from "@/lib/api/session";
+import type { ChatAttachments } from "@/lib/ai/attachments";
 
 const DRAWING_HINTS: [string, string][] = [
   ["Situasjonsplan", "Site plan"],
@@ -21,12 +24,24 @@ interface Props {
 
 export function DrawingUpload({ onContinue, onBack, hints }: Props) {
   const t = useT();
+  const [entry, setEntry] = useDraftState<{ attachments: ChatAttachments | null }>("entryChat", { attachments: null });
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const [uploaded, setUploaded] = useState<{ session: string; names: string[] } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  async function reuseChatFiles() {
+    if (!entry.attachments || uploading) return;
+    setUploading(true); setError("");
+    try {
+      const response = await sessionFetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/drawings/${entry.attachments.session_id}/status`, { method: "GET", signal: AbortSignal.timeout(15000) });
+      if (!response.ok) throw new Error("unavailable");
+      onContinue(entry.attachments.session_id);
+    } catch { setError(t("Vedleggene fra chatten er ikke tilgjengelige i denne økten. Last opp filene på nytt nedenfor.", "Chat attachments are not available in this session. Please upload the files again below.")); }
+    finally { setUploading(false); }
+  }
 
   const addFiles = useCallback((list: FileList | null) => {
     if (!list) return;
@@ -79,6 +94,12 @@ export function DrawingUpload({ onContinue, onBack, hints }: Props) {
     <>
       <Topbar title={t("Tegninger", "Drawings")} onBack={onBack} />
       <div className="view">
+        {entry.attachments && <section className="panel p-4 space-y-2"><h2 className="font-semibold">{t("Vedlegg fra samtalen", "Attachments from your chat")}</h2>
+          <ul className="text-sm">{entry.attachments.files.map((file, i) => <li key={i} className="break-words">{file.name}</li>)}</ul>
+          <p className="text-sm">{t("Bruk disse filene, eller velg et nytt sett nedenfor. Nye filer erstatter dette settet i gjennomgangen.", "Reuse these files, or select a new set below. New files replace this set for the review.")}</p>
+          <Button disabled={uploading} onClick={reuseChatFiles}>{t("Fortsett med vedleggene fra chatten", "Continue with chat attachments")}</Button>
+          <Button variant="ghost" disabled={uploading} onClick={() => setEntry(previous => ({ ...previous, attachments: null }))}>{t("Fjern vedlegg fra denne saken", "Remove attachments from this case")}</Button>
+        </section>}
         {error && <p role="alert" className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">{error}</p>}
         {uploaded && <div className="panel p-4"><p>{t("Lastet opp:", "Uploaded:")} {uploaded.names.join(", ")}</p><Button onClick={() => onContinue(uploaded.session)}>{t("Fortsett med disse filene", "Continue with these files")}</Button></div>}
         <div>
