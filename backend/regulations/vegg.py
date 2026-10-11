@@ -74,7 +74,7 @@ def evaluate_vegg(inp: VeggInput) -> VeggResult:
     findings.append(Finding(
         type="ok",
         t=f"Omfang registrert: {TYPE_LABELS[inp.type]}",
-        d=f"Åpningsbredde {width}, {inp.etasjer_over} etasje(r) over, konstruksjon: {inp.konstruksjon.replace('_', '/')}.",
+        d=f"Åpningsbredde {width}, {inp.etasjer_over if inp.etasjer_over is not None else 'ukjent antall'} etasje(r) over, konstruksjon: {inp.konstruksjon.replace('_', '/')}.",
         ref="Kundeopplysninger",
     ))
 

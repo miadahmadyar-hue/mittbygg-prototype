@@ -4,8 +4,8 @@ export interface VeggInput {
   type: "fjerne_vegg" | "ny_apning" | "utvide_apning" | "flytte_vegg" | "endre_soyle";
   baerende: "ja" | "nei" | "usikker";
   apning_bredde: number | null;
-  etasje: "kjeller" | "forste" | "ovre";
-  etasjer_over: number;
+  etasje: "kjeller" | "forste" | "ovre" | "usikker";
+  etasjer_over: number | null;
   konstruksjon: "tre" | "mur_betong" | "stal" | "usikker";
 }
 
@@ -68,7 +68,7 @@ export function evaluateVegg(input: VeggInput): VeggResult {
   findings.push({
     type: "ok",
     t: `Omfang registrert: ${LABELS[input.type]}`,
-    d: `Åpningsbredde ${input.apning_bredde ? `ca. ${input.apning_bredde} m` : "ikke oppgitt"}, ${input.etasjer_over} etasje(r) over.`,
+    d: `Åpningsbredde ${input.apning_bredde ? `ca. ${input.apning_bredde} m` : "ikke oppgitt"}, ${input.etasjer_over ?? "ukjent antall"} etasje(r) over.`,
     ref: "Kundeopplysninger",
   });
 

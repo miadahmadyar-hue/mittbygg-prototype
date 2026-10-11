@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChatBrief } from "./ChatBrief";
 import { useDraftState } from "@/lib/projects";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -88,6 +89,7 @@ export function WallPreparation({ p, result, onBack }: { p: Address; result: Til
       <p className="text-sm">{p.street} · Ønsket åpning: {input.apning_bredde ?? "ukjent"} m · {input.konstruksjon.replaceAll("_", "/")}</p>
       {error && <p role="alert" className="panel p-4 border-red-300">{error}</p>}
       {screen === "details" ? <>
+        <ChatBrief notes={draft.details.notes ?? ""} onUse={notes => setDraft({ ...draft, review: null, details: { ...draft.details, notes } })} />
         <p>La felt stå tomme hvis du ikke vet. Ta med plantegninger, snitt, bilder og eventuelle tidligere beregninger i neste steg.</p>
         {Object.entries(fields).map(([key, label]) => <label key={key} className="block text-sm font-semibold">{label}
           <textarea rows={key === "notes" ? 3 : 1} maxLength={2000} className="block w-full border rounded-xl p-3 mt-1 font-normal" value={draft.details[key] ?? ""}

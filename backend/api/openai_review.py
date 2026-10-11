@@ -31,7 +31,7 @@ def _strict_schema(value):
     return value
 
 
-def review(*, api_key: str, model: str, prompt: str, drawings: list[dict], schema: type[Assessment]) -> dict:
+def review(*, api_key: str, model: str, prompt: str, drawings: list[dict], schema: type[Assessment], instructions: str | None = None) -> dict:
     payload = {
         "model": model,
         "store": False,
@@ -41,6 +41,8 @@ def review(*, api_key: str, model: str, prompt: str, drawings: list[dict], schem
         "text": {"format": {"type": "json_schema", "name": schema.__name__, "strict": True,
                             "schema": _strict_schema(schema.model_json_schema())}},
     }
+    if instructions:
+        payload["instructions"] = instructions
     with httpx.Client(timeout=httpx.Timeout(70.0, connect=10.0)) as client:
         response = client.post("https://api.openai.com/v1/responses",
                                headers={"Authorization": f"Bearer {api_key}"}, json=payload)

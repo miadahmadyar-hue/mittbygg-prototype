@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChatBrief } from "./ChatBrief";
 import { useDraftState } from "@/lib/projects";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -101,6 +102,7 @@ export function CellarPreparation({ p, result, onBack, slug = "kjeller" }: { p: 
       {changeUse && <ChangeUsePrice />}
       {error && <p role="alert" className="panel p-4 border-red-300">{error}</p>}
       {screen === "details" ? <>
+        <ChatBrief notes={draft.details.notes ?? ""} onUse={notes => setDraft({ ...draft, review: null, details: { ...draft.details, notes } })} />
         <p>La felt stå tomme hvis du ikke vet. Ta med plantegninger, snitt, bilder og eventuelle tidligere beregninger i neste steg.</p>
         {guide && <section className="panel p-4"><h2 className="font-semibold">Nyttig underlag for denne saken</h2><ul className="list-disc pl-5 mt-2 space-y-1 text-sm">{guide.documents.map(item => <li key={item}>{item}</li>)}</ul><p className="text-sm mt-3">Du kan be om tilbud selv om noe mangler. Vi avklarer behovet sammen.</p></section>}
         {Object.entries(fields).map(([key, label]) => <label key={key} className="block text-sm font-semibold">{label}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useDraftState } from "@/lib/projects";
+import { ProjectChat } from "./ProjectChat";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -32,8 +33,8 @@ const INITIAL: VeggInput = {
   type: "fjerne_vegg",
   baerende: "usikker",
   apning_bredde: null,
-  etasje: "forste",
-  etasjer_over: 1,
+  etasje: "usikker",
+  etasjer_over: null,
   konstruksjon: "usikker",
 };
 
@@ -62,6 +63,7 @@ export function VeggWizard({ p }: { p: Address }) {
       <Topbar onBack={back} title="Endring i bærekonstruksjon" right={<span className="text-sm text-gray-500">{step + 1}/2</span>} />
       <ProgressBar step={step} total={2} />
       <div className="view">
+        {step === 0 && <ProjectChat slug="vegg" onApply={patch => setData({ ...data, ...patch })} />}
         {step === 0 ? (
           <>
             <div>
@@ -103,11 +105,13 @@ export function VeggWizard({ p }: { p: Address }) {
                 <RadioCard selected={data.etasje === "kjeller"} onClick={() => setData({ ...data, etasje: "kjeller" })} title="Kjeller" />
                 <RadioCard selected={data.etasje === "forste"} onClick={() => setData({ ...data, etasje: "forste" })} title="Første etasje" />
                 <RadioCard selected={data.etasje === "ovre"} onClick={() => setData({ ...data, etasje: "ovre" })} title="Øvre etasje" />
+                <RadioCard selected={data.etasje === "usikker"} onClick={() => setData({ ...data, etasje: "usikker" })} title="Vet ikke" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Antall etasjer over</label>
-              <NumberField label="Etasjer over" value={data.etasjer_over} onChange={(value) => setData({ ...data, etasjer_over: Math.max(0, Math.round(value)) })} unit="stk" />
+              <label className="flex gap-2 text-sm mb-2"><input type="checkbox" checked={data.etasjer_over === null} onChange={e => setData({ ...data, etasjer_over: e.target.checked ? null : 0 })} />Jeg vet ikke antall etasjer over</label>
+              {data.etasjer_over !== null && <NumberField label="Etasjer over" value={data.etasjer_over} onChange={(value) => setData({ ...data, etasjer_over: Math.min(100, Math.max(0, Math.round(value))) })} unit="stk" />}
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Hovedmateriale</h3>

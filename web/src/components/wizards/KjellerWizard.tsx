@@ -1,6 +1,7 @@
 "use client";
 
 import { useDraftState } from "@/lib/projects";
+import { ProjectChat } from "./ProjectChat";
 import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/ui/Topbar";
 import { Button } from "@/components/ui/Button";
@@ -112,6 +113,7 @@ export function KjellerWizard({ p }: { p: Address }) {
       <Topbar onBack={back} title="Bruksendring kjeller" right={<span className="text-sm text-gray-500">{step + 1}/4</span>} />
       <ProgressBar step={step} total={4} />
       <div className="view">
+        {step === 0 && <ProjectChat slug="kjeller" onApply={patch => setData({ ...data, ...patch })} />}
         {step === 0 && (
           <>
             <div>

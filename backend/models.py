@@ -86,8 +86,8 @@ class VeggInput(BaseModel):
     type: Literal["fjerne_vegg", "ny_apning", "utvide_apning", "flytte_vegg", "endre_soyle"]
     baerende: Literal["ja", "nei", "usikker"]
     apning_bredde: Optional[float] = None  # approximate metres
-    etasje: Literal["kjeller", "forste", "ovre"]
-    etasjer_over: int = 0
+    etasje: Literal["kjeller", "forste", "ovre", "usikker"]
+    etasjer_over: Optional[int] = Field(default=None, ge=0, le=100)
     konstruksjon: Literal["tre", "mur_betong", "stal", "usikker"] = "usikker"
 
 
