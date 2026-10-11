@@ -6,6 +6,7 @@ Only the customer's explicit review request reaches the existing rule engine.
 import json
 import math
 import os
+import re
 from typing import Literal
 
 import httpx
@@ -52,8 +53,8 @@ LABELS = {
     "etasjer": ("Antall etasjer", "Number of storeys"),
     "monehoyde": ("Mønehøyde", "Ridge height"), "gesimshoyde": ("Gesimshøyde", "Eaves height"),
     "over_ledninger": ("Plasseres over vann- eller avløpsledninger?", "Built over water or sewer pipes?"),
-    "plan_ok": ("Kontrollert og i samsvar med gjeldende plan?", "Checked and compliant with the current plan?"),
-    "bya_ok": ("Tillatt utnyttelsesgrad kontrollert og overholdt?", "Permitted site coverage checked and respected?"),
+    "plan_ok": ("I samsvar med gjeldende plan? (må være kontrollert)", "Complies with the current plan? (must be checked)"),
+    "bya_ok": ("Innenfor tillatt utnyttelsesgrad? (må være kontrollert)", "Within permitted site coverage? (must be checked)"),
     "bruk": ("Hva skal tilbygget brukes til?", "Use of the extension"),
     "pipe": ("Ny eller endret pipe?", "New or changed chimney?"),
     "samme_formaal": ("Samme formål som eksisterende bygg?", "Same purpose as the existing building?"),
@@ -219,6 +220,7 @@ Do not guess units. Convert explicit units to the form unit (ceiling height is m
 {'You can inspect the attached files cautiously.' if drawings else 'No files are available: never claim to have seen them.'}
 Ask only about missing or ambiguous relevant fields; do not repeat questions already answered or explicitly unknown. If the customer cannot provide a required value, explain that it remains for clarification; never invent it.
 Approved use means official approved drawings, not actual use. Never mark drawings checked, plan compliance, structural safety or heritage status from assumptions.
+For plan_ok and bya_ok, false means CHECKED AND NONCOMPLIANT, not merely unchecked. 'Not checked', 'not verified' or 'do not know' means null (or usikker for plan_status). Never map absence of verification to a negative factual finding. The same distinction applies to heritage, utilities, fire walls and dwelling functions.
 Do not size beams, provide demolition/support instructions, approve projects, promise prices, payments or submissions. Technical design and applications need professional review.
 When sufficient answers are collected, invite the customer to Review completed form, where they can edit and confirm once. No need to repeat the wizard steps.
 Do not ask for passwords, national IDs or payment details. The customer controls the final review and assessment.
@@ -238,6 +240,12 @@ Do not ask for passwords, national IDs or payment details. The customer controls
         if not field or not evidence or not any(evidence.casefold() in text.casefold() for text in sources):
             continue
         value = item.value
+        # Unchecked is not noncompliant. This common negative phrasing can
+        # otherwise be mistaken for a factual 'no' by the extractor.
+        if item.key in ("plan_ok", "bya_ok", "plan_status") and re.search(
+            r"(?:not|haven't|hasn't|ikke).{0,45}(?:check|verif|kontrollert|undersøkt)|(?:do not|don't|ikke).{0,12}(?:know|vet)",
+            evidence, re.IGNORECASE):
+            value = None
         if value is None:
             unknown = next((c["value"] for c in field["choices"] if c["value"] in ("usikker", "unknown")), None)
             value = unknown

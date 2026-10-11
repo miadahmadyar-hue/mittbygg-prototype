@@ -109,6 +109,16 @@ class IntakeTests(unittest.TestCase):
         data.update(room="usikker", godkjent_bruk_bekreftet=True)
         self.assertFalse(self.assess("kjeller", data).json()["input"]["godkjent_bruk_bekreftet"])
 
+    def test_unchecked_plan_is_unknown_not_a_confirmed_violation(self):
+        for slug, key, evidence, proposed, expected in (
+            ("garasje", "plan_ok", "I have not checked the zoning plan", "false", None),
+            ("tilbygg", "bya_ok", "har ikke kontrollert utnyttelsesgraden", "false", None),
+            ("bruksendring", "plan_status", "I haven't verified the plan", "ikke_tillatt", "usikker"),
+            ("garasje", "plan_ok", "The checked plan does not permit this", "false", False),
+        ):
+            response, _ = self.chat(slug, [{"key": key, "value": proposed, "evidence": evidence}], evidence)
+            self.assertEqual(response.json()["updates"][0]["value"], expected)
+
     def test_expired_attachment_fails_without_calling_provider(self):
         with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}), patch("api.intake._load_drawings", side_effect=__import__('fastapi').HTTPException(409)), patch("api.intake.review") as provider:
             response = self.client.post("/api/ai/intake", headers=self.headers, json={"slug": "vegg", "session_id": "abcdef123456", "messages": [{"role": "user", "content": "test"}]})
